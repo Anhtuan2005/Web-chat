@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - Admin Panel</title>
+    @Styles.Render("~/Content/css")
+    @Scripts.Render("~/bundles/modernizr")
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .admin-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #343a40; /* Dark background for sidebar */
+            color: white;
+            flex-shrink: 0;
+        }
+
+            .sidebar .sidebar-header {
+                padding: 20px;
+                font-size: 1.5rem;
+                text-align: center;
+                border-bottom: 1px solid #495057;
+            }
+
+            .sidebar .nav-link {
+                color: #adb5bd;
+                padding: 10px 20px;
+                display: block;
+                text-decoration: none;
+                transition: background-color 0.2s, color 0.2s;
+            }
+
+                .sidebar .nav-link:hover,
+                .sidebar .nav-link.active {
+                    background-color: #495057;
+                    color: white;
+                }
+
+                .sidebar .nav-link i {
+                    margin-right: 10px;
+                }
+
+        .content-wrapper {
+            flex-grow: 1;
+            padding: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-wrapper">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                Admin Panel
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="@Url.Action("Index", "Admin")">
+                        <i class="fas fa-tachometer-alt"></i> Tổng quan
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="@Url.Action("ManageUsers", "Admin")">
+                        <i class="fas fa-users"></i> Quản lý người dùng
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="@Url.Action("ManageGroups", "Admin")">
+                        <i class="fas fa-comments"></i> Quản lý nhóm chat
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="@Url.Action("ManageMessages", "Admin")">
+                        <i class="fas fa-envelope"></i> Quản lý tin nhắn
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="@Url.Action("SystemSettings", "Admin")">
+                        <i class="fas fa-cogs"></i> Cài đặt hệ thống
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="@Url.Action("Reports", "Admin")">
+                        <i class="fas fa-chart-bar"></i> Báo cáo
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <main class="content-wrapper">
+            @RenderBody()
+        </main>
+    </div>
+
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+    @RenderSection("scripts", required: false)
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html>

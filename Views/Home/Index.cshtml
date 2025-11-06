@@ -1,0 +1,27 @@
+﻿@model IEnumerable<Online_chat.Models.ChatMessage>
+@{
+    ViewBag.Title = "Chat Room";
+}
+
+<h2>Chat Room: @ViewBag.Room</h2>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<ul class="list-group mb-3">
+    @foreach (var msg in Model)
+    {
+        <li class="list-group-item">
+            <b>@msg.User</b>: @msg.Message <span class="text-muted">(@msg.Timestamp)</span>
+        </li>
+    }
+</ul>
+
+<form method="post" action="/Chat/Send">
+    <input type="hidden" name="room" value="@ViewBag.Room" />
+    <input type="text" name="user" placeholder="Your name" class="form-control mb-2" required />
+    <input type="text" name="message" placeholder="Type a message" class="form-control mb-2" required />
+    <button type="submit" class="btn btn-primary">Send</button>
+</form>

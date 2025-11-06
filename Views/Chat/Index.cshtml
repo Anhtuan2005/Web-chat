@@ -1,0 +1,245 @@
+﻿@{
+    ViewBag.Title = "Chat";
+    Layout = "~/Views/Shared/_ChatLayout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+<style>
+
+    .chat-main {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        background-color: #fff;
+        height: 100%; /* Đảm bảo lấp đầy không gian trong layout */
+    }
+
+    .chat-header {
+        padding: 15px;
+        border-bottom: 1px solid #ddd;
+        font-weight: bold;
+    }
+
+    .message-area {
+        flex-grow: 1;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    .input-area {
+        display: flex;
+        padding: 10px;
+        border-top: 1px solid #ddd;
+        align-items: center;
+    }
+
+        .input-area #messageInput {
+            flex-grow: 1;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+            padding: 5px 15px;
+            outline: none;
+        }
+
+        .input-area #sendButton {
+            margin-left: 10px;
+            border: none;
+            background: none;
+            color: #007bff;
+            font-size: 1.5rem;
+        }
+
+    .message {
+        margin-bottom: 15px;
+    }
+
+        .message strong {
+            display: block;
+            color: #555;
+        }
+
+    .btn-light {
+        background-color: transparent;
+        border: none;
+        font-size: 1.2rem;
+        color: #555;
+    }
+
+    #toggle-conversations-btn {
+        border: none;
+        background: transparent;
+        color: #2e7d32;
+        font-size: 1.3rem;
+        border-radius: 10px;
+        transition: all 0.2s ease-in-out;
+    }
+
+        #toggle-conversations-btn:hover {
+            background-color: #e8f5e9;
+            color: #1b5e20;
+        }
+    .msg-img, .msg-video {
+        border-radius: 10px;
+        margin: 5px 0;
+        display: block;
+    }
+
+</style>
+
+<div class="chat-main">
+    <!-- Thanh tiêu đề khung chat -->
+    <div class="chat-header d-flex justify-content-between align-items-center">
+        <div id="current-group-name" class="fw-bold"></div>
+        <button id="toggle-conversations-btn" class="btn btn-light" title="Ẩn/Hiện danh sách">
+            <i class="fas fa-list-ul"></i>
+        </button>
+    </div>
+
+    <!-- Khu vực tin nhắn -->
+    <div class="message-area" id="messagesList"></div>
+
+    <!-- Khu vực nhập liệu -->
+    <div class="input-area">
+        <<input type="file" id="imageUpload" accept="image/*" multiple style="display: none;" />
+        <label for="imageUpload" class="btn btn-light mr-2" style="cursor: pointer;">
+            <i class="fas fa-paperclip"></i>
+        </label>
+        <input type="text" id="messageInput" placeholder="Nhập tin nhắn..." autocomplete="off" />
+        <button id="sendButton"><i class="fas fa-paper-plane"></i></button>
+    </div>
+</div>
+
+
+<div class="modal fade" id="imagePreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xem trước ảnh</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body text-center" id="imagePreviewContainer"
+                 style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="sendImageButton">Gửi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+    const uploadUrl = '@Url.Action("UploadFiles", "Chat")';
+
+    const connection = $.hubConnection();
+    const chatHub = connection.createHubProxy("ChatHub");
+
+    // 🧩 Nhận tin nhắn realtime từ server
+    chatHub.on("ReceiveMessage", function (sender, avatarUrl, type, content, time) {
+        let html = "";
+        if (type === "image") {
+            html = `<div class="message"><strong>${sender}</strong><img src="${content}" class="img-fluid rounded" style="max-width:200px; margin-top:5px;" /></div>`;
+        } else if (type === "video") {
+            html = `<div class="message"><strong>${sender}</strong><video controls src="${content}" style="max-width:300px; margin-top:5px;"></video></div>`;
+        } else if (type === "file") {
+            html = `<div class="message"><strong>${sender}</strong><a href="${content}" target="_blank">📄 Tải file</a></div>`;
+        } else {
+            html = `<div class="message"><strong>${sender}</strong><span>${content}</span></div>`;
+        }
+        $("#messagesList").append(html);
+        $(".message-area").scrollTop($("#messagesList")[0].scrollHeight);
+    });
+
+    // 🧩 Kết nối SignalR
+    connection.start().done(function () {
+        console.log("SignalR connected.");
+
+        // Gửi text message
+        $("#sendButton").click(function () {
+            const text = $("#messageInput").val().trim();
+            if (!text) return;
+
+            const msgJson = JSON.stringify({ type: "text", content: text });
+            if (currentChat.mode === "private") {
+                chatHub.invoke("SendPrivateMessage", currentChat.partnerUsername, msgJson);
+            } else if (currentChat.mode === "ai") {
+                chatHub.invoke("SendMessageToAI", text);
+            }
+
+            $("#messageInput").val("");
+        });
+
+        // Chọn file
+        $("#imageUpload").on("change", function () {
+            const files = this.files;
+            const container = $("#imagePreviewContainer");
+            container.empty();
+
+            if (files.length > 0) {
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        let preview;
+                        if (file.type.startsWith("image/")) {
+                            preview = `<img src="${e.target.result}" class="img-fluid rounded" style="width:120px;height:120px;object-fit:cover;">`;
+                        } else if (file.type.startsWith("video/")) {
+                            preview = `<video src="${e.target.result}" controls style="width:120px;height:120px;"></video>`;
+                        } else {
+                            preview = `<div style="width:120px;height:120px;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;">📄 ${file.name}</div>`;
+                        }
+                        container.append(preview);
+                    };
+                    reader.readAsDataURL(file);
+                });
+                $("#imagePreviewModal").modal("show");
+            }
+        });
+
+        // Gửi ảnh/video/file
+        $("#sendImageButton").click(function () {
+            const files = $("#imageUpload")[0].files;
+            if (files.length === 0) return;
+
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                formData.append("file" + i, files[i]);
+            }
+
+            $.ajax({
+                url: uploadUrl,
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    if (res.success) {
+                        res.urls.forEach(url => {
+                            const ext = url.split(".").pop().toLowerCase();
+                            let type = "file";
+                            if (["jpg", "jpeg", "png", "gif"].includes(ext)) type = "image";
+                            else if (["mp4", "mov", "webm"].includes(ext)) type = "video";
+
+                            const msgJson = JSON.stringify({ type, content: url });
+                            if (currentChat.mode === "private") {
+                                chatHub.invoke("SendPrivateMessage", currentChat.partnerUsername, msgJson);
+                            } else if (currentChat.mode === "ai") {
+                                chatHub.invoke("SendMessageToAI", `[${type}] ${url}`);
+                            }
+                        });
+                    } else {
+                        alert("Lỗi upload: " + res.message);
+                    }
+                },
+                error: function () {
+                    alert("Không thể kết nối đến server!");
+                },
+                complete: function () {
+                    $("#imagePreviewModal").modal("hide");
+                    $("#imageUpload").val("");
+                }
+            });
+        });
+    });
+    </script>
+}

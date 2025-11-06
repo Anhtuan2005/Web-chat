@@ -1,0 +1,45 @@
+﻿@model IEnumerable<Online_chat.Models.Group>
+@{
+    ViewBag.Title = "Quản lý Nhóm Chat";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<h2>@ViewBag.Title</h2>
+<hr />
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tên Nhóm</th>
+            <th>Chủ sở hữu (Owner)</th>
+            <th>Ngày tạo</th>
+            <th style="width: 150px;">Thao Tác</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Id</td>
+                <td>@Html.DisplayFor(modelItem => item.GroupName)</td>
+                <td>@Html.DisplayFor(modelItem => item.Owner.Username)</td>
+                <td>@item.CreatedAt.ToLocalTime()</td>
+                <td>
+                    @Html.ActionLink("Sửa", "EditGroup", new { id = item.Id }, new { @class = "btn btn-warning btn-sm" })
+
+                    @using (Html.BeginForm("DeleteGroup", "Admin", new { id = item.Id }, FormMethod.Post, new { style = "display:inline; margin-left: 5px;" }))
+                    {
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc chắn muốn xóa nhóm @item.GroupName?');">Xóa</button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

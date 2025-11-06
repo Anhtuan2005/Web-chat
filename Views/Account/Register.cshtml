@@ -1,0 +1,46 @@
+﻿@{
+    ViewBag.Title = "Đăng Ký";
+}
+
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <div class="card">
+            <div class="card-header text-center">
+                <h2>Đăng Ký Tài Khoản Mới</h2>
+            </div>
+            <div class="card-body">
+                <form action="/Account/Register" method="post">
+                    <div class="form-group">
+                        <label>Tên đăng nhập:</label>
+                        <input type="text" name="username" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Mật khẩu:</label>
+                        <input type="password" name="password" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Tên hiển thị:</label>
+                        <input type="text" name="displayName" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Email:</label>
+                        <input type="email" name="email" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Số điện thoại:</label>
+                        <input type="tel" name="phoneNumber" class="form-control" />
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Đăng Ký</button>
+                </form>
+
+                @if (ViewBag.Error != null)
+                {
+                    <p class="text-danger mt-3">@ViewBag.Error</p>
+                }
+            </div>
+            <div class="card-footer text-center">
+                <a href="/Account/Login">Đã có tài khoản? Đăng nhập ngay</a>
+            </div>
+        </div>
+    </div>
+</div>

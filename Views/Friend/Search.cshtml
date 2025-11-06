@@ -1,0 +1,387 @@
+﻿@model IEnumerable<Online_chat.Models.SearchResultViewModel>
+@using Online_chat.Models // Needed for FriendshipStatus enum
+
+@{
+    ViewBag.Title = "Kết quả tìm kiếm";
+    Layout = "~/Views/Shared/_ChatLayout.cshtml"; 
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+
+<style>
+    .search-content-area {
+        padding: 30px;
+        height: 100%;
+        overflow-y: auto;
+        background-color: #fafffe;
+    }
+
+        .search-content-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .search-content-area::-webkit-scrollbar-track {
+            background: #f1f8e9;
+        }
+
+        .search-content-area::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #81c784, #66bb6a);
+            border-radius: 10px;
+        }
+
+    .page-title {
+        font-weight: 700;
+        color: #2e7d32;
+    }
+
+    .back-link {
+        color: #43a047;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+        .back-link:hover {
+            color: #1b5e20;
+            text-decoration: underline;
+        }
+
+    .search-results-list .list-group-item {
+        background: linear-gradient(135deg, #f9fdf9 0%, #ffffff 100%);
+        border: 1px solid #e8f5e9;
+        border-radius: 18px;
+        margin-bottom: 10px;
+        padding: 15px 20px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        cursor: pointer; /* Indicate clickable */
+    }
+
+        .search-results-list .list-group-item:hover {
+            transform: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+        }
+
+
+    .search-results-list .user-info-clickable:hover {
+        background-color: rgba(232, 245, 233, 0.5); 
+        border-radius: 10px;
+    }
+
+    .list-friend-action:hover {
+        filter: brightness(95%);
+    }
+
+    .list-action-area {
+    }
+    .result-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 15px;
+        border: 2px solid #fff;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .result-info strong {
+        font-weight: 600;
+        color: #1b5e20;
+    }
+
+    .result-info span {
+        color: #6c757d;
+        font-size: 0.9em;
+    }
+
+    .btn-action-search {
+        font-size: 0.8rem;
+        padding: 5px 12px;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+
+    .btn-add {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+    }
+
+        .btn-add:hover {
+            background-color: #bee5eb;
+        }
+
+    .btn-cancel {
+        background-color: #e2e3e5;
+        color: #383d41;
+        border: 1px solid #d6d8db;
+    }
+
+        .btn-cancel:hover {
+            background-color: #d6d8db;
+        }
+
+    .btn-friends {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .modal-content {
+        border-radius: 20px;
+        overflow: hidden;
+        background: #f1f8e9;
+        border: none;
+    }
+
+    #profilePreviewModal .modal-header {
+        padding: 0;
+        border-bottom: none;
+        height: 150px;
+    }
+
+    #modal-preview-cover {
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center;
+        background-color: #c8e6c9;
+    }
+
+    #modal-preview-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        border: 4px solid #fff;
+        position: absolute;
+        top: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #fff;
+        object-fit: cover;
+    }
+
+    #profilePreviewModal .modal-body {
+        padding-top: 65px;
+        text-align: center;
+    }
+
+    #modal-preview-display-name {
+        font-weight: 700;
+        color: #2e7d32;
+        margin-bottom: 2px;
+    }
+
+    #modal-preview-username {
+        color: #6c757d;
+        font-size: 0.95em;
+        margin-bottom: 15px;
+    }
+
+    #modal-preview-usercode {
+        font-size: 0.9em;
+        color: #555;
+    }
+
+    #profilePreviewModal .modal-footer {
+        background-color: #e8f5e9;
+        border-top: 1px solid #c8e6c9;
+    }
+
+    #modal-action-button { /* Use styles from list buttons */
+    }
+
+    #modal-message {
+        font-weight: 500;
+        color: #155724;
+    }
+    /* Message like "Already friends" */
+
+</style>
+
+<div class="modal fade" id="profilePreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div id="modal-preview-cover"></div>
+                <img id="modal-preview-avatar" src="/Content/default-avatar.png" />
+                <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close" style="z-index: 10; background-color: rgba(255,255,255,0.7); border-radius:50%;"></button>
+            </div>
+            <div class="modal-body">
+                <h3 id="modal-preview-display-name"></h3>
+                <p id="modal-preview-username"></p>
+                <p id="modal-preview-usercode"></p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <div id="modal-action-area"></div>
+                <button type="button" class="btn btn-secondary ms-2" data-bs-dismiss="modal" style="border-radius: 10px;">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="search-content-area">
+    <h2 class="page-title mb-2">@ViewBag.Title</h2>
+    <p><a href="@Url.Action("Index", "Friend")" class="back-link">&laquo; Quay lại trang Bạn bè</a></p>
+    <hr class="mb-4" />
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-warning" style="background-color: #fff3cd; border-color: #ffeeba; color: #856404; border-radius: 12px;">
+            <i class="fas fa-exclamation-triangle me-2"></i> Không tìm thấy người dùng nào phù hợp.
+        </div>
+    }
+    else
+    {
+        <ul class="list-group search-results-list" id="search-results">
+            @foreach (var user in Model)
+            {
+                <li class="list-group-item d-flex justify-content-between align-items-center"
+                    data-bs-toggle="modal" data-bs-target="#profilePreviewModal"
+                    data-user-id="@user.UserId"
+                    data-display-name="@user.DisplayName"
+                    data-username="@user.Username"
+                    data-avatar-url="@((user.AvatarUrl ?? "/Content/default-avatar.png"))"
+                    data-cover-url="@((user.CoverPhotoUrl ?? "/Content/default-cover.jpg"))"
+                    data-user-code="@user.UserCode"
+                    data-friendship-status="@(user.FriendshipStatus?.ToString() ?? "")"
+                    style="cursor: pointer;">
+
+                    <div class="user-info-clickable d-flex align-items-center flex-grow-1 me-3"
+                         data-bs-toggle="modal" data-bs-target="#profilePreviewModal"
+                         style="cursor: pointer;">
+                        <img src="@(user.AvatarUrl ?? "/Content/default-avatar.png")" class="result-avatar" ... />
+                        <div class="result-info">
+                            <strong>@user.DisplayName</strong><br />
+                            <span>@@@user.Username</span>
+                        </div>
+                    </div>
+
+                    <div class="list-action-area flex-shrink-0">
+                        @* Đã thêm flex-shrink-0 *@
+                        @if (user.FriendshipStatus == null)
+                        {
+                            <button class="btn btn-sm btn-action-search btn-add list-friend-action" ...>
+                                <i class="fas fa-user-plus me-1"></i> Kết bạn
+                            </button>
+                        }
+                        else if (user.FriendshipStatus == FriendshipStatus.Pending)
+                        {
+                            <button class="btn btn-sm btn-action-search btn-cancel list-friend-action" ...>
+                                <i class="fas fa-times me-1"></i> Hủy lời mời
+                            </button>
+                        }
+                        else if (user.FriendshipStatus == FriendshipStatus.Accepted)
+                        {
+                            <button class="btn btn-sm btn-action-search btn-friends" disabled ...>
+                                <i class="fas fa-check me-1"></i> Bạn bè
+                            </button>
+                        }
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@section scripts {
+    <script>
+    $(function () {
+        const token = $('input[name="__RequestVerificationToken"]').val(); 
+
+        $('#search-results').on('click', '.list-group-item', function (event) {
+            event.stopPropagation();
+
+            const item = $(this);
+            const userId = item.data('user-id');
+            const displayName = item.data('display-name');
+            const username = item.data('username');
+            const avatarUrl = item.data('avatar-url');
+            const coverUrl = item.data('cover-url');
+            const userCode = item.data('user-code');
+            const status = item.data('friendship-status');
+
+            console.log("Item Clicked! Data:", { userId, displayName, username, avatarUrl, coverUrl, userCode, status });
+
+            $('#modal-preview-cover').css('background-image', `url(${coverUrl})`);
+            $('#modal-preview-avatar').attr('src', avatarUrl);
+            $('#modal-preview-display-name').text(displayName);
+            $('#modal-preview-username').text(`@@${username}`);
+            $('#modal-preview-usercode').text(`ID: ${userCode}`);
+
+            const actionArea = $('#modal-action-area');
+            actionArea.empty();
+
+            if (!status) { 
+                 actionArea.html(`<button class="btn btn-sm btn-action-search btn-add modal-friend-action" data-action="send" data-receiver-id="${userId}"><i class="fas fa-user-plus me-1"></i> Gửi lời mời</button>`);
+            } else if (status === '@FriendshipStatus.Pending.ToString()') {
+                 actionArea.html(`<button class="btn btn-sm btn-action-search btn-cancel modal-friend-action" data-action="cancel" data-receiver-id="${userId}"><i class="fas fa-times me-1"></i> Hủy lời mời</button>`);
+            } else if (status === '@FriendshipStatus.Accepted.ToString()') {
+                 actionArea.html(`<span class="modal-message"><i class="fas fa-check-circle me-1"></i> Các bạn đã là bạn bè</span>`);
+            }
+        });
+
+        $('#profilePreviewModal').on('click', '.modal-friend-action', function () {
+            const button = $(this);
+            const action = button.data('action');
+            const receiverId = button.data('receiver-id');
+            const modalActionArea = $('#modal-action-area');
+
+            let url = '';
+            let newStatus = '';
+
+            if (action === 'send') {
+                 url = '@Url.Action("SendRequest", "Friend")';
+                 newStatus = '@FriendshipStatus.Pending.ToString()';
+            } else if (action === 'cancel') {
+                 url = '@Url.Action("CancelRequest", "Friend")';
+                 newStatus = '';
+            } else {
+                return; 
+            }
+
+            button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...');
+
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: {
+                    __RequestVerificationToken: token,
+                    receiverId: receiverId
+                },
+                success: function (response) {
+                    if (response.success) 
+
+                        if (action === 'send') {
+                             modalActionArea.html(`<button class="btn btn-sm btn-action-search btn-cancel modal-friend-action" data-action="cancel" data-receiver-id="${receiverId}"><i class="fas fa-times me-1"></i> Hủy lời mời</button>`);
+                        } else if (action === 'cancel') {
+                             modalActionArea.html(`<button class="btn btn-sm btn-action-search btn-add modal-friend-action" data-action="send" data-receiver-id="${receiverId}"><i class="fas fa-user-plus me-1"></i> Gửi lời mời</button>`);
+                        }
+                         const listItem = $(`#search-results .list-group-item[data-user-id='${receiverId}']`);
+                         if(listItem.length > 0) {
+                              listItem.data('friendship-status', newStatus);
+                         }
+
+                    else {
+                        alert(response.message || "Có lỗi xảy ra.");
+                         if (action === 'send') {
+                             button.prop('disabled', false).html('<i class="fas fa-user-plus me-1"></i> Gửi lời mời');
+                        } else if (action === 'cancel') {
+                             button.prop('disabled', false).html('<i class="fas fa-times me-1"></i> Hủy lời mời');
+                        }
+                    }
+                },
+                error: function () {
+                    alert("Lỗi kết nối. Vui lòng thử lại.");
+                     if (action === 'send') {
+                         button.prop('disabled', false).html('<i class="fas fa-user-plus me-1"></i> Gửi lời mời');
+                    } else if (action === 'cancel') {
+                         button.prop('disabled', false).html('<i class="fas fa-times me-1"></i> Hủy lời mời');
+                    }
+                }
+            });
+        });
+
+    });
+    </script>
+}

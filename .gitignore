@@ -1,0 +1,11 @@
+*.user
+.vs/
+
+[Bb]in/
+[Oo]bj/
+
+[Pp]ackages/
+
+Web.config 
+
+Uploads/

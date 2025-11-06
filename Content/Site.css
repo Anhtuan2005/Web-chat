@@ -1,0 +1,168 @@
+﻿/* Modern Chat Theme - Site.css */
+:root {
+    --primary-bg: #36393f;
+    --secondary-bg: #2f3136;
+    --tertiary-bg: #202225;
+    --interactive-normal: #b9bbbe;
+    --interactive-hover: #dcddde;
+    --text-normal: #dcddde;
+    --text-muted: #72767d;
+    --brand-color: #7289da;
+    --brand-color-hover: #677bc4;
+    --success-color: #43b581;
+    --danger-color: #f04747;
+    --border-color: rgba(255, 255, 255, 0.06);
+}
+
+body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--primary-bg);
+    color: var(--text-normal);
+    line-height: 1.6;
+}
+
+/* Override Bootstrap Defaults */
+.card {
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+}
+
+.navbar {
+    background-color: var(--tertiary-bg) !important;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.navbar-brand, .nav-link {
+    color: var(--interactive-hover) !important;
+}
+
+    .nav-link:hover {
+        color: white !important;
+    }
+
+.form-control {
+    background-color: var(--tertiary-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-normal);
+}
+
+    .form-control:focus {
+        background-color: var(--tertiary-bg);
+        border-color: var(--brand-color);
+        box-shadow: 0 0 0 2px rgba(114, 137, 218, 0.25);
+        color: var(--text-normal);
+    }
+
+.btn-primary {
+    background-color: var(--brand-color);
+    border-color: var(--brand-color);
+}
+
+    .btn-primary:hover {
+        background-color: var(--brand-color-hover);
+        border-color: var(--brand-color-hover);
+    }
+
+.btn-success {
+    background-color: var(--success-color);
+    border: none;
+}
+
+/* Chat Interface Specifics */
+.chat-container {
+    display: flex;
+    height: calc(100vh - 56px); /* 56px is navbar height */
+}
+
+.sidebar {
+    width: 320px;
+    background-color: var(--secondary-bg);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.sidebar-header, .friend-list {
+    padding: 1rem;
+}
+
+    .friend-list .friend-item {
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+        .friend-list .friend-item:hover, .friend-list .friend-item.active {
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+
+        .friend-list .friend-item img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 12px;
+        }
+
+.chat-panel {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--primary-bg);
+}
+
+.chat-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+}
+
+.message-container {
+    flex-grow: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+.message-bubble {
+    display: flex;
+    margin-bottom: 1rem;
+}
+
+    .message-bubble img.avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-right: 15px;
+    }
+
+    .message-bubble .message-content-wrapper {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .message-bubble .sender-name {
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+
+    .message-bubble.sent {
+        /* No visual change needed in this theme */
+    }
+
+.message-input-area {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+#sendMessageForm {
+    display: flex;
+    gap: 10px;
+}
+
+#messageInput {
+    flex-grow: 1;
+    border-radius: 20px;
+    padding: 8px 15px;
+}

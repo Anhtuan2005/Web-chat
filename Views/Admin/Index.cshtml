@@ -1,0 +1,36 @@
+﻿@{
+    ViewBag.Title = "Trang Quản Trị";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<h2>Dashboard Quản Trị Hệ Thống</h2>
+<hr />
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="panel panel-primary">
+            <div class="panel-heading">Người Dùng</div>
+            <div class="panel-body">
+                <h3>@ViewBag.UserCount</h3>
+                <p><a href="@Url.Action("ManageUsers")" class="btn btn-default">Quản lý Người Dùng</a></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="panel panel-success">
+            <div class="panel-heading">Phòng Chat/Nhóm</div>
+            <div class="panel-body">
+                <h3>@ViewBag.GroupCount</h3>
+                <p><a href="@Url.Action("ManageGroups")" class="btn btn-default">Quản lý Nhóm</a></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="panel panel-info">
+            <div class="panel-heading">Tổng Tin Nhắn</div>
+            <div class="panel-body">
+                <h3>@ViewBag.MessageCount</h3>
+            </div>
+        </div>
+    </div>
+</div>
