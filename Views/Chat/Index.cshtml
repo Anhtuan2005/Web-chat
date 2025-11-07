@@ -57,17 +57,29 @@
         font-weight: 400;
     }
 
-    /* 1. KHUNG CHAT CHÍNH (FIX LỖI CĂN GIỮA DỌC) */
     .message-area {
         flex-grow: 1;
         padding: 20px !important;
         overflow-y: auto;
-        /* Thêm 3 dòng này để đẩy tin nhắn xuống dưới */
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: flex-end !important;
+    }
+    .message-area::-webkit-scrollbar {
+        width: 8px; /* Giữ nguyên độ rộng */
     }
 
+    .message-area::-webkit-scrollbar-track {
+        background: transparent; /* Rãnh trong suốt, chìm vào nền */
+        border-radius: 10px;
+        margin: 8px 0;
+    }
+
+    .message-area::-webkit-scrollbar-thumb {
+        background: #d8d8d8; /* Màu xám nhạt, tinh tế */
+        border-radius: 10px;
+    }
+
+    .message-area::-webkit-scrollbar-thumb:hover {
+        background: #bbb; /* Đậm hơn một chút khi rê chuột */
+    }
     #messagesList {
         flex: 1; /* Cho phép messagesList co giãn */
     }
@@ -483,6 +495,59 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="partnerProfileModal" tabindex="-1" role="dialog" aria-labelledby="partnerProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 420px;">
+        <div class="modal-content" style="border-radius: 20px; overflow: hidden; background: #fff; border: none; box-shadow: 0 8px 32px rgba(0,0,0,0.12);">
+
+            <!-- Cover Photo -->
+            <div id="partner-modal-cover" style="height: 160px; background-size: cover; background-position: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative;">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                        style="position: absolute; top: 15px; right: 15px; color: #fff; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border-radius: 50%; width: 36px; height: 36px; border: none; font-size: 1.3rem; opacity: 1; text-shadow: none; display: flex; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer;">
+                    <span aria-hidden="true" style="line-height: 1;">&times;</span>
+                </button>
+            </div>
+
+            <div style="text-align: center; margin-top: -50px; position: relative; z-index: 10;">
+                <img id="partner-modal-avatar" src="/Content/default-avatar.png"
+                     style="width: 100px; height: 100px; border-radius: 50%; border: 5px solid #fff; background-color: #fff; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+            </div>
+
+            <div class="modal-body" style="padding: 20px 30px 30px; text-align: center;">
+                <h3 id="partner-modal-display-name" style="font-weight: 700; color: #1a1a1a; margin-bottom: 5px; font-size: 1.5rem;"></h3>
+                <p id="partner-modal-username" style="color: #8e8e93; font-size: 0.95rem; margin-bottom: 24px;"></p>
+
+                <div style="height: 1px; background: linear-gradient(to right, transparent, #e0e0e0, transparent); margin-bottom: 24px;"></div>
+
+                <div style="text-align: left; background: #f8f9fa; padding: 20px; border-radius: 12px;">
+                    <h5 style="font-weight: 600; margin-bottom: 16px; color: #1a1a1a; font-size: 1rem;">
+                        <i class="fas fa-user-circle" style="color: #667eea; margin-right: 8px;"></i>
+                        Thông tin cá nhân
+                    </h5>
+
+                    <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                            <i class="fas fa-venus-mars" style="color: white; font-size: 1.1rem;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Giới tính</div>
+                            <strong id="partner-modal-gender" style="color: #1a1a1a; font-size: 0.95rem;">Đang tải...</strong>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; padding: 10px; background: white; border-radius: 8px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                            <i class="fas fa-birthday-cake" style="color: white; font-size: 1.1rem;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Ngày sinh</div>
+                            <strong id="partner-modal-dob" style="color: #1a1a1a; font-size: 0.95rem;">Đang tải...</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @section scripts {
     <script>
     $(function () {
@@ -587,6 +652,59 @@
                     $("#fileUploadInput").val(null);
                 }
             });
+        });
+        $('body').on('click', '#user-chat-header', function() {
+            // Chỉ thực thi nếu đang chat private và có username
+            if (window.currentChat.mode === 'private' && window.currentChat.partnerUsername) {
+
+                const partnerUsername = window.currentChat.partnerUsername;
+
+                // Hiển thị trạng thái "Đang tải..."
+                $('#partner-modal-display-name').text('Đang tải...');
+                $('#partner-modal-avatar').attr('src', '/Content/default-avatar.png');
+                $('#partner-modal-cover').css('background-image', 'url()'); // Xóa ảnh cover cũ
+                $('#partner-modal-cover').css('background-color', '#e0e0e0'); // Dùng màu nền fallback
+                $('#partner-modal-username').text('');
+                $('#partner-modal-gender').text('');
+                $('#partner-modal-dob').text('');
+
+                // Mở modal
+                $('#partnerProfileModal').modal('show');
+
+                // Gọi AJAX đến Controller để lấy thông tin public của user
+                // (Chúng ta sẽ tạo /Profile/GetUserPublicProfile ở Bước 3)
+                $.getJSON(`/Profile/GetUserPublicProfile?username=${partnerUsername}`, function (response) {
+                    if (response.success && response.user) {
+                        const user = response.user;
+
+                        // Cập nhật thông tin lên modal
+                        $('#partner-modal-display-name').text(user.DisplayName || 'Không có tên');
+                        $('#partner-modal-username').text(`@@${user.Username}`);
+
+                        // Cập nhật Avatar (có fallback)
+                        const avatarUrl = user.AvatarUrl ? user.AvatarUrl : '/Content/default-avatar.png';
+                        $('#partner-modal-avatar').attr('src', avatarUrl);
+
+                        // Cập nhật ảnh bìa (có fallback)
+                        if (user.CoverUrl) {
+                            $('#partner-modal-cover').css('background-image', `url(${user.CoverUrl})`);
+                        }
+
+                    } else {
+                        // Xử lý lỗi
+                        $('#partner-modal-display-name').text(response.message || 'Không tìm thấy người dùng');
+                        setTimeout(function() {
+                            $('#partnerProfileModal').modal('hide');
+                        }, 2000);
+                    }
+                }).fail(function() {
+                    // Xử lý lỗi AJAX
+                    $('#partner-modal-display-name').text('Lỗi kết nối máy chủ');
+                    setTimeout(function() {
+                        $('#partnerProfileModal').modal('hide');
+                    }, 2000);
+                });
+            }
         });
         // Function update timestamp bar
         function updateTimestampBar() {

@@ -7,9 +7,14 @@ using System.IO;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using System.Threading.Tasks;
+using Microsoft.AspNet.Identity;
+using Microsoft.AspNet.Identity.Owin;
+using Microsoft.Owin.Security;
 using QRCoder; 
 using System.Drawing;
 using System.Drawing.Imaging;
+
 
 namespace Online_chat.Controllers
 {
@@ -127,6 +132,38 @@ namespace Online_chat.Controllers
             byte[] qrCodeAsPngByteArr = qrCode.GetGraphic(10); 
 
             return File(qrCodeAsPngByteArr, "image/png");
+        }
+
+        [HttpGet]
+        public async Task<JsonResult> GetUserPublicProfile(string username)
+        {
+            if (string.IsNullOrEmpty(username))
+            {
+                return Json(new { success = false, message = "Username không được rỗng" }, JsonRequestBehavior.AllowGet);
+            }
+
+            try
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "Không tìm thấy người dùng" }, JsonRequestBehavior.AllowGet);
+                }
+                var publicProfile = new
+                {
+                    user.Username,
+                    user.DisplayName,
+                    user.AvatarUrl,
+                    CoverUrl = user.CoverPhotoUrl 
+                };
+
+                return Json(new { success = true, user = publicProfile }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi máy chủ: " + ex.Message }, JsonRequestBehavior.AllowGet);
+            }
         }
     }
 }
