@@ -13,7 +13,7 @@ namespace WebChat_Online_MVC.Migrations
         
         string IMigrationMetadata.Id
         {
-            get { return "202511060630057_InitialCreate"; }
+            get { return "202511061206047_InitialCreate"; }
         }
         
         string IMigrationMetadata.Source

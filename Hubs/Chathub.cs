@@ -76,20 +76,25 @@ namespace Online_chat.Hubs
         public async Task SendMessageToAI(string messageContent)
         {
             var senderUsername = Context.User.Identity.Name;
+            if (string.IsNullOrWhiteSpace(messageContent)) return; 
 
             if (!_aiConversations.ContainsKey(senderUsername))
             {
                 _aiConversations[senderUsername] = new List<object>
-        {
-            new { role = "system", content = "Bạn là một trợ lý ảo thân thiện, luôn trả lời bằng cùng ngôn ngữ mà người dùng đang sử dụng." }
-        };
+                {
+                    new { role = "system", content = "Bạn là một trợ lý ảo thân thiện, luôn trả lời bằng cùng ngôn ngữ mà người dùng đang sử dụng." }
+                };
             }
-
             _aiConversations[senderUsername].Add(new { role = "user", content = messageContent });
 
             string apiKey = ConfigurationManager.AppSettings["OpenAIApiKey"];
-            string endpoint = "https://api.openai.com/v1/chat/completions";
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                Clients.Caller.ReceiveMessage("AI Assistant", null, "text", "Xin lỗi, API AI chưa được cấu hình. Hãy liên hệ admin.", DateTime.Now.ToString("HH:mm"));
+                return;
+            }
 
+            string endpoint = "https://api.openai.com/v1/chat/completions";
             var requestBody = new
             {
                 model = "gpt-3.5-turbo",
@@ -106,26 +111,27 @@ namespace Online_chat.Hubs
                 try
                 {
                     var response = await client.PostAsync(endpoint, content);
-
                     if (response.IsSuccessStatusCode)
                     {
                         var responseString = await response.Content.ReadAsStringAsync();
                         dynamic result = JsonConvert.DeserializeObject(responseString);
-                        string aiReply = result.choices[0].message.content;
-
+                        string aiReply = result.choices[0].message.content.ToString();  // .ToString() để safe
                         _aiConversations[senderUsername].Add(new { role = "assistant", content = aiReply });
 
-
-                        Clients.Caller.ReceiveMessage("AI Assistant", null, aiReply, DateTime.Now.ToString("HH:mm"));
+                        Clients.Caller.ReceiveMessage("AI Assistant", null, "text", aiReply, DateTime.Now.ToString("HH:mm"));
+                        Console.WriteLine($"AI reply to {senderUsername}: {aiReply.Substring(0, Math.Min(50, aiReply.Length))}...");  // Log debug
                     }
                     else
                     {
-                        Clients.Caller.ReceiveMessage("AI Assistant", null, "Xin lỗi, tôi đang gặp sự cố. Vui lòng thử lại sau.", DateTime.Now.ToString("HH:mm"));
+                        var errorMsg = $"Lỗi API: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}";
+                        Console.WriteLine(errorMsg);  // Log error
+                        Clients.Caller.ReceiveMessage("AI Assistant", null, "text", "Xin lỗi, tôi đang gặp sự cố. Vui lòng thử lại sau.", DateTime.Now.ToString("HH:mm"));
                     }
                 }
                 catch (Exception ex)
                 {
-                    Clients.Caller.ReceiveMessage("AI Assistant", null, $"Lỗi: {ex.Message}", DateTime.Now.ToString("HH:mm"));
+                    Console.WriteLine($"Exception in AI: {ex.Message}");  // Log full error
+                    Clients.Caller.ReceiveMessage("AI Assistant", null, "text", $"Lỗi: {ex.Message}", DateTime.Now.ToString("HH:mm"));
                 }
             }
         }

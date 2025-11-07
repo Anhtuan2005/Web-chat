@@ -240,8 +240,8 @@
                     data-user-id="@user.UserId"
                     data-display-name="@user.DisplayName"
                     data-username="@user.Username"
-                    data-avatar-url="@((user.AvatarUrl ?? "/Content/default-avatar.png"))"
-                    data-cover-url="@((user.CoverPhotoUrl ?? "/Content/default-cover.jpg"))"
+                    data-avatar-url="@Url.Content(user.AvatarUrl ?? "/Content/default-avatar.png")"
+                    data-cover-url="@Url.Content(user.CoverPhotoUrl ?? "/Content/default-cover.jpg")"
                     data-user-code="@user.UserCode"
                     data-friendship-status="@(user.FriendshipStatus?.ToString() ?? "")"
                     style="cursor: pointer;">
@@ -249,7 +249,7 @@
                     <div class="user-info-clickable d-flex align-items-center flex-grow-1 me-3"
                          data-bs-toggle="modal" data-bs-target="#profilePreviewModal"
                          style="cursor: pointer;">
-                        <img src="@(user.AvatarUrl ?? "/Content/default-avatar.png")" class="result-avatar" ... />
+                        <img src="@Url.Content(user.AvatarUrl ?? "/Content/default-avatar.png")" class="result-avatar" ... />
                         <div class="result-info">
                             <strong>@user.DisplayName</strong><br />
                             <span>@@@user.Username</span>

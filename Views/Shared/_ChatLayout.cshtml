@@ -8,7 +8,6 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
         <style>
-
             * {
                 margin: 0;
                 padding: 0;
@@ -278,12 +277,7 @@
                 }
             }
 
-            .message-area {
-                padding: 20px;
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
+            /* ĐÃ XÓA .message-area TẠI ĐÂY */
 
             @@keyframes slideIn {
                 from {
@@ -297,68 +291,8 @@
                 }
             }
 
-            .chat-message {
-                display: flex;
-                align-items: flex-end;
-                margin: 8px 0;
-                width: 100%;
-            }
-
-                /* Tin nhắn của người khác (bên trái) */
-                .chat-message.other {
-                    justify-content: flex-start;
-                }
-
-                    .chat-message.other .chat-bubble {
-                        background-color: #e4e6eb;
-                        color: #050505;
-                        border-radius: 18px 18px 18px 0;
-                        padding: 10px 14px;
-                        max-width: 65%;
-                        display: inline-block;
-                        word-wrap: break-word;
-                        white-space: pre-wrap;
-                        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-                    }
-
-
-
-            .chat-bubble .timestamp {
-                display: none; /* Ẩn timestamp đi cho gọn, có thể bật lại nếu muốn */
-            }
-
-
-            /* Image Messages */
-            .chat-bubble img {
-                border-radius: 15px;
-                display: block;
-                max-width: 100%;
-            }
-
-            /* --- INPUT AREA STYLES --- */
-            .input-area {
-                background: #fff;
-                padding: 10px 15px;
-                display: flex; 
-                align-items: center; 
-                gap: 10px;
-            }
-
-                .input-area #messageInput {
-                     background-color: #f0f2f5;
-                     border-radius: 20px;
-                     padding: 8px 16px;
-                     flex-grow: 1; 
-                     border: none; 
-                     width: auto;
-                                   
-                }
-
-                    .input-area #messageInput:focus {
-                        background-color: #e8f0fe;
-                        border-color: #8ab4f8;
-                        box-shadow: none;
-                    }
+            /* ĐÃ XÓA .chat-message VÀ .chat-bubble TẠI ĐÂY */
+            /* ĐÃ XÓA .input-area TẠI ĐÂY */
 
             .conv-header i {
                 font-size: 1.5rem;
@@ -420,7 +354,7 @@
                     box-shadow: 0 6px 24px rgba(46, 125, 50, 0.2);
                 }
 
-           
+
                 .list-group-item.active {
                     background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
                     color: white;
@@ -548,72 +482,6 @@
                 border-radius: 50%;
                 overflow: hidden;
             }
-            /* --- Hiển thị avatar đối phương ở bên trái --- */
-            .chat-message.other {
-                display: flex;
-                align-items: flex-end;
-                justify-content: flex-start;
-                gap: 8px;
-            }
-
-                .chat-message.other .avatar {
-                    background: #43a047;
-                    color: #fff;
-                    font-weight: 600;
-                    border-radius: 50%;
-                    width: 36px;
-                    height: 36px;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    font-size: 0.95rem;
-                    flex-shrink: 0;
-                    box-shadow: 0 2px 4px rgba(67, 160, 71, 0.3);
-                }
-
-                .chat-message.other .chat-bubble {
-                    background-color: #e4e6eb;
-                    color: #050505;
-                    border-radius: 18px 18px 18px 0;
-                    padding: 10px 14px;
-                    max-width: 65%;
-                    display: inline-block;
-                    word-wrap: break-word;
-                    white-space: pre-wrap;
-                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-                }
-
-            /* --- Tin nhắn của bạn (bên phải) --- */
-            .chat-message.self {
-                display: flex;
-                justify-content: flex-end;
-                align-items: flex-end;
-                gap: 8px;
-            }
-
-                .chat-message.self .chat-bubble {
-                    background-color: #007bff;
-                    color: white;
-                    border-radius: 18px 18px 0 18px;
-                    padding: 10px 14px;
-                    max-width: 65%;
-                    display: inline-block;
-                    word-wrap: break-word;
-                    white-space: pre-wrap;
-                    box-shadow: 0 2px 6px rgba(0, 123, 255, 0.2);
-                }
-            .chat-bubble img,
-            .chat-bubble video {
-                border-radius: 12px;
-                margin-top: 4px;
-                max-width: 100%;
-                transition: transform 0.2s ease;
-            }
-
-            .chat-bubble img:hover {
-                    transform: scale(1.02);
-            }
-
 
         </style>
     </head>
@@ -718,303 +586,9 @@
         <script src="~/Scripts/jquery.signalR-2.4.3.min.js"></script>
         <script src="~/signalr/hubs"></script>
 
+        <script src="@Html.Raw("https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/dist/index.min.js")"></script>
+
         @RenderSection("scripts", required: false)
 
-    <script>
-        var CurrentPageTitle = @Html.Raw(Json.Encode(ViewBag.Title));
-
-        $(function () {
-            window.chatHub = $.connection.chatHub;
-            window.currentChat = { mode: 'ai', partnerUsername: null };
-            const urlParams = new URLSearchParams(window.location.search);
-            const friendUsername = urlParams.get('friendUsername');
-
-            if (friendUsername) {
-                const checkFriendLoaded = setInterval(() => {
-                    const target = $(`.list-group-item-action[data-username='${friendUsername}']`);
-                    if (target.length) {
-                        clearInterval(checkFriendLoaded);
-                        switchChat(target);
-                    }
-                }, 300);
-            }
-            if ('@User.Identity.IsAuthenticated' !== 'True') {
-                return;
-            }
-
-            const chatHub = $.connection.chatHub;
-            const currentUsername = @Html.Raw(Json.Encode(User.Identity.Name));
-            window.currentChat = { mode: 'ai', partnerUsername: null };
-            let currentChat = { mode: 'ai', partnerUsername: null };
-            let aiChatHistory = [];
-
-            loadFriendsList();
-
-            function sendTextMessage(e) {
-                if (e) e.preventDefault();
-                const messageContent = $('#messageInput').val();
-                if (messageContent.trim() === '') return;
-
-                if (currentChat.mode === 'ai') {
-                    chatHub.server.sendMessageToAI(messageContent);
-                } else if (currentChat.mode === 'private') {
-                    const msg = JSON.stringify({ type: "text", content: messageContent });
-                    chatHub.server.sendPrivateMessage(currentChat.partnerUsername, msg);
-                }
-
-                if (currentChat.mode === 'private') {
-                    localStorage.setItem('lastChatPartner', currentChat.partnerUsername);
-                }
-
-                $('#messageInput').val('').focus();
-            }
-
-
-
-
-            function switchChat(target) {
-                $('#messagesList').empty();
-                currentChat.mode = $(target).data('chat-mode');
-
-                $('.conversation-list .list-group-item-action').removeClass('active');
-                $(target).addClass('active');
-
-                if (currentChat.mode === 'ai') {
-                    aiChatHistory = [];
-                    currentChat.partnerUsername = null;
-                    $('#current-group-name').html('<i class="fas fa-robot"></i> Trò chuyện với AI Assistant');
-                } else {
-                    currentChat.partnerUsername = $(target).data('username');
-                    $('#current-group-name').html(`<i class="fas fa-user"></i> Trò chuyện với ${currentChat.partnerUsername}`);
-
-                    if (chatHub.server.joinPrivateGroup) {
-                        chatHub.server.joinPrivateGroup(currentChat.partnerUsername);
-                    }
-                }
-
-                if ($(window).width() < 768) {
-                    $('.conversation-list').hide();
-                }
-                if (currentChat.mode === 'private') {
-                    // Gọi API để lấy lịch sử tin nhắn
-                    $.getJSON(`/Chat/GetChatHistory?partnerUsername=${currentChat.partnerUsername}`, function (response) {
-                        if (response.success) {
-                            $('#messagesList').empty();
-                            response.messages.forEach(msg => {
-                                const isSelf = msg.SenderUsername === currentUsername;
-                                const firstLetter = msg.SenderUsername.charAt(0).toUpperCase();
-                                let messageBodyHtml;
-                                if (msg.Content.startsWith("data:image") || msg.Content.startsWith("/Uploads/Images/")) {
-                                    messageBodyHtml = `
-                                    <div class="chat-bubble">
-                                        <img src="${msg.Content}" class="img-fluid rounded"
-                                             style="max-width: 250px; cursor: pointer;"
-                                             onclick="window.open(this.src, '_blank');" />
-                                    </div>`;
-                                } else {
-                                    const escapedContent = $('<div/>').text(msg.Content).html();
-                                    messageBodyHtml = `<div class="chat-bubble">${escapedContent}</div>`;
-                                }
-
-                                const messageHtml = `
-                                <div class="chat-message ${isSelf ? 'self' : 'other'}">
-                                    ${isSelf ? '' : `<div class="avatar" title="${msg.SenderUsername}">${firstLetter}</div>`}
-                                    ${messageBodyHtml}
-                                </div>`;
-
-                                $('#messagesList').append(messageHtml);
-                            });
-
-                            // 🔹 Cuộn xuống cuối khung chat sau khi load
-                            $('#messagesList').scrollTop($('#messagesList')[0].scrollHeight);
-
-                        }
-                    });
-                }
-                if ($(window).width() < 768) {
-                    $('.conversation-list').hide();
-                }
-            }
-
-            function loadFriendsList(selectedFriendUsername) {
-                const container = $('#conversation-list-ul');
-                container.find('.friend-item').remove();
-
-                $.getJSON("@Url.Action("GetFriendsList", "Friend")", function (friends) {
-                    friends.forEach(function (friend) {
-                        const friendHtml = `
-                            <a href="#" class="list-group-item list-group-item-action friend-item"
-                               data-chat-mode="private"
-                               data-username="${friend.Username}"
-                               data-userid="${friend.Id}">
-                                <strong><i class="fas fa-user"></i> ${friend.DisplayName}</strong>
-                            </a>`;
-                        container.append(friendHtml);
-                    });
-                    if (CurrentPageTitle === "Chat") {
-                        let target;
-                        if (selectedFriendUsername) {
-                            target = container.find(`.list-group-item-action[data-username='${selectedFriendUsername}']`);
-                        }
-
-                        if (!target || target.length === 0) {
-                            target = $('#ai-chat-btn');
-                        }
-
-                        switchChat(target);
-                    }
-                });
-            }
-
-            if (chatHub && chatHub.client) {
-                chatHub.client.receiveMessage = function (senderUsername, senderAvatar, type, messageContent, time) {
-                    const isSelf = senderUsername === currentUsername;
-                    const firstLetter = senderUsername.charAt(0).toUpperCase();
-                    let messageBodyHtml = "";
-
-                    if (type === "image") {
-                        messageBodyHtml = `
-                        <div class="chat-bubble">
-                            <img src="${messageContent}" alt="image"
-                                 class="img-fluid rounded"
-                                 style="max-width: 250px; cursor: pointer;"
-                                 onclick="window.open(this.src, '_blank');" />
-                        </div>`;
-                    } else if (type === "video") {
-                        messageBodyHtml = `
-                        <div class="chat-bubble">
-                            <video controls src="${messageContent}" 
-                                   style="max-width: 300px; border-radius: 10px;"></video>
-                        </div>`;
-                    } else if (type === "file") {
-                        messageBodyHtml = `
-                        <div class="chat-bubble">
-                            <a href="${messageContent}" target="_blank" style="color:#007bff; text-decoration:none;">
-                                📄 Tải file
-                            </a>
-                        </div>`;
-                    } else {
-                        const escaped = $('<div/>').text(messageContent).html();
-                        messageBodyHtml = `<div class="chat-bubble">${escaped}</div>`;
-                    }
-
-                    const messageHtml = `
-                        <div class="chat-message ${isSelf ? 'self' : 'other'}">
-                            ${isSelf ? '' : `<div class="avatar" title="${senderUsername}">${firstLetter}</div>`}
-                            ${messageBodyHtml}
-                        </div>`;
-
-                    const messagesList = $('#messagesList');
-                    messagesList.append(messageHtml);
-                    messagesList.scrollTop(messagesList[0].scrollHeight);
-                };
-
-                $.connection.hub.error(function (error) {
-                    console.error('SignalR Error: ', error);
-                    alert('Erreur de connexion : ' + error.message);
-                });
-
-                chatHub.client.receiveFriendRequestNotification = function (senderName) {
-                    const friendIcon = $('#friend-nav-icon');
-                    if (friendIcon.length > 0) {
-                        let badge = friendIcon.find('.notification-badge');
-                        if (badge.length === 0) {
-                            friendIcon.append('<span class="notification-badge">1</span>');
-                        } else {
-                            let count = parseInt(badge.text() || '0') + 1;
-                            badge.text(count);
-                        }
-                    }
-                };
-
-                chatHub.client.updateAvatar = function (newAvatarUrlWithVersion) {
-                    const avatarImgOnLayout = $('#layout-user-avatar-img');
-                    if (avatarImgOnLayout.length) {
-                        avatarImgOnLayout.attr('src', newAvatarUrlWithVersion);
-                    }
-                };
-            }
-
-            $('#myProfileModal').on('show.bs.modal', function () {
-                $.getJSON('@Url.Action("GetMyProfileSummary", "Profile")', function (data) {
-                    if (data.success) {
-                        $('#modal-cover').css('background-image', `url(${data.coverUrl ?? '/Content/default-cover.jpg'})`);
-                        $('#modal-avatar').attr('src', data.avatarUrl ?? '/Content/default-avatar.png');
-                        $('#modal-display-name').text(data.displayName);
-                        $('#modal-phone').text(data.phoneNumber || "Chưa cập nhật");
-                        $('#modal-email').text(data.email || "Chưa cập nhật");
-                        $('#modal-qr-code').attr('src', `${data.qrCodeUrl}?v=${new Date().getTime()}`);
-                    }
-                });
-            });
-
-            $('.conversation-list').on('click', '.list-group-item-action', function (e) {
-                e.preventDefault();
-                switchChat(this);
-            });
-            $('body').off('click', '#sendButton').on('click', '#sendButton', function (e) {
-                e.preventDefault();
-                sendTextMessage(e);
-            });
-
-            $('body').off('keypress', '#messageInput').on('keypress', '#messageInput', function (e) {
-                if (e.which === 13 && !e.shiftKey) {
-                    e.preventDefault();
-                    sendTextMessage(e);
-                }
-            });
-
-            $('body').on('click', '#toggle-conversations-btn', function (e) {
-                e.preventDefault();
-                $('.conversation-list').toggle();
-            });
-
-            $.connection.hub.url = (window.location.protocol === "https:"
-                ? "wss://"
-                : "ws://") + window.location.host + "/signalr";
-
-                $.connection.hub.qs = { "noCache": new Date().getTime() }; 
-                $.connection.hub.transportConnectTimeout = 10000; 
-                $.connection.hub.keepAlive = 15000; 
-                $.connection.hub.reconnectDelay = 5000; 
-
-            $.connection.hub.url = window.location.origin + "/signalr";
-            $.connection.hub.start({ transport: ['webSockets', 'serverSentEvents', 'longPolling'] })
-                .done(function () {
-                    console.log("✅ SignalR connected successfully");
-                    const lastPartner = localStorage.getItem('lastChatPartner');
-                    if (lastPartner) {
-                        const openChatInterval = setInterval(() => {
-                            const friendItem = $(`.friend-item[data-username='${lastPartner}']`);
-                            if (friendItem.length) {
-                                clearInterval(openChatInterval);
-                                friendItem.trigger('click');
-                            }
-                        }, 400);
-                    }
-
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const friendUsername = urlParams.get('friendUsername') || lastPartner;
-
-                    if (friendUsername) {
-                        console.log("🔍 Auto-open chat with:", friendUsername);
-
-                        const openChatInterval = setInterval(() => {
-                            const friendItem = $(`.friend-item[data-username='${friendUsername}']`);
-                            if (friendItem.length) {
-                                clearInterval(openChatInterval);
-                                friendItem.trigger('click');
-                                console.log("✅ Auto opened chat with:", friendUsername);
-                            }
-                        }, 400);
-                    }
-                })
-                .fail(function (err) {
-                    console.error("❌ SignalR connection failed:", err);
-                });
-
-        });
-    </script>
-
-    </body>
-    </html>
+</body>
+</html>

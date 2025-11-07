@@ -2,10 +2,9 @@
     ViewBag.Title = "Chat";
     Layout = "~/Views/Shared/_ChatLayout.cshtml";
 }
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
 <style>
-
+    /* CSS gốc cho Chat Layout */
     .chat-main {
         flex-grow: 1;
         display: flex;
@@ -15,15 +14,62 @@
     }
 
     .chat-header {
-        padding: 15px;
+        padding: 10px 15px;
         border-bottom: 1px solid #ddd;
         font-weight: bold;
+        min-height: 66px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
+    .chat-header-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1px solid #eee;
+    }
+
+    .chat-header-info {
+        cursor: pointer;
+    }
+
+    .chat-header .btn-light {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 5px;
+        color: #555;
+        border-radius: 50%;
+        font-size: 1.1rem;
+    }
+
+    #toggle-conversations-btn {
+        color: #2e7d32;
+    }
+
+    .chat-header-status {
+        font-size: 0.85rem;
+        color: #6c757d; /* màu xám text-muted */
+        font-weight: 400;
+    }
+
+    /* 1. KHUNG CHAT CHÍNH (FIX LỖI CĂN GIỮA DỌC) */
     .message-area {
         flex-grow: 1;
-        padding: 20px;
+        padding: 20px !important;
         overflow-y: auto;
+        /* Thêm 3 dòng này để đẩy tin nhắn xuống dưới */
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-end !important;
+    }
+
+    #messagesList {
+        flex: 1; /* Cho phép messagesList co giãn */
     }
 
     .input-area {
@@ -78,38 +124,348 @@
             background-color: #e8f5e9;
             color: #1b5e20;
         }
+
     .msg-img, .msg-video {
         border-radius: 10px;
         margin: 5px 0;
         display: block;
     }
 
+    /* ========================================================
+       PHẦN AI WELCOME & HEADER (Giữ nguyên)
+    =========================================================== */
+    #ai-welcome-screen {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+        color: #333;
+        padding: 20px;
+        overflow-y: auto; /* Cho phép cuộn nếu không đủ chỗ */
+    }
+
+    .ai-logo-circle {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #007bff, #8a2be2);
+        margin-bottom: 20px;
+        animation: pulse-glow 2s infinite ease-in-out;
+    }
+
+    @@keyframes pulse-glow {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.4);
+        }
+
+        50% {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(138, 43, 226, 0.7);
+        }
+
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.4);
+        }
+    }
+
+    #ai-welcome-screen h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    #ai-welcome-screen p {
+        font-size: 1rem;
+        color: #6c757d;
+        margin-bottom: 25px;
+    }
+
+    .ai-prompt-suggestions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .ai-prompt-btn {
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 12px 15px;
+        text-align: left;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+        .ai-prompt-btn:hover {
+            background-color: #f1f1f1;
+        }
+
+    #ai-chat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(90deg, #43A047 0%, #26C6DA 50%, #81C784 100%);
+        color: white;
+        border-bottom: 1px solid rgba(255,255,255,0.2);
+        min-height: 60px;
+        box-shadow: 0 2px 10px rgba(67, 160, 71, 0.3);
+    }
+
+        #ai-chat-header .ai-title {
+            font-size: 1.1rem;
+            flex-grow: 1;
+            justify-content: center;
+        }
+
+        #ai-chat-header .btn-link {
+            color: white !important;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+            #ai-chat-header .btn-link:hover {
+                opacity: 1;
+                background: rgba(255,255,255,0.2);
+                border-radius: 50%;
+            }
+
+    #chat-timestamp-bar {
+        font-size: 0.8rem;
+        color: #666;
+        border-top: 1px solid #eee;
+    }
+
+    #ai-chat-header ~ .input-area #messageInput {
+        background: #f0f2f5;
+        border-radius: 20px;
+        padding: 8px 16px;
+        border: none;
+    }
+
+        #ai-chat-header ~ .input-area #messageInput::placeholder {
+            color: #999;
+            font-style: italic;
+        }
+    .chat-message {
+        display: flex !important;
+        align-items: flex-end !important; /* Căn avatar và bubble theo đáy */
+        margin-bottom: 15px !important;
+        width: 100% !important;
+        position: relative;
+        gap: 8px; /* Tạo khoảng cách chung cho 2 bên */
+    }
+
+        .chat-message.other,
+        .chat-message.ai-message {
+            justify-content: flex-start !important; /* Căn trái */
+        }
+
+            .chat-message.other .avatar,
+            .chat-message.ai-message .avatar {
+                flex-shrink: 0;
+                /* margin-right: 8px; (Đã dùng gap) */
+                order: 1; /* Avatar trước */
+                background: #43a047;
+                color: #fff;
+                font-weight: 600;
+                border-radius: 50%;
+                width: 36px;
+                height: 36px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-size: 0.95rem;
+                box-shadow: 0 2px 4px rgba(67, 160, 71, 0.3);
+            }
+
+            .chat-message.other .chat-bubble,
+            .chat-message.ai-message .chat-bubble {
+                margin-right: auto;
+                order: 2; /* Bubble sau avatar */
+            }
+
+        .chat-message.self {
+            justify-content: flex-end !important; /* Căn phải */
+        }
+
+            .chat-message.self .chat-bubble {
+                order: 1; /* Bubble trước */
+            }
+
+            .chat-message.self .avatar {
+                display: none !important; /* Ẩn avatar của mình */
+            }
+
+    .message-timestamp {
+        display: none !important;
+    }
+
+    /* Gán order CỤ THỂ (thứ tự) */
+    .chat-message.other .message-timestamp,
+    .chat-message.ai-message .message-timestamp {
+        color: rgba(26,35,126,0.5) !important;
+    }
+
+    .chat-message.self .message-timestamp {
+        color: rgba(255,255,255,0.8) !important;
+    }
+
+
+    .chat-bubble {
+        display: flex; /* xếp theo cột */
+        flex-direction: column;
+        gap: 6px; /* khoảng cách text ↔ time */
+        padding: 10px 15px; /* Thêm đệm (padding) cho đẹp */
+        border-radius: 18px; /* Bo góc chung cho tất cả bubble */
+        max-width: 70%; /* Giới hạn độ rộng tối đa */
+    }
+
+    .bubble-time {
+        align-self: flex-end; /* dồn về góc phải đáy bubble */
+        font-size: .72rem;
+        line-height: 1;
+        opacity: .75;
+        margin-top: 2px;
+    }
+
+    .chat-message.other .bubble-time,
+    .chat-message.ai-message .bubble-time {
+        color: rgba(0,0,0,.45);
+    }
+
+    .chat-message.self .bubble-time {
+        color: rgba(255,255,255,.85);
+    }
+
+    .chat-bubble img, .chat-bubble video {
+        margin-bottom: 2px;
+    }
+    .chat-message.other .chat-bubble {
+        background: #e4e6eb !important;
+        color: #333 !important;
+        border-bottom-left-radius: 4px !important; /* Thêm !important */
+    }
+
+    /* Bubble của AI (đè lên bubble .other) */
+    .chat-message.ai-message .chat-bubble.ai-bubble {
+        background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%) !important;
+        color: #1a237e !important;
+        border-radius: 18px 18px 18px 4px !important;
+        padding: 12px 16px !important;
+        max-width: 70% !important;
+        box-shadow: 0 4px 12px rgba(138, 43, 226, 0.15) !important;
+        margin-left: 0 !important;
+    }
+
+    .chat-message.self .chat-bubble {
+        background: #007bff !important;
+        color: white !important;
+        border-bottom-right-radius: 4px !important; /* Thêm !important */
+    }
+
+    /* 7. MEDIA TRONG BUBBLE */
+    .chat-bubble img,
+    .chat-bubble video {
+        border-radius: 12px;
+        margin-top: 4px;
+        max-width: 100%;
+        transition: transform 0.2s ease;
+    }
+
+        .chat-bubble img:hover {
+            transform: scale(1.02);
+        }
+
+    .chat-bubble .timestamp {
+        display: none !important;
+    }
 </style>
-
 <div class="chat-main">
-    <!-- Thanh tiêu đề khung chat -->
-    <div class="chat-header d-flex justify-content-between align-items-center">
-        <div id="current-group-name" class="fw-bold"></div>
-        <button id="toggle-conversations-btn" class="btn btn-light" title="Ẩn/Hiện danh sách">
-            <i class="fas fa-list-ul"></i>
-        </button>
+    <!-- Header Container - FIX: Đặt ở đầu để luôn top -->
+    <div id="chat-header-container">
+        <!-- Private Header (giữ nguyên) -->
+        <div id="private-chat-header" class="chat-header" style="display: none;">
+            <div id="user-chat-header" class="chat-header-info d-flex align-items-center">
+                <img id="chat-header-avatar" src="" alt="Avatar" class="chat-header-avatar me-2" />
+                <div>
+                    <div id="chat-header-displayname" class="fw-bold"></div>
+                    <div id="chat-header-status" class="text-muted">Đang hoạt động</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center">
+                <div id="user-chat-buttons" style="display: none;">
+                    <button class="btn btn-light" title="Thêm vào nhóm (làm sau)">
+                        <i class="fas fa-user-plus"></i>
+                    </button>
+                    <button class="btn btn-light" title="Gọi video (làm sau)">
+                        <i class="fas fa-video"></i>
+                    </button>
+                    <button class="btn btn-light" title="Tìm kiếm (làm sau)">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button id="toggle-info-sidebar-btn" class="btn btn-light" title="Thông tin hội thoại">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+                <button id="toggle-conversations-btn" class="btn btn-light" title="Ẩn/Hiện danh sách bạn bè">
+                    <i class="fas fa-list-ul"></i>
+                </button>
+            </div>
+        </div>
+        <div id="ai-chat-header" class="ai-header px-3 py-2" style="display: none;">
+            <!-- Icon quay lại -->
+            <button id="ai-back-btn" class="btn btn-link text-white p-1" title="Quay lại danh sách">
+                <i class="fas fa-chevron-left fs-4"></i>
+            </button>
+            <!-- Tên AI -->
+            <div class="ai-title text-white fw-bold d-flex align-items-center gap-1">
+                <span>Chat AI</span>
+                <i class="fas fa-check-circle text-success" title="Verified"></i>
+            </div>
+            <!-- Icon info -->
+            <button id="ai-info-btn" class="btn btn-link text-white p-1" title="Thông tin AI">
+                <i class="fas fa-info-circle fs-5"></i>
+            </button>
+        </div>
     </div>
-
-    <!-- Khu vực tin nhắn -->
+    <!-- AI Welcome Screen - FIX: Sau header để header luôn top -->
+    <div id="ai-welcome-screen" style="display: none;">
+        <div class="ai-logo-circle"></div>
+        <h3>Bắt đầu chat với AI</h3>
+        <p>Hỏi tôi bất cứ điều gì bạn muốn</p>
+        <div class="ai-prompt-suggestions">
+            <button class="ai-prompt-btn" data-prompt="AI có sở trường gì?">AI có sở trường gì?</button>
+            <button class="ai-prompt-btn" data-prompt="Nghĩ ra một ý tưởng sản phẩm thú vị">Nghĩ ra một ý tưởng sản phẩm thú vị</button>
+            <button class="ai-prompt-btn" data-prompt="Giúp tôi khám phá ngôn ngữ tình yêu">Giúp tôi khám phá ngôn ngữ tình yêu</button>
+        </div>
+    </div>
+    <!-- Message Area -->
     <div class="message-area" id="messagesList"></div>
-
-    <!-- Khu vực nhập liệu -->
+    <!-- File Inputs (giữ nguyên) -->
+    <input type="file" id="imageUploadInput" accept="image/*" multiple style="display: none;" />
+    <input type="file" id="fileUploadInput" multiple style="display: none;" />
+    <!-- Input Area -->
     <div class="input-area">
-        <<input type="file" id="imageUpload" accept="image/*" multiple style="display: none;" />
-        <label for="imageUpload" class="btn btn-light mr-2" style="cursor: pointer;">
+        <button id="emoji-button" class="btn btn-light" type="button" title="Biểu cảm">
+            <i class="fas fa-smile"></i>
+        </button>
+        <button id="quick-image-btn" class="btn btn-light" type="button" title="Gửi ảnh nhanh">
+            <i class="fas fa-image"></i>
+        </button>
+        <button id="toggle-attach-menu" class="btn btn-light" type="button" title="Đính kèm khác">
             <i class="fas fa-paperclip"></i>
-        </label>
+        </button>
         <input type="text" id="messageInput" placeholder="Nhập tin nhắn..." autocomplete="off" />
         <button id="sendButton"><i class="fas fa-paper-plane"></i></button>
     </div>
 </div>
-
-
+<!-- Modal Preview (giữ nguyên) -->
 <div class="modal fade" id="imagePreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
@@ -127,55 +483,50 @@
         </div>
     </div>
 </div>
-
 @section scripts {
     <script>
-    const uploadUrl = '@Url.Action("UploadFiles", "Chat")';
-
-    const connection = $.hubConnection();
-    const chatHub = connection.createHubProxy("ChatHub");
-
-    // 🧩 Nhận tin nhắn realtime từ server
-    chatHub.on("ReceiveMessage", function (sender, avatarUrl, type, content, time) {
-        let html = "";
-        if (type === "image") {
-            html = `<div class="message"><strong>${sender}</strong><img src="${content}" class="img-fluid rounded" style="max-width:200px; margin-top:5px;" /></div>`;
-        } else if (type === "video") {
-            html = `<div class="message"><strong>${sender}</strong><video controls src="${content}" style="max-width:300px; margin-top:5px;"></video></div>`;
-        } else if (type === "file") {
-            html = `<div class="message"><strong>${sender}</strong><a href="${content}" target="_blank">📄 Tải file</a></div>`;
-        } else {
-            html = `<div class="message"><strong>${sender}</strong><span>${content}</span></div>`;
+    $(function () {
+        window.chatHub = $.connection.chatHub;
+        window.currentChat = { mode: 'ai', partnerUsername: null };
+        const chatHub = window.chatHub;
+        const currentUsername = @Html.Raw(Json.Encode(User.Identity.Name));
+        let currentChat = window.currentChat;
+        let aiChatHistory = [];
+        if ('@User.Identity.IsAuthenticated' !== 'True') {
+            return;
         }
-        $("#messagesList").append(html);
-        $(".message-area").scrollTop($("#messagesList")[0].scrollHeight);
-    });
-
-    // 🧩 Kết nối SignalR
-    connection.start().done(function () {
-        console.log("SignalR connected.");
-
-        // Gửi text message
-        $("#sendButton").click(function () {
-            const text = $("#messageInput").val().trim();
-            if (!text) return;
-
-            const msgJson = JSON.stringify({ type: "text", content: text });
-            if (currentChat.mode === "private") {
-                chatHub.invoke("SendPrivateMessage", currentChat.partnerUsername, msgJson);
-            } else if (currentChat.mode === "ai") {
-                chatHub.invoke("SendMessageToAI", text);
-            }
-
-            $("#messageInput").val("");
+        // Upload Configuration (giữ nguyên)
+        const uploadUrl = '@Url.Action("UploadFiles", "Chat")';
+        const $menu = $('#attachment-menu');
+        const $toggleBtn = $('#toggle-attach-menu');
+        // Attachment Menu Toggle (giữ nguyên)
+        $toggleBtn.on('click', function (e) {
+            e.stopPropagation();
+            const btnRect = $toggleBtn[0].getBoundingClientRect();
+            $menu.css({
+                display: 'block',
+                bottom: (window.innerHeight - btnRect.top) + 'px',
+                left: (btnRect.left) + 'px'
+            });
         });
-
-        // Chọn file
-        $("#imageUpload").on("change", function () {
+        $(window).on('click', function () {
+            $menu.css('display', 'none');
+        });
+        $('#send-image-btn').on('click', function (e) {
+            e.preventDefault();
+            $menu.css('display', 'none');
+            $('#imageUploadInput').click();
+        });
+        $('#send-file-btn').on('click', function (e) {
+            e.preventDefault();
+            $menu.css('display', 'none');
+            $('#fileUploadInput').click();
+        });
+        // File Upload Preview (giữ nguyên)
+        $('#imageUploadInput, #fileUploadInput').on("change", function () {
             const files = this.files;
             const container = $("#imagePreviewContainer");
             container.empty();
-
             if (files.length > 0) {
                 Array.from(files).forEach(file => {
                     const reader = new FileReader();
@@ -194,18 +545,18 @@
                 });
                 $("#imagePreviewModal").modal("show");
             }
+            $(this).val(null);
         });
-
-        // Gửi ảnh/video/file
+        // Send Files (giữ nguyên)
         $("#sendImageButton").click(function () {
-            const files = $("#imageUpload")[0].files;
-            if (files.length === 0) return;
-
+            const imageFiles = $("#imageUploadInput")[0].files;
+            const otherFiles = $("#fileUploadInput")[0].files;
+            let filesToUpload = (imageFiles.length > 0) ? imageFiles : otherFiles;
+            if (filesToUpload.length === 0) return;
             const formData = new FormData();
-            for (let i = 0; i < files.length; i++) {
-                formData.append("file" + i, files[i]);
+            for (let i = 0; i < filesToUpload.length; i++) {
+                formData.append("file" + i, filesToUpload[i]);
             }
-
             $.ajax({
                 url: uploadUrl,
                 type: "POST",
@@ -219,27 +570,387 @@
                             let type = "file";
                             if (["jpg", "jpeg", "png", "gif"].includes(ext)) type = "image";
                             else if (["mp4", "mov", "webm"].includes(ext)) type = "video";
-
                             const msgJson = JSON.stringify({ type, content: url });
-                            if (currentChat.mode === "private") {
-                                chatHub.invoke("SendPrivateMessage", currentChat.partnerUsername, msgJson);
-                            } else if (currentChat.mode === "ai") {
-                                chatHub.invoke("SendMessageToAI", `[${type}] ${url}`);
+                            if (window.currentChat.mode === "private") {
+                                window.chatHub.server.sendPrivateMessage(window.currentChat.partnerUsername, msgJson);
+                            } else if (window.currentChat.mode === "ai") {
+                                window.chatHub.server.sendMessageToAI(`[${type}] ${url}`);
                             }
                         });
                     } else {
                         alert("Lỗi upload: " + res.message);
                     }
                 },
-                error: function () {
-                    alert("Không thể kết nối đến server!");
-                },
                 complete: function () {
                     $("#imagePreviewModal").modal("hide");
-                    $("#imageUpload").val("");
+                    $("#imageUploadInput").val(null);
+                    $("#fileUploadInput").val(null);
                 }
             });
         });
+        // Function update timestamp bar
+        function updateTimestampBar() {
+            const now = new Date();
+            const vietTime = now.toLocaleDateString('vi-VN', {
+                weekday: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).replace(' ', ' lúc ');
+            $('#current-timestamp').text(vietTime);
+        }
+        function sendTextMessage(e) {
+            if (e) e.preventDefault();
+            const messageContent = $('#messageInput').val().trim();
+            if (messageContent === '') return;
+
+            // FIX TIMESTAMP: Format chuẩn
+            const now = new Date();
+            const vietTime = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+            // FIX: Đưa vietTime VÀO TRONG bubble, dùng class 'bubble-time'
+            const escapedContent = $('<div/>').text(messageContent).html();
+            let selfMessageHtml = `
+                <div class="chat-message self">
+                    <div class="chat-bubble">
+                        <span>${escapedContent}</span>
+                        <span class="bubble-time">${vietTime}</span>
+                    </div>
+                </div>`;
+
+            const messagesList = $('#messagesList');
+            messagesList.append(selfMessageHtml);
+            messagesList.scrollTop(messagesList[0].scrollHeight);
+
+            // Ẩn welcome & show area (giữ nguyên, nhưng force cho private)
+            $('#ai-welcome-screen').hide();
+            $('.message-area').show();
+            if (currentChat.mode === 'ai') {
+                $('.chat-header').hide();
+                $('#user-chat-header').hide();
+                $('#user-chat-buttons').hide();
+            } else {
+                $('#private-chat-header').show();  // FORCE HEADER PRIVATE NẾU MODE PRIVATE
+            }
+
+            // Gửi đến server
+            if (currentChat.mode === 'ai') {
+                console.log('Sending to AI:', messageContent);
+                chatHub.server.sendMessageToAI(messageContent);
+            } else if (currentChat.mode === 'private') {
+                const msgJson = JSON.stringify({ type: "text", content: messageContent });
+                chatHub.server.sendPrivateMessage(currentChat.partnerUsername, msgJson);
+            }
+            if (currentChat.mode === 'private') {
+                localStorage.setItem('lastChatPartner', currentChat.partnerUsername);
+            }
+            $('#messageInput').val('').focus();
+            // Update bar
+            updateTimestampBar();
+        }
+        function switchChat(target) {
+            $('#messagesList').empty();
+            currentChat.mode = $(target).data('chat-mode');
+            $('.conversation-list .list-group-item-action').removeClass('active');
+            $(target).addClass('active');
+
+            if (currentChat.mode === 'ai') {
+                $('#ai-chat-header').show();
+                $('#private-chat-header').hide();
+                $('#chat-timestamp-bar').show();
+                $('#messageInput').attr('placeholder', 'Hỏi tôi bất cứ điều gì...?');
+                updateTimestampBar();
+                $('#ai-welcome-screen').show();
+                $('.message-area').hide();
+                currentChat.partnerUsername = null;
+            } else {  // Private mode
+                $('#private-chat-header').show();  // HIỆN HEADER PRIVATE
+                $('#ai-chat-header').hide();
+                $('#chat-timestamp-bar').show();
+                $('#messageInput').attr('placeholder', 'Nhập tin nhắn...');
+                $('#user-chat-header').show();
+                $('#user-chat-buttons').show();
+
+                // FORCE ẨN AI WELCOME & HIỆN MESSAGES
+                $('#ai-welcome-screen').hide();
+                $('.message-area').show();
+
+                currentChat.partnerUsername = $(target).data('username');
+                const displayName = $(target).find('strong').text().trim();
+                const avatarSrc = $(target).data('avatar-url') || '/Content/default-avatar.png';
+                $('#chat-header-displayname').text(displayName);  // TÊN USER KIA
+                $('#chat-header-avatar').attr('src', avatarSrc);  // AVATAR USER KIA
+                $('#chat-header-status').text('Đang hoạt động');
+
+                // Join & load history
+                if (chatHub.server.joinPrivateGroup) {
+                    chatHub.server.joinPrivateGroup(currentChat.partnerUsername);
+                }
+                $.getJSON(`/Chat/GetChatHistory?partnerUsername=${currentChat.partnerUsername}`, function (response) {
+                    if (response.success) {
+                        $('#messagesList').empty();
+                        response.messages.forEach(msg => {
+                            const isSelf = msg.SenderUsername === currentUsername;
+                            let firstLetter = isSelf ? '' : msg.SenderUsername.charAt(0).toUpperCase();
+
+                            // FIX TIMESTAMP: Parse an toàn, tránh Invalid Date
+                            let vietTime;
+                            try {
+                                const msgDate = new Date(msg.Timestamp);
+                                if (isNaN(msgDate.getTime())) {
+                                    vietTime = 'Vừa xong';
+                                } else {
+                                    vietTime = msgDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                                }
+                            } catch (e) {
+                                vietTime = 'Lỗi thời gian';
+                            }
+
+                            // FIX: Xây dựng messageBodyHtml đã bao gồm bubble VÀ bubble-time
+                            let messageBodyHtml = '';
+                            if (msg.Content.startsWith("data:image") || msg.Content.startsWith("/Uploads/Images/")) {
+                                messageBodyHtml = `
+                                    <div class="chat-bubble">
+                                        <img src="${msg.Content}" class="img-fluid rounded" style="max-width: 250px; cursor: pointer;" onclick="window.open(this.src, '_blank');" />
+                                        <span class="bubble-time">${vietTime}</span>
+                                    </div>`;
+                            } else {
+                                const escapedContent = $('<div/>').text(msg.Content).html();
+                                messageBodyHtml = `
+                                    <div class="chat-bubble">
+                                        <span>${escapedContent}</span>
+                                        <span class="bubble-time">${vietTime}</span>
+                                    </div>`;
+                            }
+
+                            // FIX: Xóa span timestamp bên ngoài
+                            const messageHtml = `
+                                <div class="chat-message ${isSelf ? 'self' : 'other'}">
+                                    ${!isSelf ? `<div class="avatar" title="${msg.SenderUsername}">${firstLetter}</div>` : ''}
+                                    ${messageBodyHtml}
+                                </div>`;
+                            $('#messagesList').append(messageHtml);
+                        });
+                        $('#messagesList').scrollTop($('#messagesList')[0].scrollHeight);
+                    }
+                });
+            }
+            if ($(window).width() < 768) {
+                $('.conversation-list').hide();
+            }
+        }
+        // Load Friends List (giữ nguyên)
+        function loadFriendsList() {
+            const container = $('#conversation-list-ul');
+            container.find('.friend-item').remove();
+            $.getJSON("@Url.Action("GetFriendsList", "Friend")", function (friends) {
+                friends.forEach(function (friend) {
+                    if (friend.Username === currentUsername) {
+                        return;
+                    }
+                    const friendHtml = `
+                    <a href="#" class="list-group-item list-group-item-action friend-item"
+                       data-chat-mode="private"
+                       data-username="${friend.Username}"
+                       data-userid="${friend.Id}"
+                       data-avatar-url="${friend.AvatarUrl || ''}">
+                        <strong><i class="fas fa-user"></i> ${friend.DisplayName}</strong>
+                    </a>`;
+                    container.append(friendHtml);
+                });
+                const urlParams = new URLSearchParams(window.location.search);
+                const friendUsername = urlParams.get('friendUsername');
+                const lastPartner = localStorage.getItem('lastChatPartner');
+                const targetUsername = friendUsername || lastPartner;
+                let target;
+                if (targetUsername) {
+                    target = container.find(`.list-group-item-action[data-username='${targetUsername}']`);
+                }
+                if (!target || target.length === 0) {
+                    target = $('#ai-chat-btn');
+                }
+                switchChat(target);
+            });
+        }
+        if (chatHub && chatHub.client) {
+            chatHub.client.receiveMessage = function (senderUsername, senderAvatar, type, messageContent, time) {
+                // FIX: Ignore self echo (tránh duplicate)
+                if (senderUsername === currentUsername) {
+                    console.log('Ignoring self echo:', messageContent);
+                    return;
+                }
+
+                // Xử lý AI riêng
+                if (senderUsername === 'AI Assistant' && currentChat.mode === 'ai') {
+                    $('#ai-welcome-screen').hide();
+                    $('.message-area').show();
+                    if (currentChat.mode === 'ai') {
+                        $('.chat-header').hide();
+                        $('#user-chat-header').hide();
+                        $('#user-chat-buttons').hide();
+                    }
+
+                    // Lấy thời gian
+                    let formattedTime;
+                    try {
+                        const msgDate = time ? new Date(time) : new Date();
+                        if (isNaN(msgDate.getTime())) {
+                            formattedTime = 'Vừa xong';
+                        } else {
+                            formattedTime = msgDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                        }
+                    } catch (e) {
+                        formattedTime = 'Lỗi thời gian';
+                    }
+
+                    // FIX: Tạo nội dung (ảnh/text) trước
+                    let messageContentHtml = "";
+                    if (type === "image") {
+                        messageContentHtml = `<img src="${messageContent}" class="img-fluid rounded" style="max-width: 250px;" onclick="window.open(this.src, '_blank');" />`;
+                    } else if (type === "video") {
+                        messageContentHtml = `<video controls src="${messageContent}" style="max-width: 300px; border-radius: 10px;"></video>`;
+                    } else if (type === "file") {
+                        messageContentHtml = `<a href="${messageContent}" target="_blank" style="color:#007bff;">📄 Tải file</a>`;
+                    } else {
+                        const escaped = $('<div/>').text(messageContent).html();
+                        messageContentHtml = `<span>${escaped}</span>`; // Bọc text trong span
+                    }
+
+                    // FIX: Gộp nội dung và thời gian VÀO TRONG bubble
+                    const messageBodyHtml = `
+                        <div class="chat-bubble ai-bubble">
+                            ${messageContentHtml}
+                            <span class="bubble-time">${formattedTime}</span>
+                        </div>`;
+
+                    // FIX: Xóa timestamp bên ngoài
+                    const messageHtml = `<div class="chat-message other ai-message">
+                            <div class="avatar" title="AI Assistant">🤖</div>
+                            ${messageBodyHtml}
+                           </div>`;
+
+                    const messagesList = $('#messagesList');
+                    messagesList.append(messageHtml);
+                    messagesList.scrollTop(messagesList[0].scrollHeight);
+                    console.log('AI reply received:', messageContent.substring(0, 50) + '...');
+                    updateTimestampBar();
+                    return;
+                }
+
+                // Private other
+                // Lấy thời gian
+                let formattedTime;
+                try {
+                    const msgDate = time ? new Date(time) : new Date();
+                    if (isNaN(msgDate.getTime())) {
+                        formattedTime = 'Vừa xong';
+                    } else {
+                        formattedTime = msgDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                    }
+                } catch (e) {
+                    formattedTime = 'Lỗi thời gian';
+                }
+
+                // FIX: Tạo nội dung (ảnh/text) trước
+                let messageContentHtml = "";
+                if (type === "image") {
+                    messageContentHtml = `<img src="${messageContent}" alt="image" class="img-fluid rounded" style="max-width: 250px; cursor: pointer;" onclick="window.open(this.src, '_blank');" />`;
+                } else if (type === "video") {
+                    messageContentHtml = `<video controls src="${messageContent}" style="max-width: 300px; border-radius: 10px;"></video>`;
+                } else if (type === "file") {
+                    messageContentHtml = `<a href="${messageContent}" target="_blank" style="color:#007bff; text-decoration:none;">📄 Tải file</a>`;
+                } else {
+                    const escaped = $('<div/>').text(messageContent).html();
+                    messageContentHtml = `<span>${escaped}</span>`; // Bọc text trong span
+                }
+
+                // FIX: Gộp nội dung và thời gian VÀO TRONG bubble
+                const messageBodyHtml = `
+                    <div class="chat-bubble">
+                        ${messageContentHtml}
+                        <span class="bubble-time">${formattedTime}</span>
+                    </div>`;
+
+                const firstLetter = senderUsername.charAt(0).toUpperCase();
+
+                // FIX: Xóa timestamp bên ngoài
+                const messageHtml = `
+                    <div class="chat-message other">
+                        <div class="avatar" title="${senderUsername}">${firstLetter}</div>
+                        ${messageBodyHtml}
+                    </div>`;
+
+                const messagesList = $('#messagesList');
+                messagesList.append(messageHtml);
+                messagesList.scrollTop(messagesList[0].scrollHeight);
+                updateTimestampBar();
+            };
+        }
+        // Event Handlers
+        $('.conversation-list').on('click', '.list-group-item-action', function (e) {
+            e.preventDefault();
+            switchChat(this);
+        });
+        $('body').off('click', '#sendButton').on('click', '#sendButton', function (e) {
+            e.preventDefault();
+            sendTextMessage(e);
+        });
+        $('body').off('keypress', '#messageInput').on('keypress', '#messageInput', function (e) {
+            if (e.which === 13 && !e.shiftKey) {
+                e.preventDefault();
+                sendTextMessage(e);
+            }
+        });
+        $('body').on('click', '#toggle-conversations-btn', function (e) {
+            e.preventDefault();
+            $('.conversation-list').toggle();
+        });
+        $('#quick-image-btn').on('click', function (e) {
+            e.preventDefault();
+            $('#imageUploadInput').click();
+        });
+        $('body').on('click', '.ai-prompt-btn', function () {
+            const promptText = $(this).data('prompt');
+            $('#messageInput').val(promptText);
+            sendTextMessage(null);
+        });
+        // AI Back & Info
+        $('#ai-back-btn').on('click', function() {
+            $('.conversation-list').toggle();
+        });
+        $('#ai-info-btn').on('click', function() {
+            alert('Info về Meta AI: Powered by Llama 4!');
+        });
+        // Emoji (giữ nguyên)
+        const emojiBtn = document.querySelector('#emoji-button');
+        const messageInput = document.querySelector('#messageInput');
+        if (emojiBtn && messageInput && typeof EmojiButton !== 'undefined') {
+            const picker = new EmojiButton({
+                position: 'top-start',
+                autoHide: true,
+                theme: 'auto'
+            });
+            picker.on('emoji', selection => {
+                messageInput.value += selection.emoji;
+                $(messageInput).focus();
+            });
+            $(emojiBtn).on('click', function () {
+                picker.togglePicker(emojiBtn);
+            });
+        }
+        // SignalR Start
+        $.connection.hub.url = window.location.origin + "/signalr";
+        $.connection.hub.qs = { "noCache": new Date().getTime() };
+        $.connection.hub.transportConnectTimeout = 10000;
+        $.connection.hub.keepAlive = 15000;
+        $.connection.hub.reconnectDelay = 5000;
+        $.connection.hub.start({ transport: ['webSockets', 'serverSentEvents', 'longPolling'] })
+            .done(function () {
+                console.log("✅ SignalR connected successfully");
+                loadFriendsList();
+            })
+            .fail(function (err) {
+                console.error("❌ SignalR connection failed:", err);
+            });
     });
     </script>
 }

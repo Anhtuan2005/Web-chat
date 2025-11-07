@@ -240,9 +240,17 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Hubs\Chathub.cs" />
-    <Compile Include="Migrations\202511060630057_InitialCreate.cs" />
-    <Compile Include="Migrations\202511060630057_InitialCreate.Designer.cs">
-      <DependentUpon>202511060630057_InitialCreate.cs</DependentUpon>
+    <Compile Include="Migrations\202510310622520_InitClean.cs" />
+    <Compile Include="Migrations\202510310622520_InitClean.Designer.cs">
+      <DependentUpon>202510310622520_InitClean.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202511010533030_AddMessageTypeToPrivateMessage.cs" />
+    <Compile Include="Migrations\202511010533030_AddMessageTypeToPrivateMessage.Designer.cs">
+      <DependentUpon>202511010533030_AddMessageTypeToPrivateMessage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202511061206047_InitialCreate.cs" />
+    <Compile Include="Migrations\202511061206047_InitialCreate.Designer.cs">
+      <DependentUpon>202511061206047_InitialCreate.cs</DependentUpon>
     </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\ApplicationDbContext.cs" />
@@ -471,8 +479,14 @@
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Migrations\202511060630057_InitialCreate.resx">
-      <DependentUpon>202511060630057_InitialCreate.cs</DependentUpon>
+    <EmbeddedResource Include="Migrations\202510310622520_InitClean.resx">
+      <DependentUpon>202510310622520_InitClean.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511010533030_AddMessageTypeToPrivateMessage.resx">
+      <DependentUpon>202511010533030_AddMessageTypeToPrivateMessage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511061206047_InitialCreate.resx">
+      <DependentUpon>202511061206047_InitialCreate.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>
