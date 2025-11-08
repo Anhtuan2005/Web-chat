@@ -450,6 +450,7 @@
     <Content Include="Views\Shared\_Layout.cshtml" />
     <Content Include="Views\Web.config" />
     <Content Include="Views\_ViewStart.cshtml" />
+    <Content Include="Views\Settings\Index.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
@@ -460,7 +461,6 @@
     <Folder Include="Uploads\Videos\" />
     <Folder Include="Views\Base\" />
     <Folder Include="Views\Messages\" />
-    <Folder Include="Views\Settings\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -482,6 +482,130 @@
                 border-radius: 50%;
                 overflow: hidden;
             }
+            /* ===========================================
+   CSS CHO DARK MODE
+=========================================== */
+            html.dark-mode body {
+                background: #18191a; /* Nền chính */
+                color: #e4e6eb; /* Chữ chính */
+            }
+
+            html.dark-mode .main-nav-bar {
+                background: #242526; /* Nền navbar */
+                border-color: #3e4042;
+            }
+
+                html.dark-mode .main-nav-bar .nav-icon {
+                    background: #3a3b3c;
+                    color: #e4e6eb;
+                }
+
+                    html.dark-mode .main-nav-bar .nav-icon:hover,
+                    html.dark-mode .main-nav-bar .nav-icon.active {
+                        background: #4e4f50; /* Màu highlight */
+                    }
+
+            html.dark-mode .conversation-list,
+            html.dark-mode .chat-area,
+            html.dark-mode .settings-card {
+                background: #242526; /* Nền các cột */
+                border-color: #3e4042;
+            }
+
+            html.dark-mode .conv-header,
+            html.dark-mode .modal-header {
+                background: #3a3b3c; /* Nền header cột trái */
+            }
+
+            html.dark-mode .list-group-item {
+                background: #3a3b3c;
+                border-color: #3e4042;
+            }
+
+                html.dark-mode .list-group-item:hover,
+                html.dark-mode .info-accordion-card .btn-link:hover {
+                    background: #4e4f50;
+                }
+
+                html.dark-mode .list-group-item strong,
+                html.dark-mode .list-group-item,
+                html.dark-mode h2, html.dark-mode h3, html.dark-mode h5,
+                html.dark-mode .btn-link,
+                html.dark-mode .settings-item-label strong,
+                html.dark-mode label,
+                html.dark-mode .form-control {
+                    color: #e4e6eb !important; /* Màu chữ */
+                }
+
+            html.dark-mode .btn-light,
+            html.dark-mode .btn-light i {
+                color: #b0b3b8 !important;
+            }
+
+                html.dark-mode .btn-light:hover {
+                    background-color: #3a3b3c !important;
+                }
+
+            html.dark-mode .info-sidebar-body,
+            html.dark-mode #conversation-info-sidebar {
+                background: #242526;
+                border-color: #3e4042;
+            }
+
+            html.dark-mode .info-accordion-card,
+            html.dark-mode .info-sidebar-user {
+                border-color: #3e4042;
+            }
+
+                html.dark-mode .info-accordion-card .card-body,
+                html.dark-mode #collapseSecurity .list-group-item-action {
+                    background: #242526;
+                    border-color: #3e4042;
+                }
+
+                    html.dark-mode .info-accordion-card .card-body:hover,
+                    html.dark-mode #collapseSecurity .list-group-item-action:hover {
+                        background: #3a3b3c;
+                    }
+
+            html.dark-mode .info-sidebar-header,
+            html.dark-mode .search-sidebar-header {
+                border-color: #3e4042;
+            }
+
+                html.dark-mode .info-sidebar-header .close:hover,
+                html.dark-mode .search-sidebar-header .close:hover {
+                    background-color: #4e4f50;
+                    color: #e4e6eb;
+                }
+
+                html.dark-mode .info-sidebar-header .close,
+                html.dark-mode .search-sidebar-header .close {
+                    background: #3a3b3c;
+                    color: #b0b3b8;
+                }
+
+            html.dark-mode .form-control,
+            html.dark-mode .input-area #messageInput {
+                background: #3a3b3c;
+                border-color: #4e4f50;
+            }
+
+                html.dark-mode .form-control:focus,
+                html.dark-mode .input-area #messageInput:focus {
+                    background: #18191a;
+                    border-color: #43a047;
+                    color: #e4e6eb;
+                }
+
+            html.dark-mode .chat-bubble.other {
+                background: #3a3b3c !important;
+                color: #e4e6eb !important;
+            }
+
+                html.dark-mode .chat-bubble.other .bubble-time {
+                    color: rgba(255,255,255,.45);
+                }
 
         </style>
     </head>
@@ -552,6 +676,9 @@
                 @RenderBody()
             </main>
         </div>
+        <audio id="notification-sound" src="~/Sounds/notification.mp3" preload="auto"></audio>
+        <div class="app-layout">
+        </div>
 
         <div class="modal fade" id="myProfileModal" tabindex="-1" role="dialog">
             <div class="modal-dialog modal-dialog-centered" role="document">
@@ -589,6 +716,15 @@
         <script src="https://cdn.jsdelivr.net/npm/joeattardi/emoji-button@4.6.4/dist/index.min.js" type="text/javascript"></script>
 
         @RenderSection("scripts", required: false)
-
-</body>
+        <script>
+            (function () {
+                var theme = localStorage.getItem('theme');
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark-mode');
+                } else {
+                    document.documentElement.classList.remove('dark-mode');
+                }
+            })();
+        </script>
+    </body>
 </html>
