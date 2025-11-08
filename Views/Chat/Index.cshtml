@@ -4,13 +4,20 @@
 }
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
 <style>
-    /* CSS gốc cho Chat Layout */
+    .chat-view-wrapper {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        height: 100%;
+        overflow: hidden; 
+    }
     .chat-main {
         flex-grow: 1;
         display: flex;
         flex-direction: column;
         background-color: #fff;
         height: 100%; /* Đảm bảo lấp đầy không gian trong layout */
+        transition: width 0.3s ease;
     }
 
     .chat-header {
@@ -83,7 +90,206 @@
     #messagesList {
         flex: 1; /* Cho phép messagesList co giãn */
     }
+    #conversation-info-sidebar {
+        width: 320px; 
+        height: 100%;
+        flex-shrink: 0; 
+        background: #fafffe; 
+        border-left: 1px solid #e8f5e9; /* Viền xanh nhạt */
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s ease;
+        }
 
+    .info-sidebar-header {
+        padding: 0 15px;
+        border-bottom: 1px solid #e8f5e9; /* Viền xanh nhạt */
+        min-height: 66px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+    }
+        .info-sidebar-header h5 {
+        margin: 0;
+        font-weight: 700; /* Đậm hơn */
+        color: #2e7d32; /* Màu xanh đậm chủ đạo */
+    }
+    .info-sidebar-header .close {
+        font-size: 1.5rem; 
+        font-weight: 600; 
+        color: #aaa; /* Xám nhạt */
+        opacity: 1;
+        text-shadow: none;
+        background: #f1f8e9; /* Nền xanh lá nhạt */
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        line-height: 32px; /* Căn giữa 'x' */
+        padding: 0;
+        transition: all 0.2s;
+    }
+    .info-sidebar-header .close:hover {
+        background-color: #e8f5e9;
+        color: #333;
+    }
+
+    /* Body của Sidebar (cho phép cuộn) */
+    .info-sidebar-body {
+        flex-grow: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    /* Tùy chỉnh thanh cuộn cho Sidebar */
+    .info-sidebar-body::-webkit-scrollbar { width: 6px; }
+    .info-sidebar-body::-webkit-scrollbar-track { background: #f1f1f1; }
+    .info-sidebar-body::-webkit-scrollbar-thumb { background: #ccc; border-radius: 6px; }
+    .info-sidebar-body::-webkit-scrollbar-thumb:hover { background: #aaa; }
+
+    .info-sidebar-user {
+    padding: 24px;
+    text-align: center;
+    border-bottom: 8px solid #f1f8e9; 
+    }
+    .info-sidebar-user img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 12px;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .info-sidebar-user h5 {
+    font-weight: 700; /* Đậm hơn */
+    font-size: 1.25rem;
+    color: #388e3c; /* Màu xanh lá */
+    margin-bottom: 0;
+    }
+
+       .info-accordion-card {
+        border-bottom: 1px solid #e8f5e9; /* Viền xanh nhạt */
+    }
+    .info-accordion-card .card-header {
+        background-color: transparent; /* Bỏ nền trắng */
+        border-bottom: none;
+        padding: 0;
+    }
+    .info-accordion-card .btn-link {
+        width: 100%;
+        text-align: left;
+        padding: 16px 20px;
+        font-weight: 600;
+        color: #444; /* Đổi màu chữ (không dùng màu xanh dương) */
+        text-decoration: none;
+        transition: background-color 0.2s;
+    }
+    .info-accordion-card .btn-link:hover {
+        background-color: #f1f8e9; /* Highlight khi hover */
+    }
+    .info-accordion-card .btn-link .fa-chevron-down {
+        transition: transform 0.2s ease;
+        color: #aaa;
+    }
+    .info-accordion-card .btn-link[aria-expanded="true"] .fa-chevron-down {
+        transform: rotate(-180deg);
+    }
+    .info-accordion-card .card-body {
+        padding: 0; /* Xóa padding cũ */
+        max-height: 250px; 
+        overflow-y: auto;
+        background: #fff; 
+    }
+    .info-file-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        border-bottom: 1px solid #f1f8e9;
+        transition: background-color 0.2s;
+        text-decoration: none !important;
+        color: #333;
+    }
+    .
+    .info-file-item:hover {
+        background-color: #f8f9fa;
+    }
+    .info-file-item .file-icon {
+        font-size: 1.5rem;
+        color: #007bff; /* Màu Word */
+        width: 30px;
+        text-align: center;
+        margin-right: 12px;
+    }
+    .info-file-item .file-info {
+        overflow: hidden; /* Ngăn tên file dài phá vỡ layout */
+    }
+    .info-file-item .file-name {
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis; /* Dấu ... nếu tên quá dài */
+    }
+    .info-file-item .file-meta {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    #info-sidebar-images-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); /* Tăng cỡ ảnh */
+        gap: 8px;
+        padding: 16px; 
+    }
+    .info-image-item {
+        width: 100%;
+        padding-bottom: 100%; /* Tạo box vuông */
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #eee;
+    }
+    .info-image-item img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        cursor: pointer;
+    }
+        .info-image-item img:hover {
+        transform: scale(1.05);
+    }
+    #info-sidebar-files-list {
+        padding: 8px 0; 
+    }
+        #collapseSecurity .list-group-item-action {
+        color: #333; /* Màu chữ thường */
+        font-weight: 500;
+        padding: 14px 20px;
+        border: 0;
+        background: #fff; /* Nền trắng */
+        border-bottom: 1px solid #f1f8e9;
+    }
+    #collapseSecurity .list-group-item-action:last-child {
+        border-bottom: 0;
+    }
+    #collapseSecurity .list-group-item-action:hover {
+        background-color: #f8f9fa;
+    }
+    #collapseSecurity .list-group-item-action i {
+        width: 20px;
+        text-align: center;
+        margin-right: 12px;
+        color: #666;
+    }
+    #collapseSecurity .list-group-item-action.text-danger {
+        color: #dc3545 !important;
+    }
+    #collapseSecurity .list-group-item-action.text-danger i {
+        color: #dc3545 !important;
+    }
     .input-area {
         display: flex;
         padding: 10px;
@@ -317,7 +523,60 @@
     .message-timestamp {
         display: none !important;
     }
-
+        .custom-toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px; 
+        height: 28px; 
+    }
+    .custom-toggle-switch input { 
+        opacity: 0; 
+        width: 0; 
+        height: 0; 
+    }
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+    }
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 20px; /* Kích thước chấm tròn */
+        width: 20px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+    }
+    input:checked + .slider {
+        background-color: #43a047; /* Màu xanh lá cây chủ đạo */
+    }
+    input:checked + .slider:before {
+        /* Độ dịch chuyển = width - (2 * left) - width(chấm) = 50 - 8 - 20 = 22 */
+        transform: translateX(22px); 
+    }
+    .slider.round {
+        border-radius: 28px;
+    }
+    .slider.round:before {
+        border-radius: 50%;
+    }
+    /* Icon cho các mục bảo mật */
+    #collapseSecurity .list-group-item i {
+        width: 20px;
+        text-align: center;
+        margin-right: 12px;
+        color: #666;
+    }
+    #collapseSecurity .list-group-item.text-danger i {
+         color: #dc3545 !important;
+    }
     /* Gán order CỤ THỂ (thứ tự) */
     .chat-message.other .message-timestamp,
     .chat-message.ai-message .message-timestamp {
@@ -398,206 +657,304 @@
         display: none !important;
     }
 </style>
-<div class="chat-main">
-    <!-- Header Container - FIX: Đặt ở đầu để luôn top -->
-    <div id="chat-header-container">
-        <!-- Private Header (giữ nguyên) -->
-        <div id="private-chat-header" class="chat-header" style="display: none;">
-            <div id="user-chat-header" class="chat-header-info d-flex align-items-center">
-                <img id="chat-header-avatar" src="" alt="Avatar" class="chat-header-avatar me-2" />
-                <div>
-                    <div id="chat-header-displayname" class="fw-bold"></div>
-                    <div id="chat-header-status" class="text-muted">Đang hoạt động</div>
-                </div>
-            </div>
-            <div class="d-flex align-items-center">
-                <div id="user-chat-buttons" style="display: none;">
-                    <button class="btn btn-light" title="Thêm vào nhóm (làm sau)">
-                        <i class="fas fa-user-plus"></i>
-                    </button>
-                    <button class="btn btn-light" title="Gọi video (làm sau)">
-                        <i class="fas fa-video"></i>
-                    </button>
-                    <button class="btn btn-light" title="Tìm kiếm (làm sau)">
-                        <i class="fas fa-search"></i>
-                    </button>
-                    <button id="toggle-info-sidebar-btn" class="btn btn-light" title="Thông tin hội thoại">
-                        <i class="fas fa-info-circle"></i>
-                    </button>
-                </div>
-                <button id="toggle-conversations-btn" class="btn btn-light" title="Ẩn/Hiện danh sách bạn bè">
-                    <i class="fas fa-list-ul"></i>
-                </button>
-            </div>
-        </div>
-        <div id="ai-chat-header" class="ai-header px-3 py-2" style="display: none;">
-            <!-- Icon quay lại -->
-            <button id="ai-back-btn" class="btn btn-link text-white p-1" title="Quay lại danh sách">
-                <i class="fas fa-chevron-left fs-4"></i>
-            </button>
-            <!-- Tên AI -->
-            <div class="ai-title text-white fw-bold d-flex align-items-center gap-1">
-                <span>Chat AI</span>
-                <i class="fas fa-check-circle text-success" title="Verified"></i>
-            </div>
-            <!-- Icon info -->
-            <button id="ai-info-btn" class="btn btn-link text-white p-1" title="Thông tin AI">
-                <i class="fas fa-info-circle fs-5"></i>
-            </button>
-        </div>
-    </div>
-    <!-- AI Welcome Screen - FIX: Sau header để header luôn top -->
-    <div id="ai-welcome-screen" style="display: none;">
-        <div class="ai-logo-circle"></div>
-        <h3>Bắt đầu chat với AI</h3>
-        <p>Hỏi tôi bất cứ điều gì bạn muốn</p>
-        <div class="ai-prompt-suggestions">
-            <button class="ai-prompt-btn" data-prompt="AI có sở trường gì?">AI có sở trường gì?</button>
-            <button class="ai-prompt-btn" data-prompt="Nghĩ ra một ý tưởng sản phẩm thú vị">Nghĩ ra một ý tưởng sản phẩm thú vị</button>
-            <button class="ai-prompt-btn" data-prompt="Giúp tôi khám phá ngôn ngữ tình yêu">Giúp tôi khám phá ngôn ngữ tình yêu</button>
-        </div>
-    </div>
-    <!-- Message Area -->
-    <div class="message-area" id="messagesList"></div>
-    <!-- File Inputs (giữ nguyên) -->
-    <input type="file" id="imageUploadInput" accept="image/*" multiple style="display: none;" />
-    <input type="file" id="fileUploadInput" multiple style="display: none;" />
-    <!-- Input Area -->
-    <div class="input-area">
-        <button id="emoji-button" class="btn btn-light" type="button" title="Biểu cảm">
-            <i class="fas fa-smile"></i>
-        </button>
-        <button id="quick-image-btn" class="btn btn-light" type="button" title="Gửi ảnh nhanh">
-            <i class="fas fa-image"></i>
-        </button>
-        <button id="toggle-attach-menu" class="btn btn-light" type="button" title="Đính kèm khác">
-            <i class="fas fa-paperclip"></i>
-        </button>
-        <input type="text" id="messageInput" placeholder="Nhập tin nhắn..." autocomplete="off" />
-        <button id="sendButton"><i class="fas fa-paper-plane"></i></button>
-    </div>
-</div>
-<!-- Modal Preview (giữ nguyên) -->
-<div class="modal fade" id="imagePreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Xem trước ảnh</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            </div>
-            <div class="modal-body text-center" id="imagePreviewContainer"
-                 style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-primary" id="sendImageButton">Gửi</button>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="modal fade" id="partnerProfileModal" tabindex="-1" role="dialog" aria-labelledby="partnerProfileModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 420px;">
-        <div class="modal-content" style="border-radius: 20px; overflow: hidden; background: #fff; border: none; box-shadow: 0 8px 32px rgba(0,0,0,0.12);">
-
-            <div id="partner-modal-cover" style="height: 160px; background-size: cover; background-position: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative;">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"
-                        style="position: absolute; top: 15px; right: 15px; color: #fff; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border-radius: 50%; width: 36px; height: 36px; border: none; font-size: 1.3rem; opacity: 1; text-shadow: none; display: flex; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer;">
-                    <span aria-hidden="true" style="line-height: 1;">&times;</span>
-                </button>
-            </div>
-
-            <div style="text-align: center; margin-top: -50px; position: relative; z-index: 10;">
-                <img id="partner-modal-avatar" src="/Content/default-avatar.png"
-                     style="width: 100px; height: 100px; border-radius: 50%; border: 5px solid #fff; background-color: #fff; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
-            </div>
-
-            <div class="modal-body" style="padding: 20px 30px 30px; text-align: center;">
-                <h3 id="partner-modal-display-name" style="font-weight: 700; color: #1a1a1a; margin-bottom: 5px; font-size: 1.5rem;">Đang tải...</h3>
-                <p id="partner-modal-username" style="color: #8e8e93; font-size: 0.95rem; margin-bottom: 24px;"></p>
-
-                <div style="text-align: left; background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
-                    <h5 style="font-weight: 600; margin-bottom: 16px; color: #1a1a1a; font-size: 1rem;">
-                        <i class="fas fa-user-circle" style="color: #667eea; margin-right: 8px;"></i>
-                        Thông tin cá nhân
-                    </h5>
-
-                    <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
-                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
-                            <i class="fas fa-venus-mars" style="color: white; font-size: 1.1rem;"></i>
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Giới tính</div>
-                            <strong id="partner-modal-gender" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
-                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
-                            <i class="fas fa-birthday-cake" style="color: white; font-size: 1.1rem;"></i>
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Ngày sinh</div>
-                            <strong id="partner-modal-dob" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
-                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #28a745 0%, #218838 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
-                            <i class="fas fa-phone-alt" style="color: white; font-size: 1.1rem;"></i>
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Điện thoại</div>
-                            <strong id="partner-modal-phone" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; align-items: center; padding: 10px; background: white; border-radius: 8px;">
-                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
-                            <i class="fas fa-envelope" style="color: white; font-size: 1.1rem;"></i>
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Email</div>
-                            <strong id="partner-modal-email" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
-                        </div>
+<div class="chat-view-wrapper">
+    <div class="chat-main">
+        <!-- Header Container - FIX: Đặt ở đầu để luôn top -->
+        <div id="chat-header-container">
+            <!-- Private Header (giữ nguyên) -->
+            <div id="private-chat-header" class="chat-header" style="display: none;">
+                <div id="user-chat-header" class="chat-header-info d-flex align-items-center">
+                    <img id="chat-header-avatar" src="" alt="Avatar" class="chat-header-avatar me-2" />
+                    <div>
+                        <div id="chat-header-displayname" class="fw-bold"></div>
+                        <div id="chat-header-status" class="text-muted">Đang hoạt động</div>
                     </div>
                 </div>
-
-                <div style="text-align: left; background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
-                    <h5 style="font-weight: 600; margin-bottom: 12px; color: #1a1a1a; font-size: 1rem;">
-                        <i class="fas fa-book-open" style="color: #fd7e14; margin-right: 8px;"></i>
-                        Tiểu sử
-                    </h5>
-                    <p id="partner-modal-bio" style="color: #333; font-size: 0.95rem; white-space: pre-wrap; word-wrap: break-word;"></p>
-                </div>
-
-                <div id="partner-action-list" class="list-group" style="text-align: left;">
-                    <a href="#" id="partner-action-block" class="list-group-item list-group-item-action" style="color: #6c757d; font-weight: 500; border: none; background: transparent; padding-left: 0;">
-                        <i class="fas fa-ban" style="margin-right: 10px; width: 20px;"></i> Chặn tin nhắn và cuộc gọi
-                    </a>
-                    <a href="#" id="partner-action-report" class="list-group-item list-group-item-action" style="color: #dc3545; font-weight: 500; border: none; background: transparent; padding-left: 0;">
-                        <i class="fas fa-exclamation-triangle" style="margin-right: 10px; width: 20px;"></i> Báo xấu
-                    </a>
-
-                    <form id="partner-unfriend-form" method="post" action="@Url.Action("DeclineOrRemoveFriend", "Friend")" style="margin:0; display: none;">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="friendshipId" id="partner-unfriend-id" />
-                        <button type="submit" id="partner-action-unfriend" class="list-group-item list-group-item-action" style="color: #dc3545; font-weight: 500; border: none; background: transparent; padding-left: 0; width: 100%; text-align: left;">
-                            <i class="fas fa-trash-alt" style="margin-right: 10px; width: 20px;"></i> Xóa khỏi danh sách bạn bè
+                <div class="d-flex align-items-center">
+                    <div id="user-chat-buttons" style="display: none;">
+                        <button class="btn btn-light" title="Thêm vào nhóm (làm sau)">
+                            <i class="fas fa-user-plus"></i>
                         </button>
-                    </form>
+                        <button class="btn btn-light" title="Gọi video (làm sau)">
+                            <i class="fas fa-video"></i>
+                        </button>
+                        <button class="btn btn-light" title="Tìm kiếm (làm sau)">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <button id="toggle-info-sidebar-btn" class="btn btn-light" title="Thông tin hội thoại">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                    <button id="toggle-conversations-btn" class="btn btn-light" title="Ẩn/Hiện danh sách bạn bè">
+                        <i class="fas fa-list-ul"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="ai-chat-header" class="ai-header px-3 py-2" style="display: none;">
+                <!-- Icon quay lại -->
+                <button id="ai-back-btn" class="btn btn-link text-white p-1" title="Quay lại danh sách">
+                    <i class="fas fa-chevron-left fs-4"></i>
+                </button>
+                <!-- Tên AI -->
+                <div class="ai-title text-white fw-bold d-flex align-items-center gap-1">
+                    <span>Chat AI</span>
+                    <i class="fas fa-check-circle text-success" title="Verified"></i>
+                </div>
+                <!-- Icon info -->
+                <button id="ai-info-btn" class="btn btn-link text-white p-1" title="Thông tin AI">
+                    <i class="fas fa-info-circle fs-5"></i>
+                </button>
+            </div>
+        </div>
+        <!-- AI Welcome Screen - FIX: Sau header để header luôn top -->
+        <div id="ai-welcome-screen" style="display: none;">
+            <div class="ai-logo-circle"></div>
+            <h3>Bắt đầu chat với AI</h3>
+            <p>Hỏi tôi bất cứ điều gì bạn muốn</p>
+            <div class="ai-prompt-suggestions">
+                <button class="ai-prompt-btn" data-prompt="AI có sở trường gì?">AI có sở trường gì?</button>
+                <button class="ai-prompt-btn" data-prompt="Nghĩ ra một ý tưởng sản phẩm thú vị">Nghĩ ra một ý tưởng sản phẩm thú vị</button>
+                <button class="ai-prompt-btn" data-prompt="Giúp tôi khám phá ngôn ngữ tình yêu">Giúp tôi khám phá ngôn ngữ tình yêu</button>
+            </div>
+        </div>
+        <!-- Message Area -->
+        <div class="message-area" id="messagesList"></div>
+        <!-- File Inputs (giữ nguyên) -->
+        <input type="file" id="imageUploadInput" accept="image/*" multiple style="display: none;" />
+        <input type="file" id="fileUploadInput" multiple style="display: none;" />
+        <!-- Input Area -->
+        <div class="input-area">
+            <button id="emoji-button" class="btn btn-light" type="button" title="Biểu cảm">
+                <i class="fas fa-smile"></i>
+            </button>
+            <button id="quick-image-btn" class="btn btn-light" type="button" title="Gửi ảnh nhanh">
+                <i class="fas fa-image"></i>
+            </button>
+            <button id="toggle-attach-menu" class="btn btn-light" type="button" title="Đính kèm khác">
+                <i class="fas fa-paperclip"></i>
+            </button>
+            <input type="text" id="messageInput" placeholder="Nhập tin nhắn..." autocomplete="off" />
+            <button id="sendButton"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+    <!-- Modal Preview (giữ nguyên) -->
+    <div class="modal fade" id="imagePreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Xem trước ảnh</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body text-center" id="imagePreviewContainer"
+                     style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="sendImageButton">Gửi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="partnerProfileModal" tabindex="-1" role="dialog" aria-labelledby="partnerProfileModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 420px;">
+            <div class="modal-content" style="border-radius: 20px; overflow: hidden; background: #fff; border: none; box-shadow: 0 8px 32px rgba(0,0,0,0.12);">
+
+                <div id="partner-modal-cover" style="height: 160px; background-size: cover; background-position: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative;">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                            style="position: absolute; top: 15px; right: 15px; color: #fff; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border-radius: 50%; width: 36px; height: 36px; border: none; font-size: 1.3rem; opacity: 1; text-shadow: none; display: flex; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer;">
+                        <span aria-hidden="true" style="line-height: 1;">&times;</span>
+                    </button>
+                </div>
+
+                <div style="text-align: center; margin-top: -50px; position: relative; z-index: 10;">
+                    <img id="partner-modal-avatar" src="/Content/default-avatar.png"
+                         style="width: 100px; height: 100px; border-radius: 50%; border: 5px solid #fff; background-color: #fff; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+                </div>
+
+                <div class="modal-body" style="padding: 20px 30px 30px; text-align: center;">
+                    <h3 id="partner-modal-display-name" style="font-weight: 700; color: #1a1a1a; margin-bottom: 5px; font-size: 1.5rem;">Đang tải...</h3>
+                    <p id="partner-modal-username" style="color: #8e8e93; font-size: 0.95rem; margin-bottom: 24px;"></p>
+
+                    <div style="text-align: left; background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
+                        <h5 style="font-weight: 600; margin-bottom: 16px; color: #1a1a1a; font-size: 1rem;">
+                            <i class="fas fa-user-circle" style="color: #667eea; margin-right: 8px;"></i>
+                            Thông tin cá nhân
+                        </h5>
+
+                        <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
+                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                                <i class="fas fa-venus-mars" style="color: white; font-size: 1.1rem;"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Giới tính</div>
+                                <strong id="partner-modal-gender" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
+                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                                <i class="fas fa-birthday-cake" style="color: white; font-size: 1.1rem;"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Ngày sinh</div>
+                                <strong id="partner-modal-dob" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
+                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #28a745 0%, #218838 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                                <i class="fas fa-phone-alt" style="color: white; font-size: 1.1rem;"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Điện thoại</div>
+                                <strong id="partner-modal-phone" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; padding: 10px; background: white; border-radius: 8px;">
+                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                                <i class="fas fa-envelope" style="color: white; font-size: 1.1rem;"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Email</div>
+                                <strong id="partner-modal-email" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: left; background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
+                        <h5 style="font-weight: 600; margin-bottom: 12px; color: #1a1a1a; font-size: 1rem;">
+                            <i class="fas fa-book-open" style="color: #fd7e14; margin-right: 8px;"></i>
+                            Tiểu sử
+                        </h5>
+                        <p id="partner-modal-bio" style="color: #333; font-size: 0.95rem; white-space: pre-wrap; word-wrap: break-word;"></p>
+                    </div>
+
+                    <div id="partner-action-list" class="list-group" style="text-align: left;">
+                        <a href="#" id="partner-action-block" class="list-group-item list-group-item-action" style="color: #6c757d; font-weight: 500; border: none; background: transparent; padding-left: 0;">
+                            <i class="fas fa-ban" style="margin-right: 10px; width: 20px;"></i> Chặn tin nhắn và cuộc gọi
+                        </a>
+                        <a href="#" id="partner-action-report" class="list-group-item list-group-item-action" style="color: #dc3545; font-weight: 500; border: none; background: transparent; padding-left: 0;">
+                            <i class="fas fa-exclamation-triangle" style="margin-right: 10px; width: 20px;"></i> Báo xấu
+                        </a>
+
+                        <form id="partner-unfriend-form" method="post" action="@Url.Action("DeclineOrRemoveFriend", "Friend")" style="margin:0; display: none;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="friendshipId" id="partner-unfriend-id" />
+                            <button type="submit" id="partner-action-unfriend" class="list-group-item list-group-item-action" style="color: #dc3545; font-weight: 500; border: none; background: transparent; padding-left: 0; width: 100%; text-align: left;">
+                                <i class="fas fa-trash-alt" style="margin-right: 10px; width: 20px;"></i> Xóa khỏi danh sách bạn bè
+                            </button>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="conversation-info-sidebar" style="display: none;">
+        <div class="info-sidebar-header">
+            <h5>Thông tin hội thoại</h5>
+            <button id="close-info-sidebar-btn" type="button" class="close" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+
+        <div class="info-sidebar-body">
+
+            <div class="info-sidebar-user">
+                <img id="info-sidebar-avatar" src="/Content/default-avatar.png" />
+                <h5 id="info-sidebar-displayname">Đang tải...</h5>
+            </div>
+
+            <div class="accordion" id="infoAccordion">
+
+                <div class="info-accordion-card">
+                    <div class="card-header" id="headingImages">
+                        <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse" data-target="#collapseSecurity" aria-expanded="true" aria-controls="collapseSecurity">
+                            Ảnh/Video
+                            <i class="fas fa-chevron-down float-right"></i>
+                        </button>
+                    </div>
+                    <div id="collapseImages" class="collapse show" aria-labelledby="headingImages" data-parent="#infoAccordion">
+                        <div class="card-body" id="info-sidebar-images-list">
+                            <p class="text-muted text-center small p-3">Chưa có ảnh/video nào.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-accordion-card">
+                    <div class="card-header" id="headingFiles">
+                        <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#collapseFiles" aria-expanded="false" aria-controls="collapseFiles">
+                            File
+                            <i class="fas fa-chevron-down float-right"></i>
+                        </button>
+                    </div>
+                    <div id="collapseFiles" class="collapse" aria-labelledby="headingFiles" data-parent="#infoAccordion">
+                        <div class="card-body" id="info-sidebar-files-list">
+                            <p class="text-muted text-center small p-3">Chưa có file nào.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-accordion-card">
+                    <div class="card-header" id="headingLinks">
+                        <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#collapseLinks" aria-expanded="false" aria-controls="collapseLinks">
+                            Link
+                            <i class="fas fa-chevron-down float-right"></i>
+                        </button>
+                    </div>
+                    <div id="collapseLinks" class="collapse" aria-labelledby="headingLinks" data-parent="#infoAccordion">
+                        <div class="card-body">
+                            <p class="text-muted text-center small p-3">Chưa có link nào.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-accordion-card">
+                    <div class="card-header" id="headingSecurity">
+                        <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#collapseSecurity" aria-expanded="false" aria-controls="collapseSecurity">
+                            Thiết lập bảo mật
+                            <i class="fas fa-chevron-down float-right"></i>
+                        </button>
+                    </div>
+                    <div id="collapseSecurity" class="collapse show" aria-labelledby="headingSecurity" data-parent="#infoAccordion">
+
+                        <div class="card-body list-group list-group-flush" style="padding: 0;">
+
+                            <div class="list-group-item d-flex justify-content-between align-items-center" style="border:none; background: #fff; padding: 14px 20px;">
+                                <span>
+                                    <i class="fas fa-eye-slash"></i> Ẩn trò chuyện
+                                </span>
+                                <label class="custom-toggle-switch">
+                                    <input type="checkbox" id="info-action-hide-chat">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+
+                            <a href="#" class="list-group-item list-group-item-action text-danger" id="info-action-report">
+                                <i class="fas fa-exclamation-triangle"></i> Báo xấu
+                            </a>
+
+                            <a href="#" class="list-group-item list-group-item-action text-danger" id="info-action-clear-history">
+                                <i class="fas fa-trash-alt"></i> Xóa lịch sử trò chuyện
+                            </a>
+
+                        </div>
+                    </div>
                 </div>
 
             </div>
         </div>
     </div>
 </div>
-@section scripts {
-    <script>
+    @section scripts {
+        <script>
     $(function () {
         window.chatHub = $.connection.chatHub;
         window.currentChat = { mode: 'ai', partnerUsername: null };
         const chatHub = window.chatHub;
         const currentUsername = @Html.Raw(Json.Encode(User.Identity.Name));
+        const antiForgeryToken = $('#logoutForm input[name="__RequestVerificationToken"]').val();
         let currentChat = window.currentChat;
         let aiChatHistory = [];
         if ('@User.Identity.IsAuthenticated' !== 'True') {
@@ -781,10 +1138,99 @@
                 });
             }
         });
+        // ========================================================
+        // JS CHO SIDEBAR THÔNG TIN HỘI THOẠI
+        // ========================================================
+
+        $('body').on('click', '#toggle-info-sidebar-btn', function() {
+            var $sidebar = $('#conversation-info-sidebar');
+            var $button = $(this);
+
+            // Toggle (đóng/mở)
+            $sidebar.toggle();
+            $button.toggleClass('active');
+
+            if ($sidebar.is(':visible') && window.currentChat.mode === 'private') {
+                loadConversationInfo(window.currentChat.partnerUsername);
+            }
+        });
+
+        $('body').on('click', '#close-info-sidebar-btn', function() {
+            $('#conversation-info-sidebar').hide();
+            $('#toggle-info-sidebar-btn').removeClass('active');
+        });
+
+        function loadConversationInfo(partnerUsername) {
+            // Cập nhật tên và avatar (lấy từ header có sẵn)
+            var avatarSrc = $('#chat-header-avatar').attr('src');
+            var displayName = $('#chat-header-displayname').text();
+            $('#info-sidebar-avatar').attr('src', avatarSrc);
+            $('#info-sidebar-displayname').text(displayName);
+
+            var $filesList = $('#info-sidebar-files-list');
+            var $imagesList = $('#info-sidebar-images-list');
+            $filesList.html('<p class="text-muted text-center small p-3">Đang tải file...</p>');
+            $imagesList.html('<p class="text-muted text-center small p-3">Đang tải ảnh...</p>');
+
+            $.getJSON('@Url.Action("GetConversationInfo", "Chat")', { partnerUsername: partnerUsername }, function(data) {
+                if (data.success) {
+
+                    // Xử lý Ảnh/Video
+                    if (data.images && data.images.length > 0) {
+                        $imagesList.empty(); // Xóa "Đang tải..."
+                        data.images.forEach(function(img) {
+                            var imgHtml = `
+                                <a href="${img.Url}" target="_blank" class="info-image-item">
+                                    <img src="${img.Url}" alt="Ảnh" />
+                                </a>`;
+                            $imagesList.append(imgHtml);
+                        });
+                    } else {
+                        $imagesList.html('<p class="text-muted text-center small p-3">Chưa có ảnh/video nào.</p>');
+                    }
+
+                    // Xử lý File
+                    if (data.files && data.files.length > 0) {
+                        $filesList.empty(); // Xóa "Đang tải..."
+                        data.files.forEach(function(file) {
+                            var fileHtml = `
+                                <a href="${file.Url}" target="_blank" class="info-file-item">
+                                    <i class="fas fa-file-word file-icon"></i>
+                                    <div class="file-info">
+                                        <div class="file-name" title="${file.FileName}">${file.FileName}</div>
+                                        <div class="file-meta">${file.Timestamp}</div>
+                                    </div>
+                                </a>`;
+                            $filesList.append(fileHtml);
+                        });
+                    } else {
+                        $filesList.html('<p class="text-muted text-center small p-3">Chưa có file nào.</p>');
+                    }
+                }
+            });
+        }
+
+        function getHiddenChats() {
+            var hidden = localStorage.getItem('hiddenChats');
+            return hidden ? JSON.parse(hidden) : [];
+        }
+
+        function setHiddenChats(chatsArray) {
+            localStorage.setItem('hiddenChats', JSON.stringify(chatsArray));
+        }
+
+        function hideConversationInList(username, shouldHide) {
+            var $friendItem = $('.conversation-list .friend-item[data-username="' + username + '"]');
+            if (shouldHide) {
+                $friendItem.hide();
+            } else {
+                $friendItem.show();
+            }
+        }
         $('body').on('submit', '#partner-unfriend-form', function (e) {
             const partnerName = $('#partner-modal-display-name').text();
             if (!confirm(`Bạn có chắc muốn xóa '${partnerName}' khỏi danh sách bạn bè? Thao tác này không thể hoàn tác.`)) {
-                e.preventDefault(); 
+                e.preventDefault();
             }
         });
 
@@ -872,6 +1318,7 @@
                 updateTimestampBar();
                 $('#ai-welcome-screen').show();
                 $('.message-area').hide();
+                $('#info-action-hide-chat').prop('checked', false).prop('disabled', true);
                 currentChat.partnerUsername = null;
             } else {  // Private mode
                 $('#private-chat-header').show();  // HIỆN HEADER PRIVATE
@@ -880,6 +1327,13 @@
                 $('#messageInput').attr('placeholder', 'Nhập tin nhắn...');
                 $('#user-chat-header').show();
                 $('#user-chat-buttons').show();
+                const hiddenChats = getHiddenChats();
+                if (hiddenChats.includes(currentChat.partnerUsername)) {
+                    $('#info-action-hide-chat').prop('checked', true);
+                } else {
+                    $('#info-action-hide-chat').prop('checked', false);
+                }
+                $('#info-action-hide-chat').prop('disabled', false);
 
                 // FORCE ẨN AI WELCOME & HIỆN MESSAGES
                 $('#ai-welcome-screen').hide();
@@ -953,6 +1407,7 @@
         function loadFriendsList() {
             const container = $('#conversation-list-ul');
             container.find('.friend-item').remove();
+            const hiddenChats = getHiddenChats();
             $.getJSON("@Url.Action("GetFriendsList", "Friend")", function (friends) {
                 friends.forEach(function (friend) {
                     if (friend.Username === currentUsername) {
@@ -966,6 +1421,9 @@
                        data-avatar-url="${friend.AvatarUrl || ''}">
                         <strong><i class="fas fa-user"></i> ${friend.DisplayName}</strong>
                     </a>`;
+                    if (hiddenChats.includes(friend.Username)) {
+                        hideConversationInList(friend.Username, true);
+                    }
                     container.append(friendHtml);
                 });
                 const urlParams = new URLSearchParams(window.location.search);
@@ -1131,6 +1589,65 @@
         $('#ai-info-btn').on('click', function() {
             alert('Info về Meta AI: Powered by Llama 4!');
         });
+        $('body').on('change', '#info-action-hide-chat', function() {
+            if (window.currentChat.mode !== 'private' || $(this).is(':disabled')) return;
+
+            var isChecked = $(this).is(':checked');
+            var partnerUsername = window.currentChat.partnerUsername;
+            var hiddenChats = getHiddenChats();
+
+            if (isChecked) {
+                if (!hiddenChats.includes(partnerUsername)) {
+                    hiddenChats.push(partnerUsername);
+                }
+                hideConversationInList(partnerUsername, true);
+            } else {
+                hiddenChats = hiddenChats.filter(u => u !== partnerUsername);
+                hideConversationInList(partnerUsername, false);
+            }
+            setHiddenChats(hiddenChats);
+        });
+
+        $('body').on('click', '#info-action-report', function(e) {
+            e.preventDefault();
+            const partnerName = $('#info-sidebar-displayname').text();
+            alert(`Chức năng Báo xấu '${partnerName}' (Đang phát triển)`);
+        });
+
+        $('body').on('click', '#info-action-clear-history', function(e) {
+            e.preventDefault();
+            if (window.currentChat.mode !== 'private') return;
+
+            const partnerUsername = window.currentChat.partnerUsername;
+            const partnerName = $('#info-sidebar-displayname').text();
+
+            if (confirm(`Bạn có chắc muốn xóa TOÀN BỘ lịch sử trò chuyện với '${partnerName}'? Thao tác này không thể hoàn tác.`)) {
+
+                $.ajax({
+                    url: '@Url.Action("ClearHistory", "Chat")',
+                    type: 'POST',
+                    data: {
+                        __RequestVerificationToken: antiForgeryToken,
+                        partnerUsername: partnerUsername
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#messagesList').empty();
+
+                            if ($('#conversation-info-sidebar').is(':visible')) {
+                                loadConversationInfo(partnerUsername);
+                            }
+                            alert('Đã xóa lịch sử trò chuyện.');
+                        } else {
+                            alert('Lỗi: ' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('Lỗi kết nối máy chủ. Không thể xóa.');
+                    }
+                });
+            }
+        });
         // Emoji (giữ nguyên)
         const emojiBtn = document.querySelector('#emoji-button');
         const messageInput = document.querySelector('#messageInput');
@@ -1163,5 +1680,5 @@
                 console.error("❌ SignalR connection failed:", err);
             });
     });
-    </script>
-}
+        </script>
+    }
