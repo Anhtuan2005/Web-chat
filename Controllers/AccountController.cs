@@ -1,4 +1,5 @@
-﻿using Online_chat.Models;
+﻿using Microsoft.Ajax.Utilities;
+using Online_chat.Models;
 using System;
 using System.Linq;
 using System.Web.Mvc;
@@ -44,10 +45,11 @@ namespace Online_chat.Controllers
          
             while (_context.Users.Any(u => u.UserCode == userCode));
 
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
             var newUser = new User
             {
                 Username = username,
-                PasswordHash = password,
+                PasswordHash = hashedPassword,
                 DisplayName = displayName,
                 Email = email,
                 PhoneNumber = phoneNumber,
@@ -74,7 +76,7 @@ namespace Online_chat.Controllers
         {
             var user = _context.Users.FirstOrDefault(u => u.Username == username && u.IsDeleted == false);
 
-            if (user != null && user.PasswordHash == password)
+            if (user != null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
                 FormsAuthentication.SetAuthCookie(username, false);
 

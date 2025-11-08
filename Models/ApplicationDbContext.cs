@@ -6,6 +6,7 @@ namespace Online_chat.Models
     {
         public ApplicationDbContext() : base("DefaultConnection")
         {
+            Database.SetInitializer<ApplicationDbContext>(null);
         }
         public DbSet<PrivateMessage> PrivateMessages { get; set; }
         public DbSet<User> Users { get; set; }

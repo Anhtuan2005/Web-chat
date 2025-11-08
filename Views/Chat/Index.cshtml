@@ -499,7 +499,6 @@
     <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 420px;">
         <div class="modal-content" style="border-radius: 20px; overflow: hidden; background: #fff; border: none; box-shadow: 0 8px 32px rgba(0,0,0,0.12);">
 
-            <!-- Cover Photo -->
             <div id="partner-modal-cover" style="height: 160px; background-size: cover; background-position: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative;">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"
                         style="position: absolute; top: 15px; right: 15px; color: #fff; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border-radius: 50%; width: 36px; height: 36px; border: none; font-size: 1.3rem; opacity: 1; text-shadow: none; display: flex; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer;">
@@ -513,37 +512,81 @@
             </div>
 
             <div class="modal-body" style="padding: 20px 30px 30px; text-align: center;">
-                <h3 id="partner-modal-display-name" style="font-weight: 700; color: #1a1a1a; margin-bottom: 5px; font-size: 1.5rem;"></h3>
+                <h3 id="partner-modal-display-name" style="font-weight: 700; color: #1a1a1a; margin-bottom: 5px; font-size: 1.5rem;">Đang tải...</h3>
                 <p id="partner-modal-username" style="color: #8e8e93; font-size: 0.95rem; margin-bottom: 24px;"></p>
 
-                <div style="height: 1px; background: linear-gradient(to right, transparent, #e0e0e0, transparent); margin-bottom: 24px;"></div>
-
-                <div style="text-align: left; background: #f8f9fa; padding: 20px; border-radius: 12px;">
+                <div style="text-align: left; background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
                     <h5 style="font-weight: 600; margin-bottom: 16px; color: #1a1a1a; font-size: 1rem;">
                         <i class="fas fa-user-circle" style="color: #667eea; margin-right: 8px;"></i>
                         Thông tin cá nhân
                     </h5>
 
                     <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
-                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
                             <i class="fas fa-venus-mars" style="color: white; font-size: 1.1rem;"></i>
                         </div>
                         <div style="flex: 1;">
                             <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Giới tính</div>
-                            <strong id="partner-modal-gender" style="color: #1a1a1a; font-size: 0.95rem;">Đang tải...</strong>
+                            <strong id="partner-modal-gender" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
                         </div>
                     </div>
 
-                    <div style="display: flex; align-items: center; padding: 10px; background: white; border-radius: 8px;">
-                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                    <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
                             <i class="fas fa-birthday-cake" style="color: white; font-size: 1.1rem;"></i>
                         </div>
                         <div style="flex: 1;">
                             <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Ngày sinh</div>
-                            <strong id="partner-modal-dob" style="color: #1a1a1a; font-size: 0.95rem;">Đang tải...</strong>
+                            <strong id="partner-modal-dob" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #28a745 0%, #218838 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                            <i class="fas fa-phone-alt" style="color: white; font-size: 1.1rem;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Điện thoại</div>
+                            <strong id="partner-modal-phone" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; padding: 10px; background: white; border-radius: 8px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                            <i class="fas fa-envelope" style="color: white; font-size: 1.1rem;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Email</div>
+                            <strong id="partner-modal-email" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
                         </div>
                     </div>
                 </div>
+
+                <div style="text-align: left; background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
+                    <h5 style="font-weight: 600; margin-bottom: 12px; color: #1a1a1a; font-size: 1rem;">
+                        <i class="fas fa-book-open" style="color: #fd7e14; margin-right: 8px;"></i>
+                        Tiểu sử
+                    </h5>
+                    <p id="partner-modal-bio" style="color: #333; font-size: 0.95rem; white-space: pre-wrap; word-wrap: break-word;"></p>
+                </div>
+
+                <div id="partner-action-list" class="list-group" style="text-align: left;">
+                    <a href="#" id="partner-action-block" class="list-group-item list-group-item-action" style="color: #6c757d; font-weight: 500; border: none; background: transparent; padding-left: 0;">
+                        <i class="fas fa-ban" style="margin-right: 10px; width: 20px;"></i> Chặn tin nhắn và cuộc gọi
+                    </a>
+                    <a href="#" id="partner-action-report" class="list-group-item list-group-item-action" style="color: #dc3545; font-weight: 500; border: none; background: transparent; padding-left: 0;">
+                        <i class="fas fa-exclamation-triangle" style="margin-right: 10px; width: 20px;"></i> Báo xấu
+                    </a>
+
+                    <form id="partner-unfriend-form" method="post" action="@Url.Action("DeclineOrRemoveFriend", "Friend")" style="margin:0; display: none;">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="friendshipId" id="partner-unfriend-id" />
+                        <button type="submit" id="partner-action-unfriend" class="list-group-item list-group-item-action" style="color: #dc3545; font-weight: 500; border: none; background: transparent; padding-left: 0; width: 100%; text-align: left;">
+                            <i class="fas fa-trash-alt" style="margin-right: 10px; width: 20px;"></i> Xóa khỏi danh sách bạn bè
+                        </button>
+                    </form>
+                </div>
+
             </div>
         </div>
     </div>
@@ -653,7 +696,7 @@
                 }
             });
         });
-        $('body').on('click', '#user-chat-header', function() {
+        $('body').on('click', '#user-chat-header', function () {
             // Chỉ thực thi nếu đang chat private và có username
             if (window.currentChat.mode === 'private' && window.currentChat.partnerUsername) {
 
@@ -661,18 +704,24 @@
 
                 // Hiển thị trạng thái "Đang tải..."
                 $('#partner-modal-display-name').text('Đang tải...');
-                $('#partner-modal-avatar').attr('src', '/Content/default-avatar.png');
-                $('#partner-modal-cover').css('background-image', 'url()'); // Xóa ảnh cover cũ
-                $('#partner-modal-cover').css('background-color', '#e0e0e0'); // Dùng màu nền fallback
                 $('#partner-modal-username').text('');
-                $('#partner-modal-gender').text('');
-                $('#partner-modal-dob').text('');
+                $('#partner-modal-avatar').attr('src', '/Content/default-avatar.png');
+                $('#partner-modal-cover').css('background-image', 'url()');
+                $('#partner-modal-cover').css('background-color', '#e0e0e0');
 
-                // Mở modal
+                // Set text "Đang tải..." cho các trường mới
+                $('#partner-modal-gender').text('Đang tải...');
+                $('#partner-modal-dob').text('Đang tải...');
+                $('#partner-modal-phone').text('Đang tải...');
+                $('#partner-modal-email').text('Đang tải...');
+                $('#partner-modal-bio').text('Đang tải...');
+
+                // Ẩn nút xóa bạn
+                $('#partner-unfriend-form').hide();
+
                 $('#partnerProfileModal').modal('show');
 
-                // Gọi AJAX đến Controller để lấy thông tin public của user
-                // (Chúng ta sẽ tạo /Profile/GetUserPublicProfile ở Bước 3)
+                // Gọi AJAX để lấy thông tin
                 $.getJSON(`/Profile/GetUserPublicProfile?username=${partnerUsername}`, function (response) {
                     if (response.success && response.user) {
                         const user = response.user;
@@ -681,30 +730,74 @@
                         $('#partner-modal-display-name').text(user.DisplayName || 'Không có tên');
                         $('#partner-modal-username').text(`@@${user.Username}`);
 
-                        // Cập nhật Avatar (có fallback)
                         const avatarUrl = user.AvatarUrl ? user.AvatarUrl : '/Content/default-avatar.png';
                         $('#partner-modal-avatar').attr('src', avatarUrl);
 
-                        // Cập nhật ảnh bìa (có fallback)
                         if (user.CoverUrl) {
                             $('#partner-modal-cover').css('background-image', `url(${user.CoverUrl})`);
+                        }
+
+                        $('#partner-modal-gender').text(user.Gender || 'Chưa cập nhật');
+                        $('#partner-modal-phone').text(user.PhoneNumber || 'Chưa cập nhật'); // Đã mask từ C#
+                        $('#partner-modal-email').text(user.Email || 'Chưa cập nhật'); // Đã mask từ C#
+                        $('#partner-modal-bio').text(user.Bio || 'Không có tiểu sử.');
+
+                        // Format ngày sinh (chỉ hiển thị nếu có)
+                        if (user.DateOfBirth) {
+                            try {
+                                const dob = new Date(user.DateOfBirth); // Parse chuỗi ISO
+                                const day = dob.getDate();
+                                const month = dob.getMonth() + 1; // JS month 0-11
+                                const year = dob.getFullYear();
+
+                                $('#partner-modal-dob').text(`${day} tháng ${month < 10 ? '0' + month : month}, ${year}`);
+                            } catch (e) {
+                                $('#partner-modal-dob').text('Chưa cập nhật');
+                            }
+                        } else {
+                            $('#partner-modal-dob').text('Chưa cập nhật');
+                        }
+
+                        if (user.FriendshipId) {
+                            $('#partner-unfriend-id').val(user.FriendshipId);
+                            $('#partner-unfriend-form').show();
+                        } else {
+                            $('#partner-unfriend-form').hide();
                         }
 
                     } else {
                         // Xử lý lỗi
                         $('#partner-modal-display-name').text(response.message || 'Không tìm thấy người dùng');
-                        setTimeout(function() {
+                        setTimeout(function () {
                             $('#partnerProfileModal').modal('hide');
                         }, 2000);
                     }
-                }).fail(function() {
+                }).fail(function () {
                     // Xử lý lỗi AJAX
                     $('#partner-modal-display-name').text('Lỗi kết nối máy chủ');
-                    setTimeout(function() {
+                    setTimeout(function () {
                         $('#partnerProfileModal').modal('hide');
                     }, 2000);
                 });
             }
+        });
+        $('body').on('submit', '#partner-unfriend-form', function (e) {
+            const partnerName = $('#partner-modal-display-name').text();
+            if (!confirm(`Bạn có chắc muốn xóa '${partnerName}' khỏi danh sách bạn bè? Thao tác này không thể hoàn tác.`)) {
+                e.preventDefault(); 
+            }
+        });
+
+        $('body').on('click', '#partner-action-block', function (e) {
+            e.preventDefault();
+            const partnerName = $('#partner-modal-display-name').text();
+            alert(`Chức năng Chặn '${partnerName}' (Đang phát triển)`);
+        });
+
+        $('body').on('click', '#partner-action-report', function (e) {
+            e.preventDefault();
+            const partnerName = $('#partner-modal-display-name').text();
+            alert(`Chức năng Báo xấu '${partnerName}' (Đang phát triển)`);
         });
         // Function update timestamp bar
         function updateTimestampBar() {

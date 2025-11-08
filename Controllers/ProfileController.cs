@@ -77,6 +77,10 @@ namespace Online_chat.Controllers
             userInDb.DisplayName = updatedProfile.DisplayName;
             userInDb.PhoneNumber = updatedProfile.PhoneNumber;
 
+            userInDb.Gender = updatedProfile.Gender;
+            userInDb.DateOfBirth = updatedProfile.DateOfBirth;
+            userInDb.Bio = updatedProfile.Bio;
+
             _context.Entry(userInDb).State = EntityState.Modified;
             _context.SaveChanges();
 
@@ -144,18 +148,39 @@ namespace Online_chat.Controllers
 
             try
             {
+                // Tôi dùng lại _context vì file ProfileController.cs trước bạn gửi đã có
+                // 'private readonly ApplicationDbContext _context = new ApplicationDbContext();'
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
 
                 if (user == null)
                 {
                     return Json(new { success = false, message = "Không tìm thấy người dùng" }, JsonRequestBehavior.AllowGet);
                 }
+
+                var currentUsername = User.Identity.Name;
+                var friendship = await _context.Friendships
+                    .Include(f => f.Sender)
+                    .Include(f => f.Receiver)
+                    .FirstOrDefaultAsync(f =>
+                        (f.Sender.Username == currentUsername && f.Receiver.Username == username && f.Status == FriendshipStatus.Accepted) ||
+                        (f.Sender.Username == username && f.Receiver.Username == currentUsername && f.Status == FriendshipStatus.Accepted)
+                    );
+            
                 var publicProfile = new
                 {
                     user.Username,
                     user.DisplayName,
                     user.AvatarUrl,
-                    CoverUrl = user.CoverPhotoUrl 
+                    CoverUrl = user.CoverPhotoUrl, 
+
+                    user.Gender,
+                    DateOfBirth = user.DateOfBirth?.ToString("o"),
+                    user.Bio, 
+
+                    PhoneNumber = string.IsNullOrEmpty(user.PhoneNumber) ? "" : "**********",
+                    Email = string.IsNullOrEmpty(user.Email) ? "" : "**********",
+
+                    FriendshipId = friendship?.Id 
                 };
 
                 return Json(new { success = true, user = publicProfile }, JsonRequestBehavior.AllowGet);

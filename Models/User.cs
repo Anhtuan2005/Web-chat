@@ -21,6 +21,12 @@ namespace Online_chat.Models
         [DefaultValue(false)]
         public bool IsDeleted { get; set; }
         public DateTime CreatedAt { get; set; }
+
+        public string Gender { get; set; } 
+
+        public DateTime? DateOfBirth { get; set; }
+
+        public string Bio { get; set; }
         public virtual ICollection<Message> SentMessages { get; set; }
         public virtual ICollection<Friendship> InitiatedFriendships { get; set; }
         public virtual ICollection<Friendship> ReceivedFriendships { get; set; }

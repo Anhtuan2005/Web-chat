@@ -198,22 +198,87 @@
 
 </style>
 
-<div class="modal fade" id="profilePreviewModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div id="modal-preview-cover"></div>
-                <img id="modal-preview-avatar" src="/Content/default-avatar.png" />
-                <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close" style="z-index: 10; background-color: rgba(255,255,255,0.7); border-radius:50%;"></button>
+<div class="modal fade" id="profilePreviewModal" tabindex="-1" role="dialog" aria-labelledby="profilePreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 420px;">
+        <div class="modal-content" style="border-radius: 20px; overflow: hidden; background: #fff; border: none; box-shadow: 0 8px 32px rgba(0,0,0,0.12);">
+
+            <div id="modal-preview-cover" style="height: 160px; background-size: cover; background-position: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative;">
+                <button type"button" class="close" data-bs-dismiss="modal" aria-label="Close"
+                        style="position: absolute; top: 15px; right: 15px; color: #fff; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border-radius: 50%; width: 36px; height: 36px; border: none; font-size: 1.3rem; opacity: 1; text-shadow: none; display: flex; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer;">
+                    <span aria-hidden="true" style="line-height: 1;">&times;</span>
+                </button>
             </div>
-            <div class="modal-body">
-                <h3 id="modal-preview-display-name"></h3>
-                <p id="modal-preview-username"></p>
-                <p id="modal-preview-usercode"></p>
+
+            <div style="text-align: center; margin-top: -50px; position: relative; z-index: 10;">
+                <img id="modal-preview-avatar" src="/Content/default-avatar.png"
+                     style="width: 100px; height: 100px; border-radius: 50%; border: 5px solid #fff; background-color: #fff; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
             </div>
-            <div class="modal-footer justify-content-center">
-                <div id="modal-action-area"></div>
-                <button type="button" class="btn btn-secondary ms-2" data-bs-dismiss="modal" style="border-radius: 10px;">Đóng</button>
+
+            <div class="modal-body" style="padding: 20px 30px 30px; text-align: center;">
+                <h3 id="modal-preview-display-name" style="font-weight: 700; color: #1a1a1a; margin-bottom: 5px; font-size: 1.5rem;">Đang tải...</h3>
+                <p id="modal-preview-username" style="color: #8e8e93; font-size: 0.95rem; margin-bottom: 24px;"></p>
+
+                <div style="text-align: left; background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
+                    <h5 style="font-weight: 600; margin-bottom: 16px; color: #1a1a1a; font-size: 1rem;">
+                        <i class="fas fa-user-circle" style="color: #667eea; margin-right: 8px;"></i>
+                        Thông tin cá nhân
+                    </h5>
+
+                    <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                            <i class="fas fa-venus-mars" style="color: white; font-size: 1.1rem;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Giới tính</div>
+                            <strong id="modal-preview-gender" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                            <i class="fas fa-birthday-cake" style="color: white; font-size: 1.1rem;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Ngày sinh</div>
+                            <strong id="modal-preview-dob" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #28a745 0%, #218838 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                            <i class="fas fa-phone-alt" style="color: white; font-size: 1.1rem;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Điện thoại</div>
+                            <strong id="modal-preview-phone" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; padding: 10px; background: white; border-radius: 8px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                            <i class="fas fa-envelope" style="color: white; font-size: 1.1rem;"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Email</div>
+                            <strong id="modal-preview-email" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: left; background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
+                    <h5 style="font-weight: 600; margin-bottom: 12px; color: #1a1a1a; font-size: 1rem;">
+                        <i class="fas fa-book-open" style="color: #fd7e14; margin-right: 8px;"></i>
+                        Tiểu sử
+                    </h5>
+                    <p id="modal-preview-bio" style="color: #333; font-size: 0.95rem; white-space: pre-wrap; word-wrap: break-word;"></p>
+                </div>
+
+                <div class="list-group" style="text-align: left;">
+                    <a href="#" id="modal-preview-block" class="list-group-item list-group-item-action" style="color: #dc3545; font-weight: 500; border: none; background: transparent; padding-left: 0;">
+                        <i class="fas fa-ban" style="margin-right: 10px; width: 20px;"></i> Chặn tin nhắn và cuộc gọi
+                    </a>
+                </div>
+
             </div>
         </div>
     </div>
@@ -244,6 +309,11 @@
                     data-cover-url="@Url.Content(user.CoverPhotoUrl ?? "/Content/default-cover.jpg")"
                     data-user-code="@user.UserCode"
                     data-friendship-status="@(user.FriendshipStatus?.ToString() ?? "")"
+                    data-gender="@user.Gender"
+                    data-dob="@(user.DateOfBirth?.ToString("o"))"
+                    data-bio="@user.Bio"
+                    data-phone="@user.PhoneNumber"
+                    data-email="@user.Email"
                     style="cursor: pointer;">
 
                     <div class="user-info-clickable d-flex align-items-center flex-grow-1 me-3"
@@ -286,7 +356,7 @@
 @section scripts {
     <script>
     $(function () {
-        const token = $('input[name="__RequestVerificationToken"]').val(); 
+        const token = $('input[name="__RequestVerificationToken"]').val();
 
         $('#search-results').on('click', '.list-group-item', function (event) {
             event.stopPropagation();
@@ -297,27 +367,55 @@
             const username = item.data('username');
             const avatarUrl = item.data('avatar-url');
             const coverUrl = item.data('cover-url');
-            const userCode = item.data('user-code');
             const status = item.data('friendship-status');
 
-            console.log("Item Clicked! Data:", { userId, displayName, username, avatarUrl, coverUrl, userCode, status });
+            const gender = item.data('gender');
+            const dob = item.data('dob');
+            const bio = item.data('bio');
+            const phone = item.data('phone');
+            const email = item.data('email');
 
             $('#modal-preview-cover').css('background-image', `url(${coverUrl})`);
             $('#modal-preview-avatar').attr('src', avatarUrl);
             $('#modal-preview-display-name').text(displayName);
             $('#modal-preview-username').text(`@@${username}`);
-            $('#modal-preview-usercode').text(`ID: ${userCode}`);
+
+            $('#modal-preview-gender').text(gender || 'Chưa cập nhật');
+            $('#modal-preview-phone').text(phone || 'Chưa cập nhật');
+            $('#modal-preview-bio').text(bio || 'Không có tiểu sử.');
+            $('#modal-preview-email').text(email || 'Chưa cập nhật');
+
+            if (dob) {
+                try {
+                    const date = new Date(dob);
+                    const day = date.getDate();
+                    const month = date.getMonth() + 1;
+                    const year = date.getFullYear();
+                    $('#modal-preview-dob').text(`${day} tháng ${month < 10 ? '0' + month : month}, ${year}`);
+                } catch(e) {
+                    $('#modal-preview-dob').text('Chưa cập nhật');
+                }
+            } else {
+                $('#modal-preview-dob').text('Chưa cập nhật');
+            }
 
             const actionArea = $('#modal-action-area');
             actionArea.empty();
 
-            if (!status) { 
-                 actionArea.html(`<button class="btn btn-sm btn-action-search btn-add modal-friend-action" data-action="send" data-receiver-id="${userId}"><i class="fas fa-user-plus me-1"></i> Gửi lời mời</button>`);
+            if (!status) {
+                actionArea.html(`<button class="btn btn-sm btn-action-search btn-add modal-friend-action" data-action="send" data-receiver-id="${userId}"><i class="fas fa-user-plus me-1"></i> Gửi lời mời</button>`);
             } else if (status === '@FriendshipStatus.Pending.ToString()') {
-                 actionArea.html(`<button class="btn btn-sm btn-action-search btn-cancel modal-friend-action" data-action="cancel" data-receiver-id="${userId}"><i class="fas fa-times me-1"></i> Hủy lời mời</button>`);
+                actionArea.html(`<button class="btn btn-sm btn-action-search btn-cancel modal-friend-action" data-action="cancel" data-receiver-id="${userId}"><i class="fas fa-times me-1"></i> Hủy lời mời</button>`);
             } else if (status === '@FriendshipStatus.Accepted.ToString()') {
-                 actionArea.html(`<span class="modal-message"><i class="fas fa-check-circle me-1"></i> Các bạn đã là bạn bè</span>`);
+                actionArea.html(`<span class="modal-message"><i class="fas fa-check-circle me-1"></i> Các bạn đã là bạn bè</span>`);
             }
+        });
+
+        $('body').on('click', '#modal-preview-block', function(e) {
+            e.preventDefault();
+            const partnerName = $('#modal-preview-display-name').text();
+            alert(`Chức năng Chặn '${partnerName}' (Đang phát triển)`);
+            $('#profilePreviewModal').modal('hide'); 
         });
 
         $('#profilePreviewModal').on('click', '.modal-friend-action', function () {
@@ -336,7 +434,7 @@
                  url = '@Url.Action("CancelRequest", "Friend")';
                  newStatus = '';
             } else {
-                return; 
+                return;
             }
 
             button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...');
@@ -350,7 +448,7 @@
                     receiverId: receiverId
                 },
                 success: function (response) {
-                    if (response.success) 
+                    if (response.success)
 
                         if (action === 'send') {
                              modalActionArea.html(`<button class="btn btn-sm btn-action-search btn-cancel modal-friend-action" data-action="cancel" data-receiver-id="${receiverId}"><i class="fas fa-times me-1"></i> Hủy lời mời</button>`);

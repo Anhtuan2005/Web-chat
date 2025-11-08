@@ -48,6 +48,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="BCrypt.Net-Next, Version=4.0.3.0, Culture=neutral, PublicKeyToken=1e11be04b6288443, processorArchitecture=MSIL">
+      <HintPath>..\packages\BCrypt.Net-Next.4.0.3\lib\net472\BCrypt.Net-Next.dll</HintPath>
+    </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.5.1\lib\net45\EntityFramework.dll</HintPath>
     </Reference>
@@ -260,6 +263,10 @@
     <Compile Include="Migrations\202511061206047_InitialCreate.cs" />
     <Compile Include="Migrations\202511061206047_InitialCreate.Designer.cs">
       <DependentUpon>202511061206047_InitialCreate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202511080754564_AddProfileFields.cs" />
+    <Compile Include="Migrations\202511080754564_AddProfileFields.Designer.cs">
+      <DependentUpon>202511080754564_AddProfileFields.cs</DependentUpon>
     </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\ApplicationDbContext.cs" />
@@ -496,6 +503,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\202511061206047_InitialCreate.resx">
       <DependentUpon>202511061206047_InitialCreate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511080754564_AddProfileFields.resx">
+      <DependentUpon>202511080754564_AddProfileFields.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>

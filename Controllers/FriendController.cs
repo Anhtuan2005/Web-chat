@@ -114,7 +114,14 @@ namespace Online_chat.Controllers
                         AvatarUrl = user.AvatarUrl,
                         CoverPhotoUrl = user.CoverPhotoUrl,
                         UserCode = user.UserCode,
-                        FriendshipStatus = null
+                        FriendshipStatus = null,
+
+                        Gender = user.Gender,
+                        DateOfBirth = user.DateOfBirth, 
+                        Bio = user.Bio,
+
+                        PhoneNumber = string.IsNullOrEmpty(user.PhoneNumber) ? "" : "**********",
+                        Email = string.IsNullOrEmpty(user.Email) ? "" : "**********"
                     };
 
                     var friendship = existingFriendships.FirstOrDefault(f =>

@@ -151,6 +151,28 @@
                 @Html.LabelFor(m => m.PhoneNumber, "Số điện thoại")
                 @Html.TextBoxFor(m => m.PhoneNumber, new { @class = "form-control" })
             </div>
+            <div class="form-group">
+                @Html.LabelFor(m => m.Gender, "Giới tính")
+                @Html.DropDownListFor(m => m.Gender, new SelectList(
+                    new[] {
+                        new { Value = "", Text = "Chưa cập nhật" },
+                        new { Value = "Nam", Text = "Nam" },
+                        new { Value = "Nữ", Text = "Nữ" },
+                        new { Value = "Khác", Text = "Khác" }
+                    },
+                    "Value", "Text", Model.Gender
+                ), new { @class = "form-control" })
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.DateOfBirth, "Ngày sinh")
+                @Html.TextBoxFor(m => m.DateOfBirth, "{0:yyyy-MM-dd}", new { @class = "form-control", type = "date" })
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.Bio, "Giới thiệu (Sở thích,...)")
+                @Html.TextAreaFor(m => m.Bio, new { @class = "form-control", rows = 4, placeholder = "Viết một vài điều thú vị về bạn..." })
+            </div>
 
             <hr class="my-4" />
 
