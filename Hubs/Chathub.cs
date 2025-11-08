@@ -25,11 +25,11 @@ namespace Online_chat.Hubs
 
             if (user == null || string.IsNullOrWhiteSpace(messageContent)) return;
 
-            Clients.Group(groupName).ReceiveMessage(
+            Clients.Group(groupName).receiveMessage(
                 user.Username,
                 user.AvatarUrl,
                 messageContent,
-                DateTime.Now.ToString("HH:mm")
+                DateTime.UtcNow
             );
 
             var group = _context.Groups.FirstOrDefault(g => g.GroupName == groupName);
@@ -47,6 +47,7 @@ namespace Online_chat.Hubs
             }
         }
 
+        // ✅ FIX: Gửi đúng thứ tự tham số
         public void SendPrivateMessage(string partnerUsername, string rawMessage)
         {
             var senderUsername = Context.User.Identity.Name;
@@ -54,30 +55,46 @@ namespace Online_chat.Hubs
             var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername && !u.IsDeleted);
             if (senderUser == null || partnerUser == null) return;
 
+            // Parse JSON message
             ChatMessageDTO msgObj;
-            try { msgObj = JsonConvert.DeserializeObject<ChatMessageDTO>(rawMessage); }
-            catch { msgObj = new ChatMessageDTO { Type = "text", Content = rawMessage }; }
+            try
+            {
+                msgObj = JsonConvert.DeserializeObject<ChatMessageDTO>(rawMessage);
+            }
+            catch
+            {
+                msgObj = new ChatMessageDTO { Type = "text", Content = rawMessage };
+            }
 
+            // Lưu vào database
             var msg = new PrivateMessage
             {
                 SenderId = senderUser.Id,
                 ReceiverId = partnerUser.Id,
-                Content = msgObj.Content,
+                Content = rawMessage,  // ✅ Lưu RAW JSON để parse lại khi load history
                 MessageType = msgObj.Type,
                 Timestamp = DateTime.UtcNow
             };
             _context.PrivateMessages.Add(msg);
             _context.SaveChanges();
 
+            // ✅ FIX: Gửi đúng 4 tham số theo thứ tự: username, avatar, message (JSON), timestamp
             var groupName = GetPrivateGroupName(senderUser.Id, partnerUser.Id);
-            Clients.Group(groupName).ReceiveMessage(senderUser.Username, senderUser.AvatarUrl, msgObj.Type, msgObj.Content, DateTime.Now.ToString("HH:mm"));
+            Clients.Group(groupName).receiveMessage(
+                senderUser.Username,
+                senderUser.AvatarUrl,
+                rawMessage,              // ✅ Gửi JSON nguyên bản
+                DateTime.UtcNow          // ✅ Gửi DateTime object (không ToString)
+            );
         }
 
+        // ✅ FIX: Đổi tên hàm từ ReceiveMessage -> receiveMessage
         public async Task SendMessageToAI(string messageContent)
         {
             var senderUsername = Context.User.Identity.Name;
-            if (string.IsNullOrWhiteSpace(messageContent)) return; 
+            if (string.IsNullOrWhiteSpace(messageContent)) return;
 
+            // Khởi tạo lịch sử hội thoại
             if (!_aiConversations.ContainsKey(senderUsername))
             {
                 _aiConversations[senderUsername] = new List<object>
@@ -90,7 +107,13 @@ namespace Online_chat.Hubs
             string apiKey = ConfigurationManager.AppSettings["OpenAIApiKey"];
             if (string.IsNullOrEmpty(apiKey))
             {
-                Clients.Caller.ReceiveMessage("AI Assistant", null, "text", "Xin lỗi, API AI chưa được cấu hình. Hãy liên hệ admin.", DateTime.Now.ToString("HH:mm"));
+                // ✅ FIX: Đổi từ ReceiveMessage -> receiveMessage
+                Clients.Caller.receiveMessage(
+                    "AI Assistant",
+                    null,
+                    JsonConvert.SerializeObject(new { type = "text", content = "Xin lỗi, API AI chưa được cấu hình." }),
+                    DateTime.UtcNow
+                );
                 return;
             }
 
@@ -115,23 +138,42 @@ namespace Online_chat.Hubs
                     {
                         var responseString = await response.Content.ReadAsStringAsync();
                         dynamic result = JsonConvert.DeserializeObject(responseString);
-                        string aiReply = result.choices[0].message.content.ToString();  // .ToString() để safe
+                        string aiReply = result.choices[0].message.content.ToString();
+
                         _aiConversations[senderUsername].Add(new { role = "assistant", content = aiReply });
 
-                        Clients.Caller.ReceiveMessage("AI Assistant", null, "text", aiReply, DateTime.Now.ToString("HH:mm"));
-                        Console.WriteLine($"AI reply to {senderUsername}: {aiReply.Substring(0, Math.Min(50, aiReply.Length))}...");  // Log debug
+                        // ✅ FIX: Gửi đúng format JSON
+                        Clients.Caller.receiveMessage(
+                            "AI Assistant",
+                            null,
+                            JsonConvert.SerializeObject(new { type = "text", content = aiReply }),
+                            DateTime.UtcNow
+                        );
+
+                        Console.WriteLine($"✅ AI replied to {senderUsername}: {aiReply.Substring(0, Math.Min(50, aiReply.Length))}...");
                     }
                     else
                     {
-                        var errorMsg = $"Lỗi API: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}";
-                        Console.WriteLine(errorMsg);  // Log error
-                        Clients.Caller.ReceiveMessage("AI Assistant", null, "text", "Xin lỗi, tôi đang gặp sự cố. Vui lòng thử lại sau.", DateTime.Now.ToString("HH:mm"));
+                        var errorMsg = await response.Content.ReadAsStringAsync();
+                        Console.WriteLine($"❌ AI API Error: {response.StatusCode} - {errorMsg}");
+
+                        Clients.Caller.receiveMessage(
+                            "AI Assistant",
+                            null,
+                            JsonConvert.SerializeObject(new { type = "text", content = "Xin lỗi, tôi đang gặp sự cố. Vui lòng thử lại sau." }),
+                            DateTime.UtcNow
+                        );
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Exception in AI: {ex.Message}");  // Log full error
-                    Clients.Caller.ReceiveMessage("AI Assistant", null, "text", $"Lỗi: {ex.Message}", DateTime.Now.ToString("HH:mm"));
+                    Console.WriteLine($"❌ AI Exception: {ex.Message}");
+                    Clients.Caller.receiveMessage(
+                        "AI Assistant",
+                        null,
+                        JsonConvert.SerializeObject(new { type = "text", content = $"Lỗi: {ex.Message}" }),
+                        DateTime.UtcNow
+                    );
                 }
             }
         }
@@ -152,6 +194,7 @@ namespace Online_chat.Hubs
 
             Clients.User(receiverUsername).receiveFriendRequest();
         }
+
         public void JoinPrivateGroup(string partnerUsername)
         {
             var currentUsername = Context.User.Identity.Name;
@@ -164,10 +207,12 @@ namespace Online_chat.Hubs
                 Groups.Add(Context.ConnectionId, groupName);
             }
         }
+
         private string GetPrivateGroupName(int userId1, int userId2)
         {
             return userId1 < userId2 ? $"private_{userId1}_{userId2}" : $"private_{userId2}_{userId1}";
         }
+
         public async Task JoinGroup(string groupName)
         {
             await Groups.Add(Context.ConnectionId, groupName);
@@ -186,11 +231,11 @@ namespace Online_chat.Hubs
             }
             base.Dispose(disposing);
         }
+
         public class ChatMessageDTO
         {
-            public string Type { get; set; }  // "text", "image", "video", "file"
+            public string Type { get; set; }
             public string Content { get; set; }
         }
-
     }
 }
