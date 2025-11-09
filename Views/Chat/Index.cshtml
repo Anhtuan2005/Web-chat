@@ -348,7 +348,32 @@
         margin: 5px 0;
         display: block;
     }
+    .chat-bubble .call-back-btn {
+        background-color: #f0f2f5;
+        border: none;
+        font-weight: 600;
+        color: #333;
+        padding: 6px 12px;
+    }
 
+        .chat-bubble .call-back-btn:hover {
+            background-color: #e4e6eb;
+        }
+
+    /* Nút gọi lại trong bubble của chính mình (self) */
+    .chat-message.self .chat-bubble .call-back-btn {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+    }
+
+        .chat-message.self .chat-bubble .call-back-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+    /* Tinh chỉnh bubble call-log một chút */
+    .chat-message.other .chat-bubble:has(.call-back-btn) {
+        background: #f0f0f0 !important;
+    }
     /* ========================================================
        PHẦN AI WELCOME & HEADER (Giữ nguyên)
     =========================================================== */
@@ -820,6 +845,29 @@
             background-color: #fffb8f;
             font-weight: 600;
         }
+    #call-controls .btn-light {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: none;
+        backdrop-filter: blur(10px);
+        transition: background-color 0.2s;
+    }
+
+        #call-controls .btn-light:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+
+    #call-controls .btn-danger {
+        transition: transform 0.2s;
+    }
+
+        #call-controls .btn-danger:hover {
+            transform: scale(1.1);
+        }
+
+    #remoteVideo[srcObject] ~ #call-info-overlay {
+        display: none;
+    }
 </style>
 <div class="chat-view-wrapper">
     <div class="chat-main">
@@ -839,7 +887,10 @@
                         <button class="btn btn-light" title="Thêm vào nhóm (làm sau)">
                             <i class="fas fa-user-plus"></i>
                         </button>
-                        <button class="btn btn-light" title="Gọi video (làm sau)">
+                        <button id="start-voice-call-btn" class="btn btn-light" title="Gọi thoại">
+                            <i class="fas fa-phone-alt"></i>
+                        </button>
+                        <button id="start-video-call-btn" class="btn btn-light" title="Gọi video">
                             <i class="fas fa-video"></i>
                         </button>
                         <button id="toggle-search-sidebar-btn" class="btn btn-light" title="Tìm kiếm">
@@ -1135,6 +1186,49 @@
             <div id="search-results-list" style="display: none;">
             </div>
 
+        </div>
+    </div>
+    <div class="modal fade" id="incomingCallModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+            <div class="modal-content" style="border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.2);">
+                <div class="modal-body text-center p-4">
+                    <h5 class="mb-2">Cuộc gọi đến</h5>
+                    <img id="incoming-call-avatar" src="/Content/default-avatar.png"
+                         style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-bottom: 10px;" />
+                    <h4 id="incoming-call-name" style="font-weight: 600;">...</h4>
+                    <p id="incoming-call-type" class="text-muted small">Đang gọi video...</p>
+                    <div class="d-flex justify-content-around mt-4">
+                        <button id="decline-call-btn" type="button" class="btn btn-danger btn-lg"
+                                style="border-radius: 50%; width: 60px; height: 60px; font-size: 1.5rem;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <button id="accept-call-btn" type="button" class="btn btn-success btn-lg"
+                                style="border-radius: 50%; width: 60px; height: 60px; font-size: 1.5rem;">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="call-view" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #222; z-index: 2000; color: white;">
+
+        <video id="remoteVideo" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+
+        <video id="localVideo" autoplay playsinline muted style="position: absolute; top: 20px; right: 20px; width: 25%; max-width: 300px; border-radius: 10px; border: 2px solid white;"></video>
+
+        <div id="call-info-overlay" class="text-center" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+            <img id="call-view-avatar" src="/Content/default-avatar.png" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 20px;" />
+            <h2 id="call-view-name">Đang gọi...</h2>
+            <p id="call-view-status" class="text-muted">Đang kết nối...</p>
+            <p class_small" style="opacity: 0.7;"><i class="fas fa-lock"></i> Được mã hóa đầu cuối</p>
+        </div>
+
+        <div id="call-controls" style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px;">
+            <button id="toggle-video-btn" class="btn btn-light btn-lg" style="border-radius: 50%; width: 60px; height: 60px; font-size: 1.5rem;"><i class="fas fa-video"></i></button>
+            <button id="toggle-mic-btn" class="btn btn-light btn-lg" style="border-radius: 50%; width: 60px; height: 60px; font-size: 1.5rem;"><i class="fas fa-microphone"></i></button>
+            <button id="hang-up-btn" class="btn btn-danger btn-lg" style="border-radius: 50%; width: 60px; height: 60px; font-size: 1.5rem;"><i class="fas fa-phone-slash"></i></button>
         </div>
     </div>
 </div>
@@ -1577,10 +1671,13 @@
                                     // VIẾT ĐẦY ĐỦ HTML (Không còn '...')
                                     bubbleContentHtml = `<img src="${messageContent}" class="img-fluid rounded" style="max-width: 250px; cursor: pointer;" onclick="window.open(this.src, '_blank');" />`;
                                 } else if (contentObj.type === "video") {
-                                    // VIẾT ĐẦY ĐỦ HTML (Không còn '...')
                                     bubbleContentHtml = `<video controls src="${messageContent}" style="max-width: 300px; border-radius: 10px;"></video>`;
                                 } else if (contentObj.type === "file") {
                                     bubbleContentHtml = `<a href="${messageContent}" target="_blank" style="color:#007bff; text-decoration:none;">📄 Tải file</a>`;
+
+                                } else if (contentObj.type === "call_log") {
+                                    bubbleContentHtml = createCallLogHtml(contentObj);
+
                                 } else {
                                     const escapedContent = $('<div/>').text(messageContent).html();
                                     bubbleContentHtml = `<span>${escapedContent}</span>`;
@@ -1678,14 +1775,18 @@
                             bubbleHtml = `<video controls src="${msgObj.content}" style="max-width: 300px; border-radius: 10px;"></video>`;
                         } else if (msgObj.type === "file") {
                             bubbleHtml = `
-                    <a href="${msgObj.content}" target="_blank" style="display:flex; align-items:center; padding:8px 12px; background:#f0f0f0; border-radius:8px; text-decoration:none; color:#333;">
-                        <i class="fas fa-file-alt" style="font-size:1.5rem; margin-right:10px; color:#007bff;"></i>
-                        <div>
-                            <div style="font-weight:600; font-size:0.9rem;">${msgObj.fileName || 'File'}</div>
-                            <div style="font-size:0.75rem; color:#666;">${msgObj.fileSize || ''}</div>
-                        </div>
-                    </a>`;
-                        } else {
+                            <a href="${msgObj.content}" target="_blank" style="display:flex; align-items:center; padding:8px 12px; background:#f0f0f0; border-radius:8px; text-decoration:none; color:#333;">
+                                <i class="fas fa-file-alt" style="font-size:1.5rem; margin-right:10px; color:#007bff;"></i>
+                                <div>
+                                    <div style="font-weight:600; font-size:0.9rem;">${msgObj.fileName || 'File'}</div>
+                                    <div style="font-size:0.75rem; color:#666;">${msgObj.fileSize || ''}</div>
+                                </div>
+                            </a>`;
+                        }
+                        else if (msgObj.type === "call_log") {
+                            bubbleHtml = createCallLogHtml(msgObj);
+                        }
+                        else {
                             const escaped = $('<div/>').text(msgObj.content).html();
                             bubbleHtml = `<span>${escaped}</span>`;
                         }
@@ -1977,6 +2078,413 @@
                 });
             }
         });
+        // ========================================================
+        // BIẾN TOÀN CỤC CHO WEB-RTC
+        // ========================================================
+        let localStream;
+        let remoteStream;
+        let peerConnection;
+        let isCallInProgress = false;
+        let currentCallPartner = null;
+        let currentCallType = 'voice'; // 'voice' or 'video'
+        let isMicOn = true;
+        let isVideoOn = true;
+        let callStartTime = null;
+
+        // Cấu hình STUN Server (dùng của Google, miễn phí)
+        const configuration = {
+            'iceServers': [
+                { 'urls': 'stun:stun.l.google.com:19302' }
+            ]
+        };
+
+        // ========================================================
+        // HÀM HELPER CHO WEB-RTC
+        // ========================================================
+
+        // 1. Hàm khởi tạo PeerConnection
+        function createPeerConnection() {
+            if (peerConnection) {
+                peerConnection.close();
+            }
+            peerConnection = new RTCPeerConnection(configuration);
+
+            // Thêm local stream vào connection
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+            }
+
+            // A. Khi nhận được ICE candidate
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate && currentCallPartner) {
+                    console.log('Sending ICE candidate to ' + currentCallPartner);
+                    window.chatHub.server.sendIceCandidate(currentCallPartner, JSON.stringify(event.candidate));
+                }
+            };
+
+            // B. Khi nhận được track (stream) từ người kia
+            peerConnection.ontrack = (event) => {
+                console.log('Received remote track');
+                if (!remoteStream) {
+                    remoteStream = new MediaStream();
+                }
+
+                event.streams[0].getTracks().forEach(track => {
+                    remoteStream.addTrack(track);
+                });
+
+                $('#remoteVideo').get(0).srcObject = remoteStream;
+                $('#call-info-overlay').hide(); // Ẩn avatar/tên
+            };
+        }
+
+        // 2. Hàm lấy Camera/Mic
+        async function startMedia(callType) {
+            try {
+                currentCallType = callType;
+                const constraints = {
+                    audio: true,
+                    video: callType === 'video'
+                };
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                $('#localVideo').get(0).srcObject = localStream;
+                isVideoOn = callType === 'video';
+                isMicOn = true;
+            } catch (e) {
+                console.error('Error getting user media!', e);
+                alert('Không thể truy cập camera hoặc mic. Vui lòng cấp quyền.');
+                throw e; // Dừng tiến trình gọi
+            }
+        }
+
+        // 3. Hàm hiển thị giao diện gọi
+        function showCallView(partnerUsername, callType) {
+            isCallInProgress = true;
+            currentCallPartner = partnerUsername;
+            currentCallType = callType;
+
+            // Cập nhật thông tin trên modal gọi
+            const avatar = $(`.friend-item[data-username="${partnerUsername}"]`).data('avatar-url') || '/Content/default-avatar.png';
+            const displayName = $(`.friend-item[data-username="${partnerUsername}"]`).find('strong').text().trim();
+
+            $('#call-view-avatar').attr('src', avatar);
+            $('#call-view-name').text(displayName);
+            $('#call-view-status').text(callType === 'video' ? 'Cuộc gọi video' : 'Cuộc gọi thoại');
+
+            $('#call-info-overlay').show();
+            $('#remoteVideo').get(0).srcObject = null; // Reset video
+            $('#localVideo').get(0).srcObject = localStream;
+
+            // Ẩn/hiện nút video
+            $('#toggle-video-btn').toggle(callType === 'video');
+            $('body').on('click', '.call-back-btn', function () {
+                if (window.currentChat.mode !== 'private' || !window.currentChat.partnerUsername) {
+                    alert('Không thể gọi lại từ cửa sổ này.');
+                    return;
+                }
+                const callType = $(this).data('call-type'); // 'voice' or 'video'
+                startCall(callType);
+            });
+
+            // Reset icon nút
+            $('#toggle-mic-btn').html('<i class="fas fa-microphone"></i>');
+            $('#toggle-video-btn').html('<i class="fas fa-video"></i>');
+
+            $('#call-view').show();
+        }
+
+        // 4. Hàm kết thúc cuộc gọi (dọn dẹp)
+        function hangUp(isInitiator = false) {
+  
+            if (isInitiator && window.currentChat.mode === 'private' && currentCallPartner) {
+                let status = 'missed'; // Mặc định là lỡ
+                let durationSeconds = 0;
+
+                if (callStartTime) { // Nếu cuộc gọi đã thực sự bắt đầu
+                    const durationMs = new Date() - callStartTime;
+                    durationSeconds = Math.round(durationMs / 1000);
+                    status = 'completed'; // Đã hoàn thành
+                }
+                const logMessage = {
+                    type: "call_log",
+                    status: status,
+                    duration: durationSeconds,
+                    callType: currentCallType // 'voice' or 'video'
+                };
+                window.chatHub.server.sendPrivateMessage(currentCallPartner, JSON.stringify(logMessage));
+            }
+
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            if (remoteStream) {
+                remoteStream.getTracks().forEach(track => track.stop());
+                remoteStream = null;
+            }
+
+            $('#call-view').hide();
+            $('#incomingCallModal').modal('hide');
+
+            callStartTime = null;
+
+            if (isCallInProgress && currentCallPartner && isInitiator) {
+                window.chatHub.server.endCall(currentCallPartner);
+            }
+
+            isCallInProgress = false;
+            currentCallPartner = null;
+            console.log('Call ended.');
+        }
+
+
+        // ========================================================
+        // LOGIC: BẮT ĐẦU CUỘC GỌI (CALLER)
+        // ========================================================
+        async function startCall(callType) {
+            const partnerUsername = window.currentChat.partnerUsername;
+            if (!partnerUsername) return alert('Lỗi: Không tìm thấy người nhận.');
+            if (isCallInProgress) return alert('Đang trong một cuộc gọi khác.');
+
+            console.log(`Starting ${callType} call with ${partnerUsername}`);
+            currentCallPartner = partnerUsername;
+
+            try {
+                // 1. Lấy media
+                await startMedia(callType);
+
+                // 2. Hiển thị UI
+                showCallView(partnerUsername, callType);
+                $('#call-view-status').text('Đang gọi...');
+
+                // 3. Tạo Peer Connection
+                createPeerConnection();
+
+                // 4. Tạo Offer
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                // 5. Gửi Offer qua SignalR
+                console.log('Sending call offer...');
+                window.chatHub.server.sendCallOffer(partnerUsername, JSON.stringify(offer), callType);
+
+            } catch (e) {
+                console.error('Failed to start call', e);
+                hangUp(); // Dọn dẹp nếu có lỗi
+            }
+        }
+
+        // Gắn sự kiện vào nút bấm
+        $('body').on('click', '#start-voice-call-btn', function () {
+            startCall('voice');
+        });
+        $('body').on('click', '#start-video-call-btn', function () {
+            startCall('video');
+        });
+
+
+        // ========================================================
+        // LOGIC: NHẬN CUỘC GỌI (CALLEE) - TỪ SIGNALR
+        // ========================================================
+        $(function () {
+            // ... (code chatHub.client của bạn) ...
+            // Thêm các client receivers NÀY vào
+
+            let pendingOffer = null;
+            let pendingCaller = null;
+
+            // 1. Nhận được Offer
+            window.chatHub.client.receiveCallOffer = function (callerUsername, offerSdp, callType) {
+                if (isCallInProgress) {
+                    // Đang bận, tự động từ chối (hoặc báo bận)
+                    // Tạm thời bỏ qua
+                    console.log('Busy, ignoring incoming call from ' + callerUsername);
+                    return;
+                }
+
+                console.log(`Incoming ${callType} call from ${callerUsername}`);
+                pendingOffer = JSON.parse(offerSdp);
+                pendingCaller = callerUsername;
+
+                // Hiển thị modal
+                const avatar = $(`.friend-item[data-username="${callerUsername}"]`).data('avatar-url') || '/Content/default-avatar.png';
+                const displayName = $(`.friend-item[data-username="${callerUsername}"]`).find('strong').text().trim();
+
+                $('#incoming-call-avatar').attr('src', avatar);
+                $('#incoming-call-name').text(displayName);
+                $('#incoming-call-type').text(callType === 'video' ? 'Đang gọi video...' : 'Đang gọi thoại...');
+
+                $('#incomingCallModal').modal('show');
+            };
+
+            // 2. Nhận được Answer
+            window.chatHub.client.receiveCallAnswer = async function (calleeUsername, answerSdp) {
+                if (!peerConnection || !isCallInProgress) return;
+
+                console.log('Received call answer from ' + calleeUsername);
+                try {
+                    const answer = JSON.parse(answerSdp);
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+
+                    callStartTime = new Date(); // <-- THÊM DÒNG NÀY
+                    $('#call-view-status').text('Đã kết nối');
+
+                } catch (e) {
+                    console.error('Error setting remote description', e);
+                }
+            };
+
+            // 3. Nhận được ICE Candidate
+            window.chatHub.client.receiveIceCandidate = async function (senderUsername, candidate) {
+                if (!peerConnection) return;
+
+                try {
+                    const iceCandidate = JSON.parse(candidate);
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(iceCandidate));
+                } catch (e) {
+                    console.error('Error adding received ICE candidate', e);
+                }
+            };
+
+            window.chatHub.client.callEnded = function (senderUsername) {
+                console.log('Call ended by ' + senderUsername);
+                hangUp(false); 
+            };
+            // ========================================================
+            // HÀM RENDER TIN NHẮN CALL LOG
+            // ========================================================
+            function createCallLogHtml(contentObj) {
+                let icon = '';
+                let text = '';
+
+                // Icon và chữ dựa trên trạng thái
+                if (contentObj.status === 'completed') {
+                    icon = contentObj.callType === 'video' ? 'fa-video' : 'fa-phone-alt';
+                    let durationText = '0 giây';
+                    if (contentObj.duration > 0) {
+                        const minutes = Math.floor(contentObj.duration / 60);
+                        const seconds = contentObj.duration % 60;
+                        if (minutes > 0) {
+                            durationText = `${minutes} phút ${seconds} giây`;
+                        } else {
+                            durationText = `${seconds} giây`;
+                        }
+                    }
+                    text = `Cuộc gọi ${contentObj.callType === 'video' ? 'video' : 'thoại'} <br> <span style="font-size: 0.85rem; color: #6c757d;">${durationText}</span>`;
+
+                } else { // missed, declined, etc.
+                    icon = contentObj.callType === 'video' ? 'fa-video-slash' : 'fa-phone-slash';
+                    text = `Đã bỏ lỡ cuộc gọi ${contentObj.callType === 'video' ? 'video' : 'thoại'}`;
+                }
+
+                // Nút gọi lại
+                let callBackButton = `
+                <button class="btn btn-light btn-sm mt-2 w-100 call-back-btn" 
+                        data-call-type="${contentObj.callType}">
+                    Gọi lại
+                </button>`;
+
+                        // Kết hợp HTML
+                        return `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas ${icon}" style="font-size: 1.2rem; color: #555;"></i>
+                    <div style="font-weight: 500;">
+                        ${text}
+                    </div>
+                </div>
+                ${callBackButton}
+            `;
+            }
+            // ========================================================
+            // LOGIC: CÁC NÚT BẤM TRONG MODAL
+            // ========================================================
+
+            // A. Chấp nhận cuộc gọi
+            $('#accept-call-btn').on('click', async function () {
+                if (!pendingOffer || !pendingCaller) return;
+
+                console.log('Accepting call from ' + pendingCaller);
+                $('#incomingCallModal').modal('hide');
+                currentCallPartner = pendingCaller;
+
+                try {
+                    // 1. Lấy media
+                    const callType = $('#incoming-call-type').text().includes('video') ? 'video' : 'voice';
+                    await startMedia(callType);
+
+                    // 2. Hiển thị UI
+                    showCallView(pendingCaller, callType);
+                    $('#call-view-status').text('Đang kết nối...');
+
+                    callStartTime = new Date();
+
+                    // 3. Tạo Peer Connection
+                    createPeerConnection();
+
+                    // 4. Set Remote Offer (từ người gọi)
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(pendingOffer));
+
+                    // 5. Tạo Answer
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+
+                    // 6. Gửi Answer qua SignalR
+                    console.log('Sending call answer to ' + pendingCaller);
+                    window.chatHub.server.sendCallAnswer(pendingCaller, JSON.stringify(answer));
+
+                    pendingOffer = null;
+                    pendingCaller = null;
+
+                } catch (e) {
+                    console.error('Failed to accept call', e);
+                    hangUp();
+                }
+            });
+
+            // B. Từ chối cuộc gọi
+            $('#decline-call-btn').on('click', function () {
+                console.log('Declining call from ' + pendingCaller);
+                if (pendingCaller) {
+                    currentCallPartner = pendingCaller;
+                    currentCallType = $('#incoming-call-type').text().includes('video') ? 'video' : 'voice';
+                    hangUp(true);
+                }
+                $('#incomingCallModal').modal('hide');
+                pendingOffer = null;
+                pendingCaller = null;
+            });
+
+            // C. Dập máy
+            $('#hang-up-btn').on('click', function () {
+                hangUp(true);
+            });
+
+            // D. Tắt/Mở Mic
+            $('#toggle-mic-btn').on('click', function () {
+                if (!localStream) return;
+                isMicOn = !isMicOn;
+                localStream.getAudioTracks().forEach(track => {
+                    track.enabled = isMicOn;
+                });
+                $(this).html(isMicOn ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash text-danger"></i>');
+            });
+
+            $('#toggle-video-btn').on('click', function () {
+                if (!localStream || currentCallType !== 'video') return;
+                isVideoOn = !isVideoOn;
+                localStream.getVideoTracks().forEach(track => {
+                    track.enabled = isVideoOn;
+                });
+                $(this).html(isVideoOn ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash text-danger"></i>');
+            });
+
+        }); 
         // ========================================================
         // CHỨC NĂNG UPLOAD ẢNH, VIDEO, FILE
         // ========================================================

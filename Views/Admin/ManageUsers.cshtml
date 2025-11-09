@@ -1,50 +1,151 @@
 ﻿@model IEnumerable<Online_chat.Models.User>
-
 @{
-    ViewBag.Title = "Quản Lý Người Dùng";
+    ViewBag.Title = "Quản lý người dùng";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<h2>Quản Lý Người Dùng</h2>
-<hr />
-@* Hiển thị thông báo thành công hoặc lỗi *@
+<div class="page-header">
+    <h1 class="page-title">Quản lý người dùng</h1>
+    <p class="page-subtitle">Tìm kiếm, chỉnh sửa và quản lý tất cả người dùng</p>
+</div>
+
 @if (TempData["SuccessMessage"] != null)
 {
-    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 }
+
 @if (TempData["ErrorMessage"] != null)
 {
-    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 }
 
-<table class="table table-striped table-bordered">
-    <thead>
-        <tr>
-            <th>@Html.DisplayNameFor(model => model.Username)</th>
-            <th>@Html.DisplayNameFor(model => model.DisplayName)</th>
-            <th>@Html.DisplayNameFor(model => model.Email)</th>
-            <th>Admin</th>
-            <th style="width: 150px;">Thao Tác</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@Html.DisplayFor(modelItem => item.Username)</td>
-                <td>@Html.DisplayFor(modelItem => item.DisplayName)</td>
-                <td>@Html.DisplayFor(modelItem => item.Email)</td>
-                <td>@Html.DisplayFor(modelItem => item.IsAdmin)</td>
-                <td>
-                    @Html.ActionLink("Sửa", "EditUser", new { id = item.Id }, new { @class = "btn btn-warning btn-sm" })
+<div class="content-card">
+    <div class="content-card-header">
+        <h5 class="content-card-title">
+            <i class="fas fa-users me-2"></i>
+            Danh sách người dùng
+        </h5>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("BannedUsers")" class="btn btn-warning">
+                <i class="fas fa-ban me-2"></i>
+                User bị khóa
+            </a>
+        </div>
+    </div>
 
-                    @using (Html.BeginForm("DeleteUser", "Admin", new { id = item.Id }, FormMethod.Post, new { style = "display:inline; margin-left: 5px;" }))
+    <!-- TÌM KIẾM -->
+    <div class="content-card-body border-bottom">
+        <form method="get" action="@Url.Action("ManageUsers")" class="row g-3">
+            <div class="col-md-10">
+                <input type="text" name="search" class="form-control"
+                       placeholder="Tìm kiếm theo Username, Email hoặc Tên hiển thị..."
+                       value="@ViewBag.SearchQuery">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-2"></i>Tìm kiếm
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- BẢNG -->
+    <div class="content-card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">ID</th>
+                        <th>Username</th>
+                        <th>Tên hiển thị</th>
+                        <th>Email</th>
+                        <th style="width: 100px;" class="text-center">Quyền</th>
+                        <th style="width: 150px;" class="text-center">Ngày tạo</th>
+                        <th style="width: 180px;" class="text-center">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
                     {
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc chắn muốn xóa người dùng @item.Username?');">Xóa</button>
+                        <tr>
+                            <td><strong>#@user.Id</strong></td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="@(user.AvatarUrl ?? "/Content/default-avatar.png")"
+                                         class="rounded-circle me-2"
+                                         style="width: 32px; height: 32px; object-fit: cover;">
+                                    <strong>@user.Username</strong>
+                                </div>
+                            </td>
+                            <td>@user.DisplayName</td>
+                            <td>
+                                <small class="text-muted">
+                                    <i class="fas fa-envelope me-1"></i>
+                                    @user.Email
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                @if (user.IsAdmin)
+                                {
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-crown me-1"></i>Admin
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">User</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <small class="text-muted">@user.CreatedAt.ToString("dd/MM/yyyy")</small>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    <a href="@Url.Action("EditUser", new { id = user.Id })"
+                                       class="btn btn-sm btn-warning"
+                                       title="Chỉnh sửa">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+
+                                    @using (Html.BeginForm("BanUser", "Admin", new { id = user.Id }, FormMethod.Post, new { style = "display:inline;" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit"
+                                                class="btn btn-sm btn-danger"
+                                                title="Khóa tài khoản"
+                                                onclick="return confirm('Bạn có chắc muốn khóa @user.Username?');">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
                     }
-                </td>
-            </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PHÂN TRANG -->
+        @if (ViewBag.TotalPages > 1)
+        {
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("ManageUsers", new { page = i, search = ViewBag.SearchQuery })">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
         }
-    </tbody>
-</table>
+    </div>
+</div>

@@ -1,109 +1,696 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewBag.Title - Admin Panel</title>
-    @Styles.Render("~/Content/css")
-    @Scripts.Render("~/bundles/modernizr")
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    <title>@ViewBag.Title - Admin Dashboard</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --primary-light: #d1fae5;
+            --secondary: #6366f1;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --success: #22c55e;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --sidebar-width: 260px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            background-color: #f8f9fa;
+            font-family: 'Inter', sans-serif;
+            background: #f3f4f6;
+            color: #374151;
+            overflow-x: hidden;
         }
 
-        .admin-wrapper {
-            display: flex;
-            min-height: 100vh;
+        /* ===== SIDEBAR ===== */
+        .admin-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, #059669 0%, #047857 100%);
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            overflow-y: auto;
         }
 
-        .sidebar {
-            width: 250px;
-            background-color: #343a40; /* Dark background for sidebar */
+        .admin-sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .admin-sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .sidebar-logo {
+            font-size: 1.75rem;
+            font-weight: 700;
             color: white;
-            flex-shrink: 0;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
-            .sidebar .sidebar-header {
-                padding: 20px;
-                font-size: 1.5rem;
-                text-align: center;
-                border-bottom: 1px solid #495057;
-            }
+        .sidebar-logo i {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
 
-            .sidebar .nav-link {
-                color: #adb5bd;
-                padding: 10px 20px;
-                display: block;
-                text-decoration: none;
-                transition: background-color 0.2s, color 0.2s;
-            }
+        .sidebar-nav {
+            padding: 20px 0;
+        }
 
-                .sidebar .nav-link:hover,
-                .sidebar .nav-link.active {
-                    background-color: #495057;
-                    color: white;
-                }
+        .nav-item {
+            margin-bottom: 5px;
+        }
 
-                .sidebar .nav-link i {
-                    margin-right: 10px;
-                }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 14px 24px;
+            color: rgba(255, 255, 255, 0.85);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            position: relative;
+        }
 
-        .content-wrapper {
-            flex-grow: 1;
+        .nav-link i {
+            width: 24px;
+            margin-right: 12px;
+            font-size: 1.1rem;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            padding-left: 28px;
+        }
+
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-left: 4px solid #fbbf24;
+        }
+
+        .nav-section-title {
+            padding: 20px 24px 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ===== TOPBAR ===== */
+        .admin-topbar {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            height: 70px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            z-index: 999;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .menu-toggle {
+            display: none;
+            font-size: 1.5rem;
+            color: #374151;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .menu-toggle:hover {
+            color: var(--primary);
+        }
+
+        .topbar-search {
+            position: relative;
+        }
+
+        .topbar-search input {
+            width: 300px;
+            padding: 10px 40px 10px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        .topbar-search input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .topbar-search i {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .topbar-icon {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f3f4f6;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .topbar-icon:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .topbar-icon .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ef4444;
+            color: white;
+            font-size: 0.65rem;
+            padding: 3px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .topbar-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 12px;
+            transition: background 0.3s;
+        }
+
+        .topbar-user:hover {
+            background: #f3f4f6;
+        }
+
+        .topbar-user img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+        }
+
+        .topbar-user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar-user-name {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 0.95rem;
+        }
+
+        .topbar-user-role {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .admin-content {
+            margin-left: var(--sidebar-width);
+            margin-top: 70px;
             padding: 30px;
+            min-height: calc(100vh - 70px);
+        }
+
+        /* ===== STATS CARDS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s;
+            border: 1px solid #f3f4f6;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .stat-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .stat-card-title {
+            font-size: 0.9rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .stat-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-card-icon.green {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            color: #059669;
+        }
+
+        .stat-card-icon.blue {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            color: #2563eb;
+        }
+
+        .stat-card-icon.orange {
+            background: linear-gradient(135deg, #fed7aa, #fdba74);
+            color: #ea580c;
+        }
+
+        .stat-card-icon.purple {
+            background: linear-gradient(135deg, #e9d5ff, #d8b4fe);
+            color: #9333ea;
+        }
+
+        .stat-card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .stat-card-change {
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-card-change.positive {
+            color: #059669;
+        }
+
+        .stat-card-change.negative {
+            color: #ef4444;
+        }
+
+        /* ===== CONTENT CARD ===== */
+        .content-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .content-card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .content-card-body {
+            padding: 24px;
+        }
+
+        /* ===== TABLES ===== */
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table thead th {
+            background: #f9fafb;
+            color: #374151;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            border: none;
+            padding: 16px;
+        }
+
+        .table tbody td {
+            padding: 16px;
+            vertical-align: middle;
+            color: #6b7280;
+        }
+
+        .table tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+        }
+
+        .btn-info {
+            background: #3b82f6;
+            color: white;
+        }
+
+        /* ===== BADGES ===== */
+        .badge {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .badge-warning {
+            background: #fed7aa;
+            color: #ea580c;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        media (max-width: 768px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .admin-sidebar.active {
+                transform: translateX(0);
+            }
+
+            .admin-topbar {
+                left: 0;
+            }
+
+            .admin-content {
+                margin-left: 0;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .topbar-search input {
+                width: 200px;
+            }
+        }
+
+        /* ===== PAGE HEADER ===== */
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            color: #6b7280;
+            font-size: 1rem;
+        }
+
+        /* ===== ALERTS ===== */
+        .alert {
+            border-radius: 12px;
+            border: none;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .alert-danger {
+            background: #fee2e2;
+            color: #991b1b;
         }
     </style>
 </head>
 <body>
-    <div class="admin-wrapper">
-        <nav class="sidebar">
-            <div class="sidebar-header">
-                Admin Panel
-            </div>
-            <ul class="nav flex-column">
+    <!-- SIDEBAR -->
+    <aside class="admin-sidebar" id="adminSidebar">
+        <div class="sidebar-header">
+            <a href="@Url.Action("Index", "Admin")" class="sidebar-logo">
+                <i class="fas fa-crown"></i>
+                <span>Admin Panel</span>
+            </a>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Main Menu</div>
+            <ul class="list-unstyled">
                 <li class="nav-item">
-                    <a class="nav-link" href="@Url.Action("Index", "Admin")">
-                        <i class="fas fa-tachometer-alt"></i> Tổng quan
+                    <a href="@Url.Action("Index", "Admin")" class="nav-link @(ViewContext.RouteData.Values["Action"].ToString() == "Index" ? "active" : "")">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="@Url.Action("ManageUsers", "Admin")">
-                        <i class="fas fa-users"></i> Quản lý người dùng
+                    <a href="@Url.Action("ManageUsers", "Admin")" class="nav-link @(ViewContext.RouteData.Values["Action"].ToString() == "ManageUsers" ? "active" : "")">
+                        <i class="fas fa-users"></i>
+                        <span>Quản lý Users</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="@Url.Action("ManageGroups", "Admin")">
-                        <i class="fas fa-comments"></i> Quản lý nhóm chat
+                    <a href="@Url.Action("ManageGroups", "Admin")" class="nav-link @(ViewContext.RouteData.Values["Action"].ToString() == "ManageGroups" ? "active" : "")">
+                        <i class="fas fa-users-rectangle"></i>
+                        <span>Quản lý Nhóm</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="@Url.Action("ManageMessages", "Admin")">
-                        <i class="fas fa-envelope"></i> Quản lý tin nhắn
+                    <a href="@Url.Action("ManageMessages", "Admin")" class="nav-link @(ViewContext.RouteData.Values["Action"].ToString() == "ManageMessages" ? "active" : "")">
+                        <i class="fas fa-comments"></i>
+                        <span>Tin nhắn</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="nav-section-title">Analytics</div>
+            <ul class="list-unstyled">
+                <li class="nav-item">
+                    <a href="@Url.Action("Reports", "Admin")" class="nav-link @(ViewContext.RouteData.Values["Action"].ToString() == "Reports" ? "active" : "")">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Báo cáo</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="@Url.Action("SystemSettings", "Admin")">
-                        <i class="fas fa-cogs"></i> Cài đặt hệ thống
+                    <a href="@Url.Action("UserActivity", "Admin")" class="nav-link">
+                        <i class="fas fa-clock"></i>
+                        <span>Hoạt động Users</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="nav-section-title">Settings</div>
+            <ul class="list-unstyled">
+                <li class="nav-item">
+                    <a href="@Url.Action("SystemSettings", "Admin")" class="nav-link @(ViewContext.RouteData.Values["Action"].ToString() == "SystemSettings" ? "active" : "")">
+                        <i class="fas fa-cog"></i>
+                        <span>Cài đặt hệ thống</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="@Url.Action("Reports", "Admin")">
-                        <i class="fas fa-chart-bar"></i> Báo cáo
+                    <a href="@Url.Action("Index", "Home")" class="nav-link">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Về trang chủ</span>
                     </a>
                 </li>
             </ul>
         </nav>
+    </aside>
 
-        <main class="content-wrapper">
-            @RenderBody()
-        </main>
-    </div>
+    <!-- TOPBAR -->
+    <header class="admin-topbar">
+        <div class="topbar-left">
+            <i class="fas fa-bars menu-toggle" id="menuToggle"></i>
+            <div class="topbar-search">
+                <input type="text" placeholder="Tìm kiếm...">
+                <i class="fas fa-search"></i>
+            </div>
+        </div>
 
-    @Scripts.Render("~/bundles/jquery")
-    @Scripts.Render("~/bundles/bootstrap")
+        <div class="topbar-right">
+            <div class="topbar-icon">
+                <i class="fas fa-bell"></i>
+                <span class="badge">3</span>
+            </div>
+            <div class="topbar-icon">
+                <i class="fas fa-envelope"></i>
+                <span class="badge">5</span>
+            </div>
+            <div class="topbar-user">
+                <img src="@(ViewBag.CurrentUserAvatarUrl ?? "/Content/default-avatar.png")" alt="Admin">
+                <div class="topbar-user-info">
+                    <div class="topbar-user-name">@User.Identity.Name</div>
+                    <div class="topbar-user-role">Administrator</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-content">
+        @RenderBody()
+    </main>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
+    <!-- Bootstrap 5 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        // Toggle sidebar on mobile
+        $('#menuToggle').on('click', function () {
+            $('#adminSidebar').toggleClass('active');
+        });
+
+        // Initialize DataTables
+        $(document).ready(function () {
+            if ($('table.dataTable').length) {
+                $('table.dataTable').DataTable({
+                    language: {
+                        url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
+                    },
+                    pageLength: 25,
+                    order: [[0, 'desc']]
+                });
+            }
+        });
+    </script>
+
     @RenderSection("scripts", required: false)
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>

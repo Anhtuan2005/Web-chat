@@ -3,52 +3,184 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<h2>@ViewBag.Title</h2>
-<hr />
+<div class="page-header">
+    <h1 class="page-title">Báo cáo & Thống kê</h1>
+    <p class="page-subtitle">Phân tích chi tiết hoạt động hệ thống</p>
+</div>
 
-<div class="panel panel-default">
-    <div class="panel-heading">
-        Thống kê người dùng mới trong 30 ngày qua
+<!-- CHARTS ROW 1 -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-user-plus me-2 text-success"></i>
+                    Người dùng mới (30 ngày qua)
+                </h5>
+            </div>
+            <div class="content-card-body">
+                <canvas id="newUsersChart" height="250"></canvas>
+            </div>
+        </div>
     </div>
-    <div class="panel-body">
-        <canvas id="newUsersChart"></canvas>
+
+    <div class="col-md-6">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-comment-dots me-2 text-primary"></i>
+                    Tin nhắn theo ngày (30 ngày qua)
+                </h5>
+            </div>
+            <div class="content-card-body">
+                <canvas id="messagesChart" height="250"></canvas>
+            </div>
+        </div>
     </div>
 </div>
 
+<!-- CHARTS ROW 2 -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-fire me-2 text-warning"></i>
+                    Top 10 nhóm hoạt động nhất
+                </h5>
+            </div>
+            <div class="content-card-body">
+                <canvas id="topGroupsChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
 
 @section scripts {
     <script>
-    $(document).ready(function () {
-        $.ajax({
-            url: "@Url.Action("GetNewUserData", "Admin")",
-            type: "GET",
-            success: function (data) {
-                const ctx = document.getElementById('newUsersChart').getContext('2d');
-
-                new Chart(ctx, {
-                    type: 'line', 
-                    data: {
-                        labels: data.labels, 
-                        datasets: [{
-                            label: '# số người dùng mới',
-                            data: data.values,
-                            borderColor: 'rgb(75, 192, 192)',
-                            tension: 0.1
-                        }]
+$(document).ready(function() {
+    // 1. Biểu đồ người dùng mới
+    $.ajax({
+        url: '@Url.Action("GetNewUserData")',
+        success: function(data) {
+            const ctx = document.getElementById('newUsersChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Người dùng mới',
+                        data: data.values,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'top' }
                     },
-                    options: {
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 },
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                        },
+                        x: {
+                            grid: { display: false }
                         }
                     }
-                });
-            },
-            error: function (err) {
-                console.error("Lỗi khi tải dữ liệu biểu đồ:", err);
-            }
-        });
+                }
+            });
+        }
     });
+
+    // 2. Biểu đồ tin nhắn
+    $.ajax({
+        url: '@Url.Action("GetMessageData")',
+        success: function(data) {
+            const ctx = document.getElementById('messagesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Số tin nhắn',
+                        data: data.values,
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 },
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+    });
+
+    // 3. Biểu đồ top nhóm
+    $.ajax({
+        url: '@Url.Action("GetTopGroups")',
+        success: function(data) {
+            const ctx = document.getElementById('topGroupsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Số tin nhắn',
+                        data: data.values,
+                        backgroundColor: [
+                            '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6',
+                            '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16'
+                        ],
+                        borderWidth: 0,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 },
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                        },
+                        y: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+    });
+});
     </script>
 }

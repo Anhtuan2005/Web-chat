@@ -1,36 +1,236 @@
 ﻿@{
-    ViewBag.Title = "Trang Quản Trị";
+    ViewBag.Title = "Dashboard";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<h2>Dashboard Quản Trị Hệ Thống</h2>
-<hr />
+<div class="page-header">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Tổng quan hệ thống quản trị</p>
+</div>
 
-<div class="row">
-    <div class="col-md-4">
-        <div class="panel panel-primary">
-            <div class="panel-heading">Người Dùng</div>
-            <div class="panel-body">
-                <h3>@ViewBag.UserCount</h3>
-                <p><a href="@Url.Action("ManageUsers")" class="btn btn-default">Quản lý Người Dùng</a></p>
+<!-- STATS CARDS -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-title">Tổng người dùng</div>
+                <div class="stat-card-value">@ViewBag.UserCount</div>
+                <div class="stat-card-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+@ViewBag.NewUsersLast30Days mới (30 ngày)</span>
+                </div>
+            </div>
+            <div class="stat-card-icon green">
+                <i class="fas fa-users"></i>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="panel panel-success">
-            <div class="panel-heading">Phòng Chat/Nhóm</div>
-            <div class="panel-body">
-                <h3>@ViewBag.GroupCount</h3>
-                <p><a href="@Url.Action("ManageGroups")" class="btn btn-default">Quản lý Nhóm</a></p>
+
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-title">Tổng nhóm chat</div>
+                <div class="stat-card-value">@ViewBag.GroupCount</div>
+                <div class="stat-card-change">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Đang hoạt động</span>
+                </div>
+            </div>
+            <div class="stat-card-icon blue">
+                <i class="fas fa-comments"></i>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="panel panel-info">
-            <div class="panel-heading">Tổng Tin Nhắn</div>
-            <div class="panel-body">
-                <h3>@ViewBag.MessageCount</h3>
+
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-title">Tin nhắn nhóm</div>
+                <div class="stat-card-value">@ViewBag.MessageCount</div>
+                <div class="stat-card-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>+@ViewBag.MessagesLast30Days (30 ngày)</span>
+                </div>
+            </div>
+            <div class="stat-card-icon orange">
+                <i class="fas fa-comment-dots"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div>
+                <div class="stat-card-title">Tin nhắn riêng tư</div>
+                <div class="stat-card-value">@ViewBag.PrivateMessageCount</div>
+                <div class="stat-card-change">
+                    <i class="fas fa-lock"></i>
+                    <span>Bảo mật</span>
+                </div>
+            </div>
+            <div class="stat-card-icon purple">
+                <i class="fas fa-envelope"></i>
             </div>
         </div>
     </div>
 </div>
+
+<!-- CHARTS ROW -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Người dùng mới (30 ngày qua)
+                </h5>
+            </div>
+            <div class="content-card-body">
+                <canvas id="newUsersChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-fire me-2"></i>
+                    Nhóm hoạt động
+                </h5>
+            </div>
+            <div class="content-card-body">
+                <div class="list-group list-group-flush">
+                    @foreach (var group in ViewBag.ActiveGroups)
+                    {
+                        <div class="list-group-item ...">
+                            <div>
+                                <i class="fas fa-users text-success me-2"></i>
+                                <strong>@group.GroupName</strong>
+                            </div>
+                            <span class="badge badge-success">@group.Messages.Count() tin nhắn</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- RECENT ACTIVITY -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-user-plus me-2"></i>
+                    Người dùng mới nhất
+                </h5>
+                <a href="@Url.Action("ManageUsers")" class="btn btn-sm btn-primary">Xem tất cả</a>
+            </div>
+            <div class="content-card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Tên hiển thị</th>
+                                <th>Ngày đăng ký</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in ViewBag.RecentUsers)
+                            {
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-user-circle text-primary me-2"></i>
+                                        <strong>@user.Username</strong>
+                                    </td>
+                                    <td>@user.DisplayName</td>
+                                    <td>
+                                        <small class="text-muted">
+                                            @user.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                        </small>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-tasks me-2"></i>
+                    Hành động nhanh
+                </h5>
+            </div>
+            <div class="content-card-body">
+                <div class="d-grid gap-3">
+                    <a href="@Url.Action("ManageUsers")" class="btn btn-lg btn-outline-primary text-start">
+                        <i class="fas fa-users me-3"></i>
+                        <strong>Quản lý người dùng</strong>
+                        <span class="float-end badge bg-primary">@ViewBag.UserCount</span>
+                    </a>
+                    <a href="@Url.Action("ManageGroups")" class="btn btn-lg btn-outline-success text-start">
+                        <i class="fas fa-comments me-3"></i>
+                        <strong>Quản lý nhóm</strong>
+                        <span class="float-end badge bg-success">@ViewBag.GroupCount</span>
+                    </a>
+                    <a href="@Url.Action("Reports")" class="btn btn-lg btn-outline-info text-start">
+                        <i class="fas fa-chart-bar me-3"></i>
+                        <strong>Xem báo cáo</strong>
+                        <span class="float-end"><i class="fas fa-arrow-right"></i></span>
+                    </a>
+                    <a href="@Url.Action("SystemSettings")" class="btn btn-lg btn-outline-secondary text-start">
+                        <i class="fas fa-cog me-3"></i>
+                        <strong>Cài đặt hệ thống</strong>
+                        <span class="float-end"><i class="fas fa-arrow-right"></i></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+$(document).ready(function() {
+    // Biểu đồ người dùng mới
+    $.ajax({
+        url: '@Url.Action("GetNewUserData")',
+        success: function(data) {
+            const ctx = document.getElementById('newUsersChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Người dùng mới',
+                        data: data.values,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } }
+                    }
+                }
+            });
+        }
+    });
+});
+    </script>
+}

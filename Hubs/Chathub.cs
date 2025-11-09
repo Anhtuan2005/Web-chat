@@ -237,5 +237,30 @@ namespace Online_chat.Hubs
             public string Type { get; set; }
             public string Content { get; set; }
         }
+       
+        public async Task SendCallOffer(string targetUsername, string offerSdp, string callType)
+        {
+            var callerUsername = Context.User.Identity.Name;
+           
+            await Clients.User(targetUsername).ReceiveCallOffer(callerUsername, offerSdp, callType);
+        }
+
+        public async Task SendCallAnswer(string targetUsername, string answerSdp)
+        {
+            var calleeUsername = Context.User.Identity.Name;
+            await Clients.User(targetUsername).ReceiveCallAnswer(calleeUsername, answerSdp);
+        }
+
+        public async Task SendIceCandidate(string targetUsername, string candidate)
+        {
+            var senderUsername = Context.User.Identity.Name;
+            await Clients.User(targetUsername).ReceiveIceCandidate(senderUsername, candidate);
+        }
+
+        public async Task EndCall(string targetUsername)
+        {
+            var senderUsername = Context.User.Identity.Name;
+            await Clients.User(targetUsername).CallEnded(senderUsername);
+        }
     }
 }
