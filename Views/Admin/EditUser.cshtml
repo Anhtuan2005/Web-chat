@@ -1,56 +1,119 @@
 ﻿@model Online_chat.Models.User
-
 @{
     ViewBag.Title = "Chỉnh sửa người dùng";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<h2>Chỉnh sửa người dùng: @Model.Username</h2>
-<hr />
+<div class="page-header">
+    <h1 class="page-title">Chỉnh sửa người dùng</h1>
+    <p class="page-subtitle">Cập nhật thông tin tài khoản: <strong>@Model.Username</strong></p>
+</div>
 
-@using (Html.BeginForm())
-{
-    @Html.AntiForgeryToken()
-
-    <div class="form-horizontal">
-        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-        @Html.HiddenFor(model => model.Id)
-        @Html.HiddenFor(model => model.Username)
-        @Html.HiddenFor(model => model.PasswordHash)
-        @Html.HiddenFor(model => model.CreatedAt)
-
-
-        <div class="form-group">
-            @Html.LabelFor(model => model.DisplayName, "Tên hiển thị", htmlAttributes: new { @class = "control-label col-md-2" })
-            <div class="col-md-10">
-                @Html.EditorFor(model => model.DisplayName, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.DisplayName, "", new { @class = "text-danger" })
+<div class="row">
+    <div class="col-md-8">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-user-edit me-2"></i>
+                    Thông tin cá nhân
+                </h5>
             </div>
-        </div>
 
-        <div class="form-group">
-            @Html.LabelFor(model => model.Email, htmlAttributes: new { @class = "control-label col-md-2" })
-            <div class="col-md-10">
-                @Html.EditorFor(model => model.Email, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.Email, "", new { @class = "text-danger" })
-            </div>
-        </div>
+            <div class="content-card-body">
+                @using (Html.BeginForm())
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+                    @Html.HiddenFor(model => model.Id)
+                    @Html.HiddenFor(model => model.Username)
+                    @Html.HiddenFor(model => model.PasswordHash)
+                    @Html.HiddenFor(model => model.CreatedAt)
 
-        <div class="form-group">
-            @Html.LabelFor(model => model.IsAdmin, "Quyền Admin", htmlAttributes: new { @class = "control-label col-md-2" })
-            <div class="col-md-10">
-                <div class="checkbox">
-                    @Html.EditorFor(model => model.IsAdmin)
-                </div>
-            </div>
-        </div>
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.DisplayName, "Tên hiển thị", new { @class = "form-label fw-bold" })
+                        @Html.EditorFor(model => model.DisplayName, new { htmlAttributes = new { @class = "form-control", placeholder = "Nhập tên hiển thị" } })
+                        @Html.ValidationMessageFor(model => model.DisplayName, "", new { @class = "text-danger small" })
+                    </div>
 
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.Email, new { @class = "form-label fw-bold" })
+                        @Html.EditorFor(model => model.Email, new { htmlAttributes = new { @class = "form-control", placeholder = "example@mail.com", type = "email" } })
+                        @Html.ValidationMessageFor(model => model.Email, "", new { @class = "text-danger small" })
+                    </div>
 
-        <div class="form-group">
-            <div class="col-md-offset-2 col-md-10">
-                <input type="submit" value="Lưu thay đổi" class="btn btn-primary" />
-                @Html.ActionLink("Quay lại danh sách", "ManageUsers", null, new { @class = "btn btn-default" })
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.PhoneNumber, "Số điện thoại", new { @class = "form-label fw-bold" })
+                        @Html.EditorFor(model => model.PhoneNumber, new { htmlAttributes = new { @class = "form-control", placeholder = "0123456789" } })
+                        @Html.ValidationMessageFor(model => model.PhoneNumber, "", new { @class = "text-danger small" })
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            @Html.EditorFor(model => model.IsAdmin, new { htmlAttributes = new { @class = "form-check-input", role = "switch" } })
+                            <label class="form-check-label fw-bold" for="IsAdmin">
+                                <i class="fas fa-crown text-warning me-2"></i>
+                                Quyền Admin
+                            </label>
+                            <small class="d-block text-muted">User sẽ có toàn quyền truy cập admin panel</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>Lưu thay đổi
+                        </button>
+                        <a href="@Url.Action("ManageUsers")" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Hủy
+                        </a>
+                    </div>
+                }
             </div>
         </div>
     </div>
-}
+
+    <div class="col-md-4">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Thông tin tài khoản
+                </h5>
+            </div>
+            <div class="content-card-body">
+                <div class="text-center mb-3">
+                    <img src="@(Model.AvatarUrl ?? "/Content/default-avatar.png")"
+                         class="rounded-circle shadow"
+                         style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #e9ecef;">
+                </div>
+
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>Username:</strong>
+                        <span class="badge bg-primary">@Model.Username</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>User ID:</strong>
+                        <span class="badge bg-secondary">#@Model.Id</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>Ngày tạo:</strong>
+                        <small class="text-muted">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>Quyền:</strong>
+                        @if (Model.IsAdmin)
+                        {
+                            <span class="badge bg-danger">
+                                <i class="fas fa-crown me-1"></i>Admin
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">User</span>
+                        }
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

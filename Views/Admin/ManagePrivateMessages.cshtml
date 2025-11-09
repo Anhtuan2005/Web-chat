@@ -1,0 +1,142 @@
+﻿@model IEnumerable<Online_chat.Models.PrivateMessage>
+@{
+    ViewBag.Title = "Quản lý tin nhắn riêng tư";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <h1 class="page-title">Quản lý tin nhắn riêng tư</h1>
+    <p class="page-subtitle">Giám sát và quản lý tin nhắn private giữa các user</p>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="content-card">
+    <div class="content-card-header">
+        <h5 class="content-card-title">
+            <i class="fas fa-envelope me-2"></i>
+            Danh sách tin nhắn private
+        </h5>
+    </div>
+
+    <!-- TÌM KIẾM -->
+    <div class="content-card-body border-bottom">
+        <form method="get" action="@Url.Action("ManagePrivateMessages")" class="row g-3">
+            <div class="col-md-10">
+                <input type="text" name="search" class="form-control"
+                       placeholder="Tìm kiếm theo nội dung hoặc username..."
+                       value="@ViewBag.SearchQuery">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-2"></i>Tìm kiếm
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- BẢNG -->
+    <div class="content-card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">ID</th>
+                        <th style="width: 150px;">Người gửi</th>
+                        <th style="width: 150px;">Người nhận</th>
+                        <th>Nội dung</th>
+                        <th style="width: 100px;">Loại</th>
+                        <th style="width: 150px;">Thời gian</th>
+                        <th style="width: 100px;" class="text-center">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var msg in Model)
+                    {
+                        <tr>
+                            <td><strong>#@msg.Id</strong></td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="@(msg.Sender.AvatarUrl ?? "/Content/default-avatar.png")"
+                                         class="rounded-circle me-2"
+                                         style="width: 28px; height: 28px; object-fit: cover;">
+                                    <small>@msg.Sender.Username</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="@(msg.Receiver.AvatarUrl ?? "/Content/default-avatar.png")"
+                                         class="rounded-circle me-2"
+                                         style="width: 28px; height: 28px; object-fit: cover;">
+                                    <small>@msg.Receiver.Username</small>
+                                </div>
+                            </td>
+                            <td>
+                                <small class="text-muted" style="max-width: 300px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    @msg.Content
+                                </small>
+                            </td>
+                            <td>
+                                @if (msg.MessageType == "text")
+                                {
+                                    <span class="badge bg-primary">Text</span>
+                                }
+                                else if (msg.MessageType == "image")
+                                {
+                                    <span class="badge bg-success">Image</span>
+                                }
+                                else if (msg.MessageType == "file")
+                                {
+                                    <span class="badge bg-warning">File</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">@msg.MessageType</span>
+                                }
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    @msg.Timestamp.ToString("dd/MM/yyyy HH:mm")
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                @using (Html.BeginForm("DeletePrivateMessage", "Admin", new { id = msg.Id }, FormMethod.Post, new { style = "display:inline;" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            class="btn btn-sm btn-danger"
+                                            title="Xóa"
+                                            onclick="return confirm('Xóa tin nhắn này?');">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PHÂN TRANG -->
+        @if (ViewBag.TotalPages > 1)
+        {
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("ManagePrivateMessages", new { page = i, search = ViewBag.SearchQuery })">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    </div>
+</div>

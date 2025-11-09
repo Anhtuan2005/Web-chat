@@ -3,13 +3,12 @@
 
 @{
     ViewBag.Title = "Kết quả tìm kiếm";
-    Layout = "~/Views/Shared/_ChatLayout.cshtml";
+    Layout = "~/Views/Shared/_ChatLayout.cshtml"; 
 }
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
 
 <style>
-    /* (Toàn bộ CSS của bạn giữ nguyên, không cần thay đổi) */
     .search-content-area {
         padding: 30px;
         height: 100%;
@@ -59,12 +58,12 @@
 
         .search-results-list .list-group-item:hover {
             transform: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
         }
 
 
     .search-results-list .user-info-clickable:hover {
-        background-color: rgba(232, 245, 233, 0.5);
+        background-color: rgba(232, 245, 233, 0.5); 
         border-radius: 10px;
     }
 
@@ -74,7 +73,6 @@
 
     .list-action-area {
     }
-
     .result-avatar {
         width: 45px;
         height: 45px;
@@ -205,7 +203,7 @@
         <div class="modal-content" style="border-radius: 20px; overflow: hidden; background: #fff; border: none; box-shadow: 0 8px 32px rgba(0,0,0,0.12);">
 
             <div id="modal-preview-cover" style="height: 160px; background-size: cover; background-position: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative;">
-                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"
+                <button type"button" class="close" data-bs-dismiss="modal" aria-label="Close"
                         style="position: absolute; top: 15px; right: 15px; color: #fff; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border-radius: 50%; width: 36px; height: 36px; border: none; font-size: 1.3rem; opacity: 1; text-shadow: none; display: flex; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer;">
                     <span aria-hidden="true" style="line-height: 1;">&times;</span>
                 </button>
@@ -235,6 +233,7 @@
                             <strong id="modal-preview-gender" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
                         </div>
                     </div>
+
                     <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
                         <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
                             <i class="fas fa-birthday-cake" style="color: white; font-size: 1.1rem;"></i>
@@ -244,6 +243,7 @@
                             <strong id="modal-preview-dob" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
                         </div>
                     </div>
+
                     <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
                         <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #28a745 0%, #218838 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
                             <i class="fas fa-phone-alt" style="color: white; font-size: 1.1rem;"></i>
@@ -253,6 +253,7 @@
                             <strong id="modal-preview-phone" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
                         </div>
                     </div>
+
                     <div style="display: flex; align-items: center; padding: 10px; background: white; border-radius: 8px;">
                         <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
                             <i class="fas fa-envelope" style="color: white; font-size: 1.1rem;"></i>
@@ -278,8 +279,6 @@
                     </a>
                 </div>
 
-                <div id="modal-action-area" class="text-center mt-4" style="min-height: 38px;">
-                </div>
             </div>
         </div>
     </div>
@@ -319,34 +318,31 @@
 
                     <div class="user-info-clickable d-flex align-items-center flex-grow-1 me-3"
                          data-bs-toggle="modal" data-bs-target="#profilePreviewModal"
-                         style="cursor: pointer; min-width: 0;">
-
-                        <img src="@Url.Content(user.AvatarUrl ?? "/Content/default-avatar.png")" class="result-avatar" />
-
-                        <div class="result-info" style="overflow: hidden;">
-                            <strong style="display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                @user.DisplayName
-                            </strong>
+                         style="cursor: pointer;">
+                        <img src="@Url.Content(user.AvatarUrl ?? "/Content/default-avatar.png")" class="result-avatar" ... />
+                        <div class="result-info">
+                            <strong>@user.DisplayName</strong><br />
                             <span>@@@user.Username</span>
                         </div>
                     </div>
 
                     <div class="list-action-area flex-shrink-0">
+                        @* Đã thêm flex-shrink-0 *@
                         @if (user.FriendshipStatus == null)
                         {
-                            <button class="btn btn-sm btn-action-search btn-add list-friend-action" data-action="send" data-receiver-id="@user.UserId">
+                            <button class="btn btn-sm btn-action-search btn-add list-friend-action" ...>
                                 <i class="fas fa-user-plus me-1"></i> Kết bạn
                             </button>
                         }
                         else if (user.FriendshipStatus == FriendshipStatus.Pending)
                         {
-                            <button class="btn btn-sm btn-action-search btn-cancel list-friend-action" data-action="cancel" data-receiver-id="@user.UserId">
+                            <button class="btn btn-sm btn-action-search btn-cancel list-friend-action" ...>
                                 <i class="fas fa-times me-1"></i> Hủy lời mời
                             </button>
                         }
                         else if (user.FriendshipStatus == FriendshipStatus.Accepted)
                         {
-                            <button class="btn btn-sm btn-action-search btn-friends" disabled>
+                            <button class="btn btn-sm btn-action-search btn-friends" disabled ...>
                                 <i class="fas fa-check me-1"></i> Bạn bè
                             </button>
                         }
@@ -362,80 +358,8 @@
     $(function () {
         const token = $('input[name="__RequestVerificationToken"]').val();
 
-        // =================================================================
-        // FIX 2B: XỬ LÝ CLICK NÚT TRÊN DANH SÁCH (NGOÀI MODAL)
-        // =================================================================
-        $('#search-results').on('click', '.list-action-area', function (event) {
-            // Ngăn sự kiện click "nổi bọt" lên <li> (ngăn mở modal)
-            event.stopPropagation();
-
-            const button = $(this).find('button.list-friend-action');
-            if (button.length === 0 || button.is(':disabled')) return;
-
-            const listItem = button.closest('.list-group-item');
-            const receiverId = button.data('receiver-id');
-            const action = button.data('action');
-            const originalHtml = button.html();
-
-            let url = '';
-            let newStatus = '';
-            let newAction = '';
-
-            if (action === 'send') {
-                url = '@Url.Action("SendRequest", "Friend")';
-                newStatus = '@FriendshipStatus.Pending.ToString()';
-                newAction = 'cancel';
-            } else if (action === 'cancel') {
-                url = '@Url.Action("CancelRequest", "Friend")';
-                newStatus = ''; // Trở về null/empty
-                newAction = 'send';
-            } else {
-                return;
-            }
-
-            button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
-
-            $.ajax({
-                url: url,
-                type: 'POST',
-                data: {
-                    __RequestVerificationToken: token,
-                    receiverId: receiverId
-                },
-                success: function (response) {
-                    if (response.success) {
-                        // 1. Cập nhật data-status trên <li>
-                        listItem.data('friendship-status', newStatus);
-
-                        // 2. Cập nhật chính nút vừa click
-                        button.data('action', newAction);
-                        if (action === 'send') {
-                            button.removeClass('btn-add').addClass('btn-cancel')
-                                .html('<i class="fas fa-times me-1"></i> Hủy lời mời');
-                        } else if (action === 'cancel') {
-                            button.removeClass('btn-cancel').addClass('btn-add')
-                                .html('<i class="fas fa-user-plus me-1"></i> Kết bạn');
-                        }
-                    } else {
-                        alert(response.message || "Có lỗi xảy ra.");
-                        button.html(originalHtml); // Trả lại text nút cũ nếu lỗi
-                    }
-                },
-                error: function () {
-                    alert("Lỗi kết nối. Vui lòng thử lại.");
-                    button.html(originalHtml); // Trả lại text nút cũ nếu lỗi
-                },
-                complete: function() {
-                    button.prop('disabled', false);
-                }
-            });
-        });
-
-        // =================================================================
-        // XỬ LÝ MỞ MODAL KHI CLICK VÀO <li> (PHẦN THÔNG TIN USER)
-        // =================================================================
         $('#search-results').on('click', '.list-group-item', function (event) {
-            // Sự kiện này sẽ không chạy nếu bạn click vào nút (do đã bị stopPropagation)
+            event.stopPropagation();
 
             const item = $(this);
             const userId = item.data('user-id');
@@ -443,8 +367,6 @@
             const username = item.data('username');
             const avatarUrl = item.data('avatar-url');
             const coverUrl = item.data('cover-url');
-
-            // Lấy status MỚI NHẤT từ data attribute (đã được AJAX ở trên cập nhật)
             const status = item.data('friendship-status');
 
             const gender = item.data('gender');
@@ -453,7 +375,6 @@
             const phone = item.data('phone');
             const email = item.data('email');
 
-            // Đổ dữ liệu vào modal
             $('#modal-preview-cover').css('background-image', `url(${coverUrl})`);
             $('#modal-preview-avatar').attr('src', avatarUrl);
             $('#modal-preview-display-name').text(displayName);
@@ -478,11 +399,10 @@
                 $('#modal-preview-dob').text('Chưa cập nhật');
             }
 
-            // TẠO NÚT ACTION TRONG MODAL (dựa trên data-status)
             const actionArea = $('#modal-action-area');
             actionArea.empty();
 
-            if (!status || status === '') { // Đã sửa điều kiện
+            if (!status) {
                 actionArea.html(`<button class="btn btn-sm btn-action-search btn-add modal-friend-action" data-action="send" data-receiver-id="${userId}"><i class="fas fa-user-plus me-1"></i> Gửi lời mời</button>`);
             } else if (status === '@FriendshipStatus.Pending.ToString()') {
                 actionArea.html(`<button class="btn btn-sm btn-action-search btn-cancel modal-friend-action" data-action="cancel" data-receiver-id="${userId}"><i class="fas fa-times me-1"></i> Hủy lời mời</button>`);
@@ -491,43 +411,34 @@
             }
         });
 
-        // =================================================================
-        // XỬ LÝ CLICK NÚT CHẶN (TRONG MODAL)
-        // =================================================================
         $('body').on('click', '#modal-preview-block', function(e) {
             e.preventDefault();
             const partnerName = $('#modal-preview-display-name').text();
             alert(`Chức năng Chặn '${partnerName}' (Đang phát triển)`);
-            $('#profilePreviewModal').modal('hide');
+            $('#profilePreviewModal').modal('hide'); 
         });
 
-        // =================================================================
-        // XỬ LÝ CLICK NÚT ACTION (TRONG MODAL)
-        // =================================================================
         $('#profilePreviewModal').on('click', '.modal-friend-action', function () {
             const button = $(this);
             const action = button.data('action');
             const receiverId = button.data('receiver-id');
             const modalActionArea = $('#modal-action-area');
-            const originalHtml = button.html();
 
             let url = '';
             let newStatus = '';
-            let newAction = '';
 
             if (action === 'send') {
-                url = '@Url.Action("SendRequest", "Friend")';
-                newStatus = '@FriendshipStatus.Pending.ToString()';
-                newAction = 'cancel';
+                 url = '@Url.Action("SendRequest", "Friend")';
+                 newStatus = '@FriendshipStatus.Pending.ToString()';
             } else if (action === 'cancel') {
-                url = '@Url.Action("CancelRequest", "Friend")';
-                newStatus = '';
-                newAction = 'send';
+                 url = '@Url.Action("CancelRequest", "Friend")';
+                 newStatus = '';
             } else {
                 return;
             }
 
             button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...');
+
 
             $.ajax({
                 url: url,
@@ -537,41 +448,34 @@
                     receiverId: receiverId
                 },
                 success: function (response) {
-                    if (response.success) {
-                        // 1. Cập nhật nút TRONG MODAL
+                    if (response.success)
+
                         if (action === 'send') {
-                            modalActionArea.html(`<button class="btn btn-sm btn-action-search btn-cancel modal-friend-action" data-action="cancel" data-receiver-id="${receiverId}"><i class="fas fa-times me-1"></i> Hủy lời mời</button>`);
+                             modalActionArea.html(`<button class="btn btn-sm btn-action-search btn-cancel modal-friend-action" data-action="cancel" data-receiver-id="${receiverId}"><i class="fas fa-times me-1"></i> Hủy lời mời</button>`);
                         } else if (action === 'cancel') {
-                            modalActionArea.html(`<button class="btn btn-sm btn-action-search btn-add modal-friend-action" data-action="send" data-receiver-id="${receiverId}"><i class="fas fa-user-plus me-1"></i> Gửi lời mời</button>`);
+                             modalActionArea.html(`<button class="btn btn-sm btn-action-search btn-add modal-friend-action" data-action="send" data-receiver-id="${receiverId}"><i class="fas fa-user-plus me-1"></i> Gửi lời mời</button>`);
                         }
+                         const listItem = $(`#search-results .list-group-item[data-user-id='${receiverId}']`);
+                         if(listItem.length > 0) {
+                              listItem.data('friendship-status', newStatus);
+                         }
 
-                        // 2. TÌM VÀ CẬP NHẬT NÚT BÊN NGOÀI LIST
-                        const listItem = $(`#search-results .list-group-item[data-user-id='${receiverId}']`);
-                        if(listItem.length > 0) {
-                            // Cập nhật data-status trên <li>
-                            listItem.data('friendship-status', newStatus);
-
-                            // Cập nhật nút trên list
-                            const listButton = listItem.find('button.list-friend-action');
-                            if(listButton.length > 0) {
-                                listButton.data('action', newAction);
-                                if (action === 'send') {
-                                    listButton.removeClass('btn-add').addClass('btn-cancel')
-                                        .html('<i class="fas fa-times me-1"></i> Hủy lời mời');
-                                } else if (action === 'cancel') {
-                                    listButton.removeClass('btn-cancel').addClass('btn-add')
-                                        .html('<i class="fas fa-user-plus me-1"></i> Kết bạn');
-                                }
-                            }
-                        }
-                    } else {
+                    else {
                         alert(response.message || "Có lỗi xảy ra.");
-                        button.html(originalHtml);
+                         if (action === 'send') {
+                             button.prop('disabled', false).html('<i class="fas fa-user-plus me-1"></i> Gửi lời mời');
+                        } else if (action === 'cancel') {
+                             button.prop('disabled', false).html('<i class="fas fa-times me-1"></i> Hủy lời mời');
+                        }
                     }
                 },
                 error: function () {
                     alert("Lỗi kết nối. Vui lòng thử lại.");
-                    button.html(originalHtml);
+                     if (action === 'send') {
+                         button.prop('disabled', false).html('<i class="fas fa-user-plus me-1"></i> Gửi lời mời');
+                    } else if (action === 'cancel') {
+                         button.prop('disabled', false).html('<i class="fas fa-times me-1"></i> Hủy lời mời');
+                    }
                 }
             });
         });

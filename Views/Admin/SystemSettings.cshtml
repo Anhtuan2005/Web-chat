@@ -1,47 +1,187 @@
 ﻿@model Online_chat.Models.Setting
-
 @{
     ViewBag.Title = "Cài đặt hệ thống";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<h2>@ViewBag.Title</h2>
-<hr />
+<div class="page-header">
+    <h1 class="page-title">Cài đặt hệ thống</h1>
+    <p class="page-subtitle">Quản lý cấu hình và thiết lập toàn hệ thống</p>
+</div>
 
 @if (TempData["SuccessMessage"] != null)
 {
-    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 }
 
-@using (Html.BeginForm())
-{
-    @Html.AntiForgeryToken()
+<div class="row">
+    <div class="col-md-8">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-cog me-2"></i>
+                    Cấu hình chính
+                </h5>
+            </div>
 
-    <div class="form-horizontal">
-        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-        @Html.HiddenFor(model => model.Id)
+            <div class="content-card-body">
+                @using (Html.BeginForm())
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+                    @Html.HiddenFor(model => model.Id)
 
-        <div class="form-group">
-            @Html.LabelFor(model => model.SiteName, htmlAttributes: new { @class = "control-label col-md-3" })
-            <div class="col-md-9">
-                @Html.EditorFor(model => model.SiteName, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.SiteName, "", new { @class = "text-danger" })
+                    <div class="mb-4">
+                        @Html.LabelFor(model => model.SiteName, "Tên website", new { @class = "form-label fw-bold" })
+                        @Html.EditorFor(model => model.SiteName, new { htmlAttributes = new { @class = "form-control", placeholder = "Ví dụ: Online Chat" } })
+                        @Html.ValidationMessageFor(model => model.SiteName, "", new { @class = "text-danger small" })
+                        <small class="text-muted d-block mt-1">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Tên này sẽ hiển thị trên thanh tiêu đề và logo
+                        </small>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            @Html.EditorFor(model => model.AllowNewRegistrations, new { htmlAttributes = new { @class = "form-check-input", role = "switch" } })
+                            <label class="form-check-label fw-bold" for="AllowNewRegistrations">
+                                <i class="fas fa-user-plus me-2 text-success"></i>
+                                Cho phép đăng ký tài khoản mới
+                            </label>
+                        </div>
+                        <small class="text-muted d-block mt-1 ms-4">
+                            Tắt chức năng này để ngăn người dùng mới tạo tài khoản
+                        </small>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>Lưu cài đặt
+                        </button>
+                        <button type="reset" class="btn btn-outline-secondary">
+                            <i class="fas fa-undo me-2"></i>Đặt lại
+                        </button>
+                    </div>
+                }
             </div>
         </div>
 
-        <div class="form-group">
-            @Html.LabelFor(model => model.AllowNewRegistrations, htmlAttributes: new { @class = "control-label col-md-3" })
-            <div class="col-md-9">
-                <div class="checkbox">
-                    @Html.EditorFor(model => model.AllowNewRegistrations)
+        <!-- THỐNG KÊ HỆ THỐNG -->
+        <div class="content-card mt-4">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-server me-2"></i>
+                    Thông tin hệ thống
+                </h5>
+            </div>
+            <div class="content-card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="p-3 border rounded">
+                            <i class="fas fa-database text-primary fs-3 mb-2"></i>
+                            <h4 class="mb-0">@ViewBag.TotalRecords</h4>
+                            <small class="text-muted">Tổng records</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3 border rounded">
+                            <i class="fas fa-clock text-success fs-3 mb-2"></i>
+                            <h4 class="mb-0">@ViewBag.Uptime</h4>
+                            <small class="text-muted">Uptime</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3 border rounded">
+                            <i class="fas fa-memory text-warning fs-3 mb-2"></i>
+                            <h4 class="mb-0">@ViewBag.MemoryUsage</h4>
+                            <small class="text-muted">Memory</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3 border rounded">
+                            <i class="fas fa-code-branch text-info fs-3 mb-2"></i>
+                            <h4 class="mb-0">v1.0.0</h4>
+                            <small class="text-muted">Version</small>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="form-group">
-            <div class="col-md-offset-3 col-md-9">
-                <input type="submit" value="Lưu Cài Đặt" class="btn btn-primary" />
+    <div class="col-md-4">
+        <!-- THÔNG TIN -->
+        <div class="content-card">
+            <div class="content-card-header bg-primary text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Hướng dẫn
+                </h6>
+            </div>
+            <div class="content-card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <small>Thay đổi tên website theo ý muốn</small>
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <small>Bật/tắt đăng ký tài khoản mới</small>
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <small>Cấu hình sẽ áp dụng ngay lập tức</small>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- BACKUP -->
+        <div class="content-card mt-3">
+            <div class="content-card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="fas fa-database me-2"></i>
+                    Sao lưu dữ liệu
+                </h6>
+            </div>
+            <div class="content-card-body">
+                <p class="small text-muted mb-3">
+                    Tạo bản sao lưu toàn bộ database để phòng trường hợp mất mát.
+                </p>
+                <button class="btn btn-warning w-100" disabled>
+                    <i class="fas fa-download me-2"></i>Tải xuống backup
+                </button>
+                <small class="text-muted d-block mt-2">
+                    (Tính năng đang phát triển)
+                </small>
+            </div>
+        </div>
+
+        <!-- NGUY HIỂM -->
+        <div class="content-card mt-3">
+            <div class="content-card-header bg-danger text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Vùng nguy hiểm
+                </h6>
+            </div>
+            <div class="content-card-body">
+                <p class="small text-muted mb-3">
+                    <strong>Xóa toàn bộ dữ liệu:</strong> Hành động này không thể hoàn tác!
+                </p>
+                <button class="btn btn-danger w-100" disabled>
+                    <i class="fas fa-trash me-2"></i>Xóa tất cả dữ liệu
+                </button>
+                <small class="text-muted d-block mt-2">
+                    (Được bảo vệ)
+                </small>
             </div>
         </div>
     </div>
-}
+</div>

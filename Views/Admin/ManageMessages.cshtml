@@ -1,47 +1,120 @@
 ﻿@model IEnumerable<Online_chat.Models.Message>
-
 @{
-    ViewBag.Title = "Quản lý Tin nhắn";
+    ViewBag.Title = "Quản lý tin nhắn nhóm";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<h2>@ViewBag.Title</h2>
-<p>Hiển thị 100 tin nhắn mới nhất.</p>
-<hr />
+<div class="page-header">
+    <h1 class="page-title">Quản lý tin nhắn nhóm</h1>
+    <p class="page-subtitle">Giám sát và quản lý tin nhắn trong các nhóm chat</p>
+</div>
 
 @if (TempData["SuccessMessage"] != null)
 {
-    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 }
 
-<table class="table table-striped table-bordered">
-    <thead>
-        <tr>
-            <th style="width: 15%;">Người gửi</th>
-            <th>Nội dung tin nhắn</th>
-            <th style="width: 15%;">Nhóm</th>
-            <th style="width: 18%;">Thời gian gửi</th>
-            <th style="width: 10%;">Thao tác</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@Html.DisplayFor(modelItem => item.Sender.Username)</td>
-                <td>@Html.DisplayFor(modelItem => item.Content)</td>
-                <td>@Html.DisplayFor(modelItem => item.Group.GroupName)</td>
-                <td>@item.Timestamp.ToLocalTime()</td>
-                <td>
-                    @using (Html.BeginForm("DeleteMessage", "Admin", new { id = item.Id }, FormMethod.Post))
+<div class="content-card">
+    <div class="content-card-header">
+        <h5 class="content-card-title">
+            <i class="fas fa-comment-dots me-2"></i>
+            Tin nhắn gần đây (100 tin mới nhất)
+        </h5>
+    </div>
+
+    <!-- LỌC & TÌM KIẾM -->
+    <div class="content-card-body border-bottom">
+        <form method="get" action="@Url.Action("ManageMessages")" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">Lọc theo nhóm</label>
+                <select name="groupId" class="form-select">
+                    <option value="">-- Tất cả nhóm --</option>
+                    @foreach (var group in ViewBag.Groups as IEnumerable<SelectListItem>)
                     {
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc chắn muốn xóa tin nhắn này?');">
-                            <i class="fas fa-trash"></i> Xóa
-                        </button>
+                        <option value="@group.Value" @(group.Value == ViewBag.SelectedGroupId?.ToString() ? "selected" : "")>
+                            @group.Text
+                        </option>
                     }
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-bold">Tìm kiếm nội dung</label>
+                <input type="text" name="search" class="form-control"
+                       placeholder="Tìm kiếm trong tin nhắn..."
+                       value="@ViewBag.SearchQuery">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-2"></i>Lọc
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- BẢNG -->
+    <div class="content-card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">ID</th>
+                        <th style="width: 150px;">Người gửi</th>
+                        <th>Nội dung</th>
+                        <th style="width: 150px;">Nhóm</th>
+                        <th style="width: 150px;">Thời gian</th>
+                        <th style="width: 120px;" class="text-center">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var msg in Model)
+                    {
+                        <tr>
+                            <td><strong>#@msg.Id</strong></td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="@(msg.Sender.AvatarUrl ?? "/Content/default-avatar.png")"
+                                         class="rounded-circle me-2"
+                                         style="width: 32px; height: 32px; object-fit: cover;">
+                                    <small>@msg.Sender.Username</small>
+                                </div>
+                            </td>
+                            <td>
+                                <small class="text-muted" style="max-width: 400px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    @msg.Content
+                                </small>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">
+                                    <i class="fas fa-users me-1"></i>
+                                    @msg.Group.GroupName
+                                </span>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    @msg.Timestamp.ToString("dd/MM/yyyy HH:mm")
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                @using (Html.BeginForm("DeleteMessage", "Admin", new { id = msg.Id }, FormMethod.Post, new { style = "display:inline;" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            class="btn btn-sm btn-danger"
+                                            title="Xóa tin nhắn"
+                                            onclick="return confirm('Xóa tin nhắn này?');">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

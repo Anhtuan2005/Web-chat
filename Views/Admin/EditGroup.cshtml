@@ -1,36 +1,113 @@
 ﻿@model Online_chat.Models.Group
-
 @{
     ViewBag.Title = "Chỉnh sửa nhóm";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<h2>Chỉnh sửa nhóm</h2>
-<hr />
+<div class="page-header">
+    <h1 class="page-title">Chỉnh sửa nhóm</h1>
+    <p class="page-subtitle">Cập nhật thông tin nhóm: <strong>@Model.GroupName</strong></p>
+</div>
 
-@using (Html.BeginForm())
-{
-    @Html.AntiForgeryToken()
-
-    <div class="form-horizontal">
-        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-        @Html.HiddenFor(model => model.Id)
-        @Html.HiddenFor(model => model.OwnerId)
-        @Html.HiddenFor(model => model.CreatedAt)
-
-        <div class="form-group">
-            @Html.LabelFor(model => model.GroupName, "Tên nhóm", htmlAttributes: new { @class = "control-label col-md-2" })
-            <div class="col-md-10">
-                @Html.EditorFor(model => model.GroupName, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.GroupName, "", new { @class = "text-danger" })
+<div class="row">
+    <div class="col-md-8">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-edit me-2"></i>
+                    Thông tin nhóm
+                </h5>
             </div>
-        </div>
 
-        <div class="form-group">
-            <div class="col-md-offset-2 col-md-10">
-                <input type="submit" value="Lưu" class="btn btn-primary" />
-                @Html.ActionLink("Quay lại", "ManageGroups", null, new { @class = "btn btn-default" })
+            <div class="content-card-body">
+                @using (Html.BeginForm())
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+                    @Html.HiddenFor(model => model.Id)
+                    @Html.HiddenFor(model => model.CreatedAt)
+
+                    <div class="mb-3">
+                        @Html.LabelFor(model => model.GroupName, "Tên nhóm", new { @class = "form-label fw-bold" })
+                        @Html.EditorFor(model => model.GroupName, new { htmlAttributes = new { @class = "form-control", placeholder = "Nhập tên nhóm" } })
+                        @Html.ValidationMessageFor(model => model.GroupName, "", new { @class = "text-danger small" })
+                    </div>
+
+                    <div class="mb-4">
+                        @Html.LabelFor(model => model.OwnerId, "Chủ sở hữu", new { @class = "form-label fw-bold" })
+                        @Html.DropDownListFor(model => model.OwnerId,
+                            (IEnumerable<SelectListItem>)ViewBag.Users,
+                            "-- Chọn chủ sở hữu --",
+                            new { @class = "form-select" })
+                        @Html.ValidationMessageFor(model => model.OwnerId, "", new { @class = "text-danger small" })
+                        <small class="text-muted d-block mt-1">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Owner có quyền quản lý nhóm và mời thành viên
+                        </small>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>Lưu thay đổi
+                        </button>
+                        <a href="@Url.Action("ManageGroups")" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Hủy
+                        </a>
+                    </div>
+                }
             </div>
         </div>
     </div>
-}
+
+    <div class="col-md-4">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Thông tin nhóm
+                </h5>
+            </div>
+            <div class="content-card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>Group ID:</strong>
+                        <span class="badge bg-secondary">#@Model.Id</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <strong>Ngày tạo:</strong>
+                        <small class="text-muted">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                    </li>
+                </ul>
+
+                <div class="mt-3">
+                    <a href="@Url.Action("GroupMembers", new { id = Model.Id })" class="btn btn-outline-info w-100">
+                        <i class="fas fa-users me-2"></i>Xem thành viên
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-card mt-3">
+            <div class="content-card-header bg-danger text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Vùng nguy hiểm
+                </h6>
+            </div>
+            <div class="content-card-body">
+                <p class="text-muted small mb-3">
+                    Xóa nhóm sẽ xóa toàn bộ tin nhắn và không thể khôi phục.
+                </p>
+                @using (Html.BeginForm("DeleteGroup", "Admin", new { id = Model.Id }, FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    <button type="submit"
+                            class="btn btn-danger w-100"
+                            onclick="return confirm('XÓA VĨNH VIỄN nhóm @Model.GroupName? Hành động này KHÔNG THỂ HOÀN TÁC!');">
+                        <i class="fas fa-trash me-2"></i>Xóa nhóm
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+</div>

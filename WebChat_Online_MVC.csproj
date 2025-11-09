@@ -304,6 +304,7 @@
     <Content Include="Content\bootstrap.min.css" />
     <Content Include="Content\bootstrap.rtl.css" />
     <Content Include="Content\bootstrap.rtl.min.css" />
+    <Content Include="Content\chat-styles.css" />
     <Content Include="Content\default-avatar.png" />
     <Content Include="Content\Site.css" />
     <Content Include="favicon.ico" />
@@ -314,6 +315,7 @@
     <Content Include="Scripts\bootstrap.esm.min.js" />
     <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />
+    <Content Include="Scripts\chat-client.js" />
     <Content Include="Scripts\esm\popper-utils.js" />
     <Content Include="Scripts\esm\popper-utils.min.js" />
     <Content Include="Scripts\esm\popper.js" />
@@ -451,6 +453,13 @@
     <Content Include="Views\Web.config" />
     <Content Include="Views\_ViewStart.cshtml" />
     <Content Include="Views\Settings\Index.cshtml" />
+    <Content Include="Views\Friend\friend\Index.cshtml" />
+    <Content Include="Views\Friend\friend\Search.cshtml" />
+    <Content Include="Views\Friend\friend\_FriendList.cshtml" />
+    <Content Include="Views\Admin\BannedUsers.cshtml" />
+    <Content Include="Views\Admin\UserActivity.cshtml" />
+    <Content Include="Views\Admin\GroupMembers.cshtml" />
+    <Content Include="Views\Admin\ManagePrivateMessages.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

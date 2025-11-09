@@ -1,45 +1,115 @@
 ﻿@model IEnumerable<Online_chat.Models.Group>
 @{
-    ViewBag.Title = "Quản lý Nhóm Chat";
+    ViewBag.Title = "Quản lý nhóm chat";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<h2>@ViewBag.Title</h2>
-<hr />
+<div class="page-header">
+    <h1 class="page-title">Quản lý nhóm chat</h1>
+    <p class="page-subtitle">Tìm kiếm, chỉnh sửa và xóa các nhóm chat</p>
+</div>
 
 @if (TempData["SuccessMessage"] != null)
 {
-    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 }
 
-<table class="table table-bordered table-striped">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Tên Nhóm</th>
-            <th>Chủ sở hữu (Owner)</th>
-            <th>Ngày tạo</th>
-            <th style="width: 150px;">Thao Tác</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@item.Id</td>
-                <td>@Html.DisplayFor(modelItem => item.GroupName)</td>
-                <td>@Html.DisplayFor(modelItem => item.Owner.Username)</td>
-                <td>@item.CreatedAt.ToLocalTime()</td>
-                <td>
-                    @Html.ActionLink("Sửa", "EditGroup", new { id = item.Id }, new { @class = "btn btn-warning btn-sm" })
+<div class="content-card">
+    <div class="content-card-header">
+        <h5 class="content-card-title">
+            <i class="fas fa-comments me-2"></i>
+            Danh sách nhóm (@Model.Count())
+        </h5>
+    </div>
 
-                    @using (Html.BeginForm("DeleteGroup", "Admin", new { id = item.Id }, FormMethod.Post, new { style = "display:inline; margin-left: 5px;" }))
+    <!-- TÌM KIẾM -->
+    <div class="content-card-body border-bottom">
+        <form method="get" action="@Url.Action("ManageGroups")" class="row g-3">
+            <div class="col-md-10">
+                <input type="text" name="search" class="form-control"
+                       placeholder="Tìm kiếm theo tên nhóm..."
+                       value="@ViewBag.SearchQuery">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-2"></i>Tìm kiếm
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- BẢNG -->
+    <div class="content-card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">ID</th>
+                        <th>Tên nhóm</th>
+                        <th style="width: 200px;">Chủ sở hữu</th>
+                        <th style="width: 150px;" class="text-center">Ngày tạo</th>
+                        <th style="width: 200px;" class="text-center">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var group in Model)
                     {
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc chắn muốn xóa nhóm @item.GroupName?');">Xóa</button>
+                        <tr>
+                            <td><strong>#@group.Id</strong></td>
+                            <td>
+                                <i class="fas fa-users text-success me-2"></i>
+                                <strong>@group.GroupName</strong>
+                            </td>
+                            <td>
+                                @if (group.Owner != null)
+                                {
+                                    <div class="d-flex align-items-center">
+                                        <img src="@(group.Owner.AvatarUrl ?? "/Content/default-avatar.png")"
+                                             class="rounded-circle me-2"
+                                             style="width: 28px; height: 28px; object-fit: cover;">
+                                        <small>@group.Owner.Username</small>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <small class="text-muted">Không có owner</small>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <small class="text-muted">@group.CreatedAt.ToString("dd/MM/yyyy")</small>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    <a href="@Url.Action("GroupMembers", new { id = group.Id })"
+                                       class="btn btn-sm btn-info"
+                                       title="Xem thành viên">
+                                        <i class="fas fa-users"></i>
+                                    </a>
+                                    <a href="@Url.Action("EditGroup", new { id = group.Id })"
+                                       class="btn btn-sm btn-warning"
+                                       title="Chỉnh sửa">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    @using (Html.BeginForm("DeleteGroup", "Admin", new { id = group.Id }, FormMethod.Post, new { style = "display:inline;" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit"
+                                                class="btn btn-sm btn-danger"
+                                                title="Xóa nhóm"
+                                                onclick="return confirm('Xóa nhóm @group.GroupName? Tất cả tin nhắn sẽ bị xóa!');">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
                     }
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,96 @@
+﻿@{
+    ViewBag.Title = "Hoạt động người dùng";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <h1 class="page-title">Hoạt động người dùng</h1>
+    <p class="page-subtitle">Theo dõi người dùng hoạt động gần đây (30 ngày qua)</p>
+</div>
+
+<div class="content-card">
+    <div class="content-card-header">
+        <h5 class="content-card-title">
+            <i class="fas fa-chart-line me-2"></i>
+            Top 50 người dùng hoạt động nhất
+        </h5>
+    </div>
+
+    <div class="content-card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;" class="text-center">Hạng</th>
+                        <th>Người dùng</th>
+                        <th style="width: 150px;" class="text-center">Số tin nhắn</th>
+                        <th style="width: 180px;" class="text-center">Lần cuối hoạt động</th>
+                        <th style="width: 100px;" class="text-center">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int rank = 1;
+                        foreach (var item in Model)
+                        {
+                            string badgeClass = rank == 1 ? "bg-warning" : rank == 2 ? "bg-secondary" : rank == 3 ? "bg-danger" : "bg-light text-dark";
+                            string icon = rank == 1 ? "fa-trophy" : rank == 2 ? "fa-medal" : rank == 3 ? "fa-award" : "fa-hashtag";
+
+                            <tr>
+                                <td class="text-center">
+                                    <span class="badge @badgeClass" style="font-size: 1rem;">
+                                        <i class="fas @icon me-1"></i>@rank
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="@(item.User.AvatarUrl ?? "/Content/default-avatar.png")"
+                                             class="rounded-circle me-3"
+                                             style="width: 40px; height: 40px; object-fit: cover; border: 2px solid #e9ecef;">
+                                        <div>
+                                            <strong>@item.User.DisplayName</strong>
+                                            <br>
+                                            <small class="text-muted">
+                                                <i class="fas fa-at"></i>
+                                                @item.User.Username
+                                            </small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <h5 class="mb-0">
+                                        <span class="badge bg-primary" style="font-size: 1.1rem;">
+                                            @item.MessageCount
+                                        </span>
+                                    </h5>
+                                </td>
+                                <td class="text-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        @item.LastActivity.ToString("dd/MM/yyyy HH:mm")
+                                    </small>
+                                </td>
+                                <td class="text-center">
+                                    <a href="@Url.Action("EditUser", new { id = item.User.Id })"
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="Xem chi tiết">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+
+                            rank++;
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+        transition: background-color 0.2s;
+    }
+</style>
