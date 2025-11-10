@@ -50,8 +50,6 @@ namespace Online_chat.Hubs
                 UserLastSeen[username] = DateTime.UtcNow;
                 Clients.All.userDisconnected(username);
                 Console.WriteLine($"❌ {username} disconnected");
-                List<object> conversation;
-                _aiConversations.TryRemove(username, out conversation);
             }
             return base.OnDisconnected(stopCalled);
         }
@@ -122,23 +120,12 @@ namespace Online_chat.Hubs
 
             if (senderUser == null || partnerUser == null) return;
 
-            ChatMessageDTO msgObj;
-            try
-            {
-                msgObj = JsonConvert.DeserializeObject<ChatMessageDTO>(rawMessage);
-            }
-            catch
-            {
-                msgObj = new ChatMessageDTO { Type = "text", Content = rawMessage };
-            }
-
             var timestamp = DateTime.UtcNow;
             var msg = new PrivateMessage
             {
                 SenderId = senderUser.Id,
                 ReceiverId = partnerUser.Id,
                 Content = rawMessage,
-                MessageType = msgObj.Type,
                 Timestamp = timestamp
             };
             _context.PrivateMessages.Add(msg);
@@ -149,7 +136,7 @@ namespace Online_chat.Hubs
                 senderUser.Username,
                 senderUser.AvatarUrl,
                 rawMessage,
-                timestamp.ToString("o") // ISO 8601 format
+                timestamp.ToString("o")
             );
         }
 
@@ -257,19 +244,23 @@ namespace Online_chat.Hubs
         public void JoinPrivateGroup(string partnerUsername)
         {
             var currentUsername = Context.User.Identity.Name;
-            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
-            var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername);
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername && !u.IsDeleted);
+            var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername && !u.IsDeleted);
 
             if (currentUser != null && partnerUser != null)
             {
                 var groupName = GetPrivateGroupName(currentUser.Id, partnerUser.Id);
                 Groups.Add(Context.ConnectionId, groupName);
+                Console.WriteLine($"👥 {currentUsername} joined private group: {groupName}");
             }
         }
 
+
         private string GetPrivateGroupName(int userId1, int userId2)
         {
-            return userId1 < userId2 ? $"private_{userId1}_{userId2}" : $"private_{userId2}_{userId1}";
+            return userId1 < userId2
+                ? $"private_{userId1}_{userId2}"
+                : $"private_{userId2}_{userId1}";
         }
 
         // ========================================================
@@ -333,27 +324,51 @@ namespace Online_chat.Hubs
         // ========================================================
         public void UserTyping(string partnerUsername)
         {
-            var currentUsername = Context.User.Identity.Name;
-            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
-            var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername);
-
-            if (currentUser != null && partnerUser != null)
+            try
             {
+                var currentUsername = Context.User.Identity.Name;
+                Console.WriteLine($"[DEBUG] UserTyping called: {currentUsername} -> {partnerUsername}");
+
+                var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername && !u.IsDeleted);
+                var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername && !u.IsDeleted);
+
+                if (currentUser == null || partnerUser == null)
+                {
+                    Console.WriteLine($"[ERROR] User not found: current={currentUser?.Id}, partner={partnerUser?.Id}");
+                    return;
+                }
+
                 var groupName = GetPrivateGroupName(currentUser.Id, partnerUser.Id);
+                Console.WriteLine($"[DEBUG] Sending typing to group: {groupName}");
+
                 Clients.Group(groupName).userTyping(currentUsername);
+
+                Console.WriteLine($"⌨️ Typing: {currentUsername} -> {partnerUsername}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] UserTyping exception: {ex.Message}");
             }
         }
 
         public void UserStoppedTyping(string partnerUsername)
         {
-            var currentUsername = Context.User.Identity.Name;
-            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
-            var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername);
-
-            if (currentUser != null && partnerUser != null)
+            try
             {
+                var currentUsername = Context.User.Identity.Name;
+                var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername && !u.IsDeleted);
+                var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername && !u.IsDeleted);
+
+                if (currentUser == null || partnerUser == null) return;
+
                 var groupName = GetPrivateGroupName(currentUser.Id, partnerUser.Id);
                 Clients.Group(groupName).userStoppedTyping(currentUsername);
+
+                Console.WriteLine($"⏹ Stopped typing: {currentUsername} -> {partnerUsername}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] UserStoppedTyping exception: {ex.Message}");
             }
         }
 

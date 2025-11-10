@@ -1,35 +1,23 @@
-﻿using Online_chat.Models;
-using System.Linq;
+﻿// Controllers/BaseController.cs
+using Online_chat.Models;
 using System.Web.Mvc;
 
 namespace Online_chat.Controllers
 {
-    [Authorize]
     public class BaseController : Controller
     {
-        protected readonly ApplicationDbContext _context = new ApplicationDbContext();
+        protected ApplicationDbContext _context;
 
-        protected override void OnActionExecuting(ActionExecutingContext filterContext)
+        public BaseController()
         {
-            if (User.Identity.IsAuthenticated)
-            {
-                var currentUsername = User.Identity.Name;
-                var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
-
-                if (currentUser != null)
-                {
-                    ViewBag.CurrentUserAvatarUrl = currentUser.AvatarUrl;
-                    ViewBag.CurrentUserAvatarVersion = currentUser.AvatarVersion;
-                }
-            }
-            base.OnActionExecuting(filterContext);
+            _context = new ApplicationDbContext();
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                _context.Dispose();
+                _context?.Dispose();
             }
             base.Dispose(disposing);
         }

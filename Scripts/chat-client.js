@@ -170,17 +170,20 @@
         $('#typing-indicator').fadeOut(200);
     }
 
+    console.log("📋 Available SignalR methods:", Object.keys(chatHub.server));
     function sendTypingSignal() {
         if (currentChat.mode === 'private' && currentChat.partnerUsername) {
             console.log('🔄 Sending typing signal to:', currentChat.partnerUsername);
 
             if (!chatHub.server.userTyping) {
-                console.error('❌ userTyping method not found! Available:', Object.keys(chatHub.server));
+                console.error('❌ userTyping method not found!');
+                console.log('Available methods:', Object.keys(chatHub.server));
                 return;
             }
 
             if (!isTyping) {
                 isTyping = true;
+
                 chatHub.server.userTyping(currentChat.partnerUsername)
                     .done(() => console.log('✅ Typing signal sent'))
                     .fail(err => console.error('❌ Typing signal failed:', err));
@@ -189,7 +192,9 @@
             clearTimeout(typingTimer);
             typingTimer = setTimeout(() => {
                 isTyping = false;
-                chatHub.server.userStoppedTyping(currentChat.partnerUsername);
+                if (chatHub.server.userStoppedTyping) {
+                    chatHub.server.userStoppedTyping(currentChat.partnerUsername);
+                }
                 console.log('⏹ Stopped typing');
             }, TYPING_TIMEOUT);
         }
@@ -1291,9 +1296,7 @@
         _sendTextMessage(e);
     };
 
-    // ========== SWITCH CHAT ==========
     function switchChat(target) {
-        // Clear typing indicator khi đổi chat
         hideTypingIndicator();
         if (isTyping && currentChat.mode === 'private' && currentChat.partnerUsername) {
             clearTimeout(typingTimer);
@@ -1331,6 +1334,13 @@
             $('.message-area').show();
 
             currentChat.partnerUsername = $(target).data('username');
+
+            if (chatHub.server.joinPrivateGroup) {
+                chatHub.server.joinPrivateGroup(currentChat.partnerUsername)
+                    .done(() => console.log(`✅ Joined private group with ${currentChat.partnerUsername}`))
+                    .fail(err => console.error('❌ Failed to join private group:', err));
+            }
+
             const displayName = $(target).find('strong').text().trim();
             const avatarSrc = $(target).data('avatar-url') || '/Content/default-avatar.png';
 
@@ -1821,13 +1831,6 @@
     loadNicknames();
     loadBackgrounds();
 
-    // Manually add typing methods if SignalR proxy doesn't auto-generate
-    // This happens when methods are added after initial hub creation
-    if (typeof chatHub.server.userTyping === 'undefined') {
-        console.log("⚠️ Creating userTyping method manually");
-
-    }
-
     if (typeof chatHub.server.userStoppedTyping === 'undefined') {
         console.log("⚠️ Creating userStoppedTyping method manually");
         chatHub.server.userStoppedTyping = function (partnerUsername) {
@@ -1849,18 +1852,19 @@
 
     $.connection.hub.start()
         .done(function () {
-            console.log("✅ SignalR connected successfully");
-            console.log("📋 Available SignalR methods:", Object.keys(chatHub.server));
+            console.log("✅ SignalR connected");
+            console.log("📋 Server methods:", Object.keys(chatHub.server));
 
-            // Join private group cho mỗi friend
-            loadFriendsList();
-
-            if (chatHub.server.getOnlineUsers) {
-                chatHub.server.getOnlineUsers();
+            if (chatHub.server.userTyping && chatHub.server.userStoppedTyping) {
+                console.log("✅ Typing methods available");
+            } else {
+                console.error("❌ Typing methods MISSING!");
             }
+
+            loadFriendsList();
         })
         .fail(function (err) {
-            console.error("❌ SignalR connection failed:", err);
+            console.error("❌ SignalR failed:", err);
         });
 
     setInterval(function () {
@@ -1868,4 +1872,5 @@
             chatHub.server.ping();
         }
     }, 30000);
+
 });

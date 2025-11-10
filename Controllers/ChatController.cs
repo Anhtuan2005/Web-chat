@@ -13,7 +13,6 @@ namespace Online_chat.Controllers
     [Authorize]
     public class ChatController : BaseController
     {
-        private readonly ApplicationDbContext _context = new ApplicationDbContext();
 
         public ActionResult Index(string friendUsername)
         {
@@ -22,7 +21,6 @@ namespace Online_chat.Controllers
 
             ViewBag.CurrentUserAvatarUrl = currentUser?.AvatarUrl;
             ViewBag.CurrentUserAvatarVersion = currentUser?.AvatarVersion ?? 0;
-
             ViewBag.SelectedFriendUsername = friendUsername;
 
             return View();
@@ -52,19 +50,17 @@ namespace Online_chat.Controllers
                 })
                 .ToList();
 
-            // Format timestamp thành ISO string để JavaScript parse được
             var messagesFormatted = messages.Select(m => new
             {
                 m.SenderUsername,
                 m.SenderAvatar,
                 m.Content,
-                Timestamp = m.Timestamp.ToString("o") // ISO 8601 format
+                Timestamp = m.Timestamp.ToString("o") 
             }).ToList();
 
-            // Dùng JSON.NET để serialize đúng format
-            var json = JsonConvert.SerializeObject(new { success = true, messages = messagesFormatted });
-            return Content(json, "application/json");
+            return Json(new { success = true, messages = messagesFormatted }, JsonRequestBehavior.AllowGet);
         }
+
         [HttpPost]
         public JsonResult UploadFiles()
         {
@@ -101,26 +97,6 @@ namespace Online_chat.Controllers
                 return Json(new { success = false, message = "Upload lỗi: " + ex.Message });
             }
         }
-        public class MessageContent
-        {
-            public string type { get; set; }
-            public string content { get; set; }
-        }
-        public class FileLinkInfo
-        {
-            public string Url { get; set; }
-            public string FileName { get; set; }
-            public string Timestamp { get; set; }
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                _context.Dispose();
-            }
-            base.Dispose(disposing);
-        }
 
         [HttpGet]
         public async Task<JsonResult> GetConversationInfo(string partnerUsername)
@@ -133,7 +109,7 @@ namespace Online_chat.Controllers
                     (m.Sender.Username == currentUsername && m.Receiver.Username == partnerUsername) ||
                     (m.Sender.Username == partnerUsername && m.Receiver.Username == currentUsername)
                 )
-                .OrderByDescending(m => m.Timestamp) // Mới nhất trước
+                .OrderByDescending(m => m.Timestamp)
                 .ToListAsync();
 
             var files = new List<FileLinkInfo>();
@@ -144,18 +120,16 @@ namespace Online_chat.Controllers
                 try
                 {
                     var content = JsonConvert.DeserializeObject<MessageContent>(msg.Content);
-
                     if (content != null)
                     {
                         var timeAgo = GetTimeAgo(msg.Timestamp);
 
-                        // 3. Phân loại File và Ảnh/Video
                         if (content.type == "file")
                         {
                             files.Add(new FileLinkInfo
                             {
                                 Url = content.content,
-                                FileName = System.IO.Path.GetFileName(content.content), // Lấy tên file từ URL
+                                FileName = Path.GetFileName(content.content),
                                 Timestamp = timeAgo
                             });
                         }
@@ -170,23 +144,12 @@ namespace Online_chat.Controllers
                         }
                     }
                 }
-                catch (Exception)
-                {
-                }
+                catch { }
             }
 
             return Json(new { success = true, files = files, images = images }, JsonRequestBehavior.AllowGet);
         }
-        private string GetTimeAgo(DateTime timestamp)
-        {
-            var span = DateTime.Now - timestamp;
-            if (span.Days > 365) return $"{span.Days / 365} năm trước";
-            if (span.Days > 30) return $"{span.Days / 30} tháng trước";
-            if (span.Days > 0) return $"{span.Days} ngày trước";
-            if (span.Hours > 0) return $"{span.Hours} giờ trước";
-            if (span.Minutes > 0) return $"{span.Minutes} phút trước";
-            return "Vừa xong";
-        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<JsonResult> ClearHistory(string partnerUsername)
@@ -220,6 +183,30 @@ namespace Online_chat.Controllers
             {
                 return Json(new { success = false, message = "Lỗi máy chủ: " + ex.Message });
             }
+        }
+
+        private string GetTimeAgo(DateTime timestamp)
+        {
+            var span = DateTime.Now - timestamp;
+            if (span.Days > 365) return $"{span.Days / 365} năm trước";
+            if (span.Days > 30) return $"{span.Days / 30} tháng trước";
+            if (span.Days > 0) return $"{span.Days} ngày trước";
+            if (span.Hours > 0) return $"{span.Hours} giờ trước";
+            if (span.Minutes > 0) return $"{span.Minutes} phút trước";
+            return "Vừa xong";
+        }
+
+        public class MessageContent
+        {
+            public string type { get; set; }
+            public string content { get; set; }
+        }
+
+        public class FileLinkInfo
+        {
+            public string Url { get; set; }
+            public string FileName { get; set; }
+            public string Timestamp { get; set; }
         }
     }
 }
