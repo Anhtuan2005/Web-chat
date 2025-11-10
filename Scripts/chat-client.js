@@ -634,8 +634,21 @@
                 duration: durationSeconds,
                 callType: currentCallType
             };
+            const logMessageJson = JSON.stringify(logMessage);
 
-            chatHub.server.sendPrivateMessage(currentCallPartner, JSON.stringify(logMessage));
+            // Gửi lên server
+            chatHub.server.sendPrivateMessage(currentCallPartner, logMessageJson);
+            chatHub.server.endCall(currentCallPartner);
+
+            // Hiển thị ngay cho chính mình
+            renderMessage({
+                senderUsername: currentUsername,
+                content: logMessageJson,
+                timestamp: new Date().toISOString(),
+                isSelf: true
+            });
+        } else if (currentCallPartner) {
+            // Nếu không gửi log, vẫn thông báo cho người kia kết thúc
             chatHub.server.endCall(currentCallPartner);
         }
 
@@ -1508,7 +1521,7 @@
 
         const formData = new FormData();
         for (let i = 0; i < filesToUpload.length; i++) {
-            formData.append('file' + i, filesToUpload[i]); 
+            formData.append('files', filesToUpload[i]);
         }
 
         $('#sendImageButton').prop('disabled', true).text('Đang gửi...');
@@ -1663,53 +1676,41 @@
         $('#fileUploadInput').click();
     });
 
-    // ========== EMOJI PICKER ==========
-    (function () {
-        const $emojiBtn = $('#emoji-button');
-        const $messageInput = $('#messageInput');
+    // ========== EMOJI PICKER (PICMO IMPLEMENTATION - JQUERY EVENT FIX) ==========
+    $(window).on('load', function () {
+        const button = document.querySelector('#emoji-button');
+        const messageInput = document.querySelector('#messageInput');
 
-        if ($emojiBtn.length && $messageInput.length) {
-            const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '❤️', '💕', '💖', '💗', '👍', '👎', '👏', '🙏', '💪', '🎉', '🎊', '🎁', '🔥', '⭐', '✨', '💯', '✅', '❌'];
+        if (button && messageInput) {
+            try {
+                const picker = PicmoPopup.createPopup({}, {
+                    referenceElement: button,
+                    triggerElement: button,
+                    position: 'top-start',
+                    showCloseButton: false
+                });
 
-            $emojiBtn.on('click', function (e) {
-                e.stopPropagation();
+                picker.addEventListener('emoji:select', (selection) => {
+                    const start = messageInput.selectionStart;
+                    const end = messageInput.selectionEnd;
+                    const text = messageInput.value;
+                    messageInput.value = text.substring(0, start) + selection.emoji + text.substring(end);
+                    messageInput.focus();
+                    messageInput.selectionEnd = start + selection.emoji.length;
+                });
 
-                if ($('#simple-emoji-picker').length === 0) {
-                    const pickerHtml = `
-                        <div id="simple-emoji-picker" style="display:none; position:fixed; background:white; border:1px solid #ddd; border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,0.2); padding:12px; z-index:1000; max-width:300px;">
-                            <div style="display:grid; grid-template-columns:repeat(8, 1fr); gap:8px;">
-                                ${emojis.map(emoji => `<button class="emoji-btn" style="border:none; background:transparent; font-size:1.5rem; cursor:pointer; padding:4px; border-radius:4px;">${emoji}</button>`).join('')}
-                            </div>
-                        </div>`;
-                    $('body').append(pickerHtml);
+                // Sử dụng jQuery để xử lý click để đảm bảo tính nhất quán
+                $(button).on('click', function (e) {
+                    e.stopPropagation(); // Ngăn sự kiện lan ra ngoài
+                    picker.toggle();
+                });
 
-                    $(document).on('mouseenter', '.emoji-btn', function () {
-                        $(this).css('background', '#f0f0f0');
-                    }).on('mouseleave', '.emoji-btn', function () {
-                        $(this).css('background', 'transparent');
-                    });
-
-                    $(document).on('click', '.emoji-btn', function () {
-                        $messageInput.val($messageInput.val() + $(this).text());
-                        $('#simple-emoji-picker').hide();
-                        $messageInput.focus();
-                    });
-                }
-
-                const btnRect = $emojiBtn[0].getBoundingClientRect();
-                $('#simple-emoji-picker').css({
-                    bottom: (window.innerHeight - btnRect.top + 10) + 'px',
-                    left: (btnRect.left) + 'px'
-                }).toggle();
-            });
-
-            $(document).on('click', function (e) {
-                if (!$(e.target).closest('#emoji-button, #simple-emoji-picker').length) {
-                    $('#simple-emoji-picker').hide();
-                }
-            });
+            } catch (e) {
+                console.error("Lỗi khởi tạo Emoji Picker:", e);
+                $(button).hide();
+            }
         }
-    })();
+    });
     $('body').on('click', '#user-chat-header', function () {
         if (window.currentChat.mode === 'private' && window.currentChat.partnerUsername) {
             const partnerUsername = window.currentChat.partnerUsername;
@@ -1792,89 +1793,80 @@
     });
 
     // ========== LOAD FRIENDS ==========
-    function loadFriendsList() {
+    function loadFriendsList(callback) {
         const container = $('#conversation-list-ul');
         container.find('.friend-item').remove();
         const hiddenChats = JSON.parse(localStorage.getItem('hiddenChats') || '[]');
 
         $.getJSON(urls.getFriendsList, function (friends) {
-            if (!friends || friends.length === 0) return;
+            if (friends && friends.length > 0) {
+                friends.forEach(function (friend) {
+                    if (friend.Username === currentUsername) return;
+                    if (hiddenChats.includes(friend.Username)) return;
 
-            friends.forEach(function (friend) {
-                if (friend.Username === currentUsername) return;
+                    const isOnline = onlineUsers.has(friend.Username);
+                    const statusIndicator = `<span class="status-indicator ${isOnline ? 'online' : 'offline'}" data-username="${friend.Username}"></span>`;
 
-                // Bỏ qua những người dùng trong danh sách ẩn
-                if (hiddenChats.includes(friend.Username)) {
-                    console.log(`Hiding friend: ${friend.Username}`);
-                    return;
-                }
-
-                const isOnline = onlineUsers.has(friend.Username);
-                const statusIndicator = `<span class="status-indicator ${isOnline ? 'online' : 'offline'}" data-username="${friend.Username}"></span>`;
-
-                const friendHtml = `
-                    <a href="#" class="list-group-item list-group-item-action friend-item no-silhouette-icon"
-                        data-chat-mode="private"
-                        data-username="${friend.Username}"
-                        data-userid="${friend.Id}"
-                        data-avatar-url="${friend.AvatarUrl || ''}">
-                        <strong>
-                            <div class="chat-header-avatar-wrapper">
-                                <img src="${friend.AvatarUrl || '/Content/default-avatar.png'}"
-                                     class="chat-header-avatar no-default-icon" 
-                                     style="width: 40px; height: 40px;" 
-                                     alt="${friend.DisplayName}" />
-                                ${statusIndicator} <!-- Chỉ dot online/offline, không phải silhouette -->
-                            </div>
-                            ${friend.DisplayName}
-                        </strong>
-                    </a>`;
-                container.append(friendHtml);
-            });
-
-            const lastPartner = localStorage.getItem('lastChatPartner');
-            let target = lastPartner ? container.find(`.list-group-item-action[data-username='${lastPartner}']`) : null;
-            if (!target || target.length === 0) {
-                target = $('#ai-chat-btn');
+                    const friendHtml = `
+                        <a href="#" class="list-group-item list-group-item-action friend-item no-silhouette-icon"
+                            data-chat-mode="private"
+                            data-username="${friend.Username}"
+                            data-userid="${friend.Id}"
+                            data-avatar-url="${friend.AvatarUrl || ''}">
+                            <strong>
+                                <div class="chat-header-avatar-wrapper">
+                                    <img src="${friend.AvatarUrl || '/Content/default-avatar.png'}"
+                                         class="chat-header-avatar no-default-icon" 
+                                         style="width: 40px; height: 40px;" 
+                                         alt="${friend.DisplayName}" />
+                                    ${statusIndicator}
+                                </div>
+                                ${friend.DisplayName}
+                            </strong>
+                        </a>`;
+                    container.append(friendHtml);
+                });
             }
-            switchChat(target);
+
+            // Execute the callback after the list is populated
+            if (callback && typeof callback === 'function') {
+                callback();
+            }
         });
     }
 
     loadNicknames();
     loadBackgrounds();
 
-    if (typeof chatHub.server.userStoppedTyping === 'undefined') {
-        console.log("⚠️ Creating userStoppedTyping method manually");
-        chatHub.server.userStoppedTyping = function (partnerUsername) {
-            return $.connection.hub.invoke('ChatHub', 'UserStoppedTyping', partnerUsername);
-        };
-    }
-    if (typeof chatHub.server.userStoppedTyping === 'undefined') {
-        console.log("⚠️ Creating userStoppedTyping method manually");
-        Object.defineProperty(chatHub.server, 'userStoppedTyping', {
-            value: function (partnerUsername) {
-                var args = [].slice.call(arguments, 0);
-                return $.connection.hub.proxies['chatHub'].invoke.apply($.connection.hub.proxies['chatHub'], ['UserStoppedTyping'].concat(args));
-            },
-            enumerable: true
-        });
-    }
-
-    $.connection.hub.url = window.location.origin + "/signalr";
+    // ... (rest of the file) ...
 
     $.connection.hub.start()
         .done(function () {
             console.log("✅ SignalR connected");
-            console.log("📋 Server methods:", Object.keys(chatHub.server));
+            
+            // Load friends and then select the one from the URL if it exists
+            loadFriendsList(function() {
+                const selectedFriendUsername = config.selectedFriendUsername || '';
+                let target;
 
-            if (chatHub.server.userTyping && chatHub.server.userStoppedTyping) {
-                console.log("✅ Typing methods available");
-            } else {
-                console.error("❌ Typing methods MISSING!");
-            }
+                if (selectedFriendUsername) {
+                    target = $(`.friend-item[data-username='${selectedFriendUsername}']`);
+                }
 
-            loadFriendsList();
+                // Fallback logic if no friend is selected or found
+                if (!target || target.length === 0) {
+                    const lastPartner = localStorage.getItem('lastChatPartner');
+                    if (lastPartner) {
+                        target = $(`.friend-item[data-username='${lastPartner}']`);
+                    }
+                }
+                
+                if (!target || target.length === 0) {
+                    target = $('#ai-chat-btn');
+                }
+
+                switchChat(target);
+            });
         })
         .fail(function (err) {
             console.error("❌ SignalR failed:", err);

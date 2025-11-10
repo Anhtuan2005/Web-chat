@@ -136,27 +136,31 @@ namespace Online_chat.Controllers
         }
 
         [HttpPost]
-        public JsonResult Multiple()
+        public JsonResult Multiple(IEnumerable<HttpPostedFileBase> files)
         {
             try
             {
                 var uploadedFiles = new List<object>();
 
-                for (int i = 0; i < Request.Files.Count; i++)
+                if (files == null || !files.Any())
                 {
-                    var file = Request.Files[i]; 
+                    return Json(new { success = false, message = "Không có file nào được chọn." });
+                }
 
+                foreach (var file in files)
+                {
                     if (file == null || file.ContentLength == 0) continue;
 
                     if (file.ContentLength > 50 * 1024 * 1024)
                     {
+                        // Trả về lỗi ngay lập tức nếu có file quá lớn
                         return Json(new { success = false, message = $"File '{file.FileName}' vượt quá 50MB" });
                     }
 
                     var extension = Path.GetExtension(file.FileName).ToLower();
                     var fileName = Guid.NewGuid().ToString() + extension;
-                    string uploadDir = "";
-                    string type = "";
+                    string uploadDir;
+                    string type;
 
                     var imageExts = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp" };
                     var videoExts = new[] { ".mp4", ".mov", ".avi", ".webm", ".mkv" };
@@ -189,7 +193,6 @@ namespace Online_chat.Controllers
 
                     uploadedFiles.Add(new
                     {
-                        success = true,
                         filePath = relativePath,
                         type = type,
                         fileName = file.FileName,
@@ -198,7 +201,7 @@ namespace Online_chat.Controllers
                 }
 
                 if (uploadedFiles.Count == 0)
-                    return Json(new { success = false, message = "Không có file nào được upload." });
+                    return Json(new { success = false, message = "Không có file hợp lệ nào được upload." });
 
                 return Json(new { success = true, files = uploadedFiles });
             }

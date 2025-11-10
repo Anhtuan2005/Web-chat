@@ -434,6 +434,7 @@
     <script>
         window.chatConfig = {
             currentUsername: @Html.Raw(Json.Encode(User.Identity.Name)),
+            selectedFriendUsername: @Html.Raw(Json.Encode(ViewBag.SelectedFriendUsername)),
             antiForgeryToken: $('#logoutForm input[name="__RequestVerificationToken"]').val(),
             urls: {
                 getChatHistory: '@Url.Action("GetChatHistory", "Chat")',
