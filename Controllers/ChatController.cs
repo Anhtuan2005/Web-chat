@@ -46,12 +46,24 @@ namespace Online_chat.Controllers
                 .Select(m => new
                 {
                     SenderUsername = m.Sender.Username,
+                    SenderAvatar = m.Sender.AvatarUrl ?? "/Content/default-avatar.png",
                     Content = m.Content,
                     Timestamp = m.Timestamp
                 })
                 .ToList();
 
-            return Json(new { success = true, messages }, JsonRequestBehavior.AllowGet);
+            // Format timestamp thành ISO string để JavaScript parse được
+            var messagesFormatted = messages.Select(m => new
+            {
+                m.SenderUsername,
+                m.SenderAvatar,
+                m.Content,
+                Timestamp = m.Timestamp.ToString("o") // ISO 8601 format
+            }).ToList();
+
+            // Dùng JSON.NET để serialize đúng format
+            var json = JsonConvert.SerializeObject(new { success = true, messages = messagesFormatted });
+            return Content(json, "application/json");
         }
         [HttpPost]
         public JsonResult UploadFiles()

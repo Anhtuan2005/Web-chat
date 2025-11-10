@@ -48,6 +48,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Anthropic.SDK, Version=5.5.0.0, Culture=neutral, PublicKeyToken=964e90d2b32b1213, processorArchitecture=MSIL">
+      <HintPath>..\packages\Anthropic.SDK.5.8.0\lib\netstandard2.0\Anthropic.SDK.dll</HintPath>
+    </Reference>
     <Reference Include="BCrypt.Net-Next, Version=4.0.3.0, Culture=neutral, PublicKeyToken=1e11be04b6288443, processorArchitecture=MSIL">
       <HintPath>..\packages\BCrypt.Net-Next.4.0.3\lib\net472\BCrypt.Net-Next.dll</HintPath>
     </Reference>
@@ -82,6 +85,9 @@
       <HintPath>..\packages\Microsoft.Configuration.ConfigurationBuilders.UserSecrets.3.0.0\lib\Net471\Microsoft.Configuration.ConfigurationBuilders.UserSecrets.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.Extensions.AI.Abstractions, Version=9.10.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Extensions.AI.Abstractions.9.10.1\lib\net462\Microsoft.Extensions.AI.Abstractions.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=6.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Extensions.Logging.Abstractions.6.0.0\lib\net461\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
     </Reference>
@@ -154,11 +160,20 @@
     <Reference Include="System.Text.Encoding.CodePages, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Text.Encoding.CodePages.8.0.0\lib\net462\System.Text.Encoding.CodePages.dll</HintPath>
     </Reference>
+    <Reference Include="System.Text.Encodings.Web, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Text.Encodings.Web.8.0.0\lib\net462\System.Text.Encodings.Web.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.Json, Version=8.0.0.6, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Text.Json.8.0.6\lib\net462\System.Text.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System.Threading.Channels, Version=9.0.0.5, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Threading.Channels.9.0.5\lib\net462\System.Threading.Channels.dll</HintPath>
     </Reference>
     <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Threading.Tasks.Extensions.4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
     </Reference>
     <Reference Include="System.Web.DynamicData" />
     <Reference Include="System.Web.Entity" />
@@ -244,6 +259,7 @@
     <Compile Include="Controllers\BaseController.cs" />
     <Compile Include="Controllers\ChatController.cs" />
     <Compile Include="Controllers\FriendController.cs" />
+    <Compile Include="Controllers\GroupController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\ProfileController.cs" />
     <Compile Include="Controllers\SettingsController.cs" />
@@ -267,6 +283,22 @@
     <Compile Include="Migrations\202511080754564_AddProfileFields.cs" />
     <Compile Include="Migrations\202511080754564_AddProfileFields.Designer.cs">
       <DependentUpon>202511080754564_AddProfileFields.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202511091008046_FixFriendshipForeignKeys.cs" />
+    <Compile Include="Migrations\202511091008046_FixFriendshipForeignKeys.Designer.cs">
+      <DependentUpon>202511091008046_FixFriendshipForeignKeys.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202511091027502_AddRequestedAtRespondedAtToFriendship.cs" />
+    <Compile Include="Migrations\202511091027502_AddRequestedAtRespondedAtToFriendship.Designer.cs">
+      <DependentUpon>202511091027502_AddRequestedAtRespondedAtToFriendship.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202511091038396_AddIsReadToPrivateMessages.cs" />
+    <Compile Include="Migrations\202511091038396_AddIsReadToPrivateMessages.Designer.cs">
+      <DependentUpon>202511091038396_AddIsReadToPrivateMessages.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202511091039141_SyncIsReadColumn.cs" />
+    <Compile Include="Migrations\202511091039141_SyncIsReadColumn.Designer.cs">
+      <DependentUpon>202511091039141_SyncIsReadColumn.cs</DependentUpon>
     </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\ApplicationDbContext.cs" />
@@ -421,6 +453,7 @@
     <Content Include="Scripts\umd\popper-utils.min.js" />
     <Content Include="Scripts\umd\popper.js" />
     <Content Include="Scripts\umd\popper.min.js" />
+    <Content Include="Sounds\notification.mp3" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
@@ -463,12 +496,15 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
+    <Folder Include="Content\backgrounds\" />
     <Folder Include="Uploads\Avatars\" />
     <Folder Include="Uploads\CoverPhotos\" />
     <Folder Include="Uploads\Files\" />
     <Folder Include="Uploads\Images\" />
     <Folder Include="Uploads\Videos\" />
     <Folder Include="Views\Base\" />
+    <Folder Include="Views\Dev\" />
+    <Folder Include="Views\Group\" />
     <Folder Include="Views\Messages\" />
   </ItemGroup>
   <ItemGroup>
@@ -515,6 +551,18 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\202511080754564_AddProfileFields.resx">
       <DependentUpon>202511080754564_AddProfileFields.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511091008046_FixFriendshipForeignKeys.resx">
+      <DependentUpon>202511091008046_FixFriendshipForeignKeys.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511091027502_AddRequestedAtRespondedAtToFriendship.resx">
+      <DependentUpon>202511091027502_AddRequestedAtRespondedAtToFriendship.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511091038396_AddIsReadToPrivateMessages.resx">
+      <DependentUpon>202511091038396_AddIsReadToPrivateMessages.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511091039141_SyncIsReadColumn.resx">
+      <DependentUpon>202511091039141_SyncIsReadColumn.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>

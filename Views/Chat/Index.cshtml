@@ -5,16 +5,18 @@
     Layout = "~/Views/Shared/_ChatLayout.cshtml";
 }
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
-<style>
-</style>
+
 <div class="chat-view-wrapper">
     <div class="chat-main">
-        <!-- Header Container - FIX: Đặt ở đầu để luôn top -->
+        <!-- Header Container -->
         <div id="chat-header-container">
-            <!-- Private Header (giữ nguyên) -->
+            <!-- Private Header -->
             <div id="private-chat-header" class="chat-header" style="display: none;">
                 <div id="user-chat-header" class="chat-header-info d-flex align-items-center">
-                    <img id="chat-header-avatar" src="" alt="Avatar" class="chat-header-avatar me-2" />
+                    <div class="chat-header-avatar-wrapper">
+                        <img id="chat-header-avatar" src="" alt="Avatar" class="chat-header-avatar me-2" />
+                        <span class="status-indicator" id="header-status-indicator"></span>
+                    </div>
                     <div>
                         <div id="chat-header-displayname" class="fw-bold"></div>
                         <div id="chat-header-status" class="text-muted">Đang hoạt động</div>
@@ -22,9 +24,6 @@
                 </div>
                 <div class="d-flex align-items-center">
                     <div id="user-chat-buttons" style="display: none;">
-                        <button class="btn btn-light" title="Thêm vào nhóm (làm sau)">
-                            <i class="fas fa-user-plus"></i>
-                        </button>
                         <button id="start-voice-call-btn" class="btn btn-light" title="Gọi thoại">
                             <i class="fas fa-phone-alt"></i>
                         </button>
@@ -43,23 +42,23 @@
                     </button>
                 </div>
             </div>
+
+            <!-- AI Header -->
             <div id="ai-chat-header" class="ai-header px-3 py-2" style="display: none;">
-                <!-- Icon quay lại -->
                 <button id="ai-back-btn" class="btn btn-link text-white p-1" title="Quay lại danh sách">
                     <i class="fas fa-chevron-left fs-4"></i>
                 </button>
-                <!-- Tên AI -->
                 <div class="ai-title text-white fw-bold d-flex align-items-center gap-1">
                     <span>Chat AI</span>
                     <i class="fas fa-check-circle text-success" title="Verified"></i>
                 </div>
-                <!-- Icon info -->
                 <button id="ai-info-btn" class="btn btn-link text-white p-1" title="Thông tin AI">
                     <i class="fas fa-info-circle fs-5"></i>
                 </button>
             </div>
         </div>
-        <!-- AI Welcome Screen - FIX: Sau header để header luôn top -->
+
+        <!-- AI Welcome Screen -->
         <div id="ai-welcome-screen" style="display: none;">
             <div class="ai-logo-circle"></div>
             <h3>Bắt đầu chat với AI</h3>
@@ -70,11 +69,26 @@
                 <button class="ai-prompt-btn" data-prompt="Giúp tôi khám phá ngôn ngữ tình yêu">Giúp tôi khám phá ngôn ngữ tình yêu</button>
             </div>
         </div>
+
         <!-- Message Area -->
         <div class="message-area" id="messagesList"></div>
-        <!-- File Inputs (giữ nguyên) -->
+
+        <!-- Typing Indicator -->
+        <div id="typing-indicator" style="display: none; padding: 10px 20px; margin-bottom: 10px;">
+            <div class="typing-dots">
+                <span class="typing-avatar"></span>
+                <div class="typing-bubble">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Inputs -->
         <input type="file" id="imageUploadInput" accept="image/*" multiple style="display: none;" />
         <input type="file" id="fileUploadInput" multiple style="display: none;" />
+
         <!-- Input Area -->
         <div class="input-area">
             <button id="emoji-button" class="btn btn-light" type="button" title="Biểu cảm">
@@ -90,120 +104,7 @@
             <button id="sendButton"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
-    <!-- Modal Preview (giữ nguyên) -->
-    <div class="modal fade" id="imagePreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Xem trước ảnh</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                </div>
-                <div class="modal-body text-center" id="imagePreviewContainer"
-                     style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                    <button type="button" class="btn btn-primary" id="sendImageButton">Gửi</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="modal fade" id="partnerProfileModal" tabindex="-1" role="dialog" aria-labelledby="partnerProfileModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 420px;">
-            <div class="modal-content" style="border-radius: 20px; overflow: hidden; background: #fff; border: none; box-shadow: 0 8px 32px rgba(0,0,0,0.12);">
 
-                <div id="partner-modal-cover" style="height: 160px; background-size: cover; background-position: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative;">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"
-                            style="position: absolute; top: 15px; right: 15px; color: #fff; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border-radius: 50%; width: 36px; height: 36px; border: none; font-size: 1.3rem; opacity: 1; text-shadow: none; display: flex; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer;">
-                        <span aria-hidden="true" style="line-height: 1;">&times;</span>
-                    </button>
-                </div>
-
-                <div style="text-align: center; margin-top: -50px; position: relative; z-index: 10;">
-                    <img id="partner-modal-avatar" src="/Content/default-avatar.png"
-                         style="width: 100px; height: 100px; border-radius: 50%; border: 5px solid #fff; background-color: #fff; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
-                </div>
-
-                <div class="modal-body" style="padding: 20px 30px 30px; text-align: center;">
-                    <h3 id="partner-modal-display-name" style="font-weight: 700; color: #1a1a1a; margin-bottom: 5px; font-size: 1.5rem;">Đang tải...</h3>
-                    <p id="partner-modal-username" style="color: #8e8e93; font-size: 0.95rem; margin-bottom: 24px;"></p>
-
-                    <div style="text-align: left; background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
-                        <h5 style="font-weight: 600; margin-bottom: 16px; color: #1a1a1a; font-size: 1rem;">
-                            <i class="fas fa-user-circle" style="color: #667eea; margin-right: 8px;"></i>
-                            Thông tin cá nhân
-                        </h5>
-
-                        <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
-                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
-                                <i class="fas fa-venus-mars" style="color: white; font-size: 1.1rem;"></i>
-                            </div>
-                            <div style="flex: 1;">
-                                <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Giới tính</div>
-                                <strong id="partner-modal-gender" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
-                            </div>
-                        </div>
-
-                        <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
-                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
-                                <i class="fas fa-birthday-cake" style="color: white; font-size: 1.1rem;"></i>
-                            </div>
-                            <div style="flex: 1;">
-                                <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Ngày sinh</div>
-                                <strong id="partner-modal-dob" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
-                            </div>
-                        </div>
-
-                        <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 10px; background: white; border-radius: 8px;">
-                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #28a745 0%, #218838 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
-                                <i class="fas fa-phone-alt" style="color: white; font-size: 1.1rem;"></i>
-                            </div>
-                            <div style="flex: 1;">
-                                <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Điện thoại</div>
-                                <strong id="partner-modal-phone" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
-                            </div>
-                        </div>
-
-                        <div style="display: flex; align-items: center; padding: 10px; background: white; border-radius: 8px;">
-                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
-                                <i class="fas fa-envelope" style="color: white; font-size: 1.1rem;"></i>
-                            </div>
-                            <div style="flex: 1;">
-                                <div style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 2px;">Email</div>
-                                <strong id="partner-modal-email" style="color: #1a1a1a; font-size: 0.95rem;"></strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="text-align: left; background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
-                        <h5 style="font-weight: 600; margin-bottom: 12px; color: #1a1a1a; font-size: 1rem;">
-                            <i class="fas fa-book-open" style="color: #fd7e14; margin-right: 8px;"></i>
-                            Tiểu sử
-                        </h5>
-                        <p id="partner-modal-bio" style="color: #333; font-size: 0.95rem; white-space: pre-wrap; word-wrap: break-word;"></p>
-                    </div>
-
-                    <div id="partner-action-list" class="list-group" style="text-align: left;">
-                        <a href="#" id="partner-action-block" class="list-group-item list-group-item-action" style="color: #6c757d; font-weight: 500; border: none; background: transparent; padding-left: 0;">
-                            <i class="fas fa-ban" style="margin-right: 10px; width: 20px;"></i> Chặn tin nhắn và cuộc gọi
-                        </a>
-                        <a href="#" id="partner-action-report" class="list-group-item list-group-item-action" style="color: #dc3545; font-weight: 500; border: none; background: transparent; padding-left: 0;">
-                            <i class="fas fa-exclamation-triangle" style="margin-right: 10px; width: 20px;"></i> Báo xấu
-                        </a>
-
-                        <form id="partner-unfriend-form" method="post" action="@Url.Action("DeclineOrRemoveFriend", "Friend")" style="margin:0; display: none;">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="friendshipId" id="partner-unfriend-id" />
-                            <button type="submit" id="partner-action-unfriend" class="list-group-item list-group-item-action" style="color: #dc3545; font-weight: 500; border: none; background: transparent; padding-left: 0; width: 100%; text-align: left;">
-                                <i class="fas fa-trash-alt" style="margin-right: 10px; width: 20px;"></i> Xóa khỏi danh sách bạn bè
-                            </button>
-                        </form>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-    </div>
     <div id="conversation-info-sidebar" style="display: none;">
         <div class="info-sidebar-header">
             <h5>Thông tin hội thoại</h5>
@@ -213,67 +114,108 @@
         </div>
 
         <div class="info-sidebar-body">
-
+            <!-- User info -->
             <div class="info-sidebar-user">
                 <img id="info-sidebar-avatar" src="/Content/default-avatar.png" />
                 <h5 id="info-sidebar-displayname">Đang tải...</h5>
             </div>
 
-            <div class="accordion" id="infoAccordion">
+            <div class="chat-settings-section">
+                <h6>
+                    <i class="fas fa-paint-brush"></i> Tùy chỉnh
+                </h6>
 
+                <!-- Đổi hình nền -->
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <i class="fas fa-image" style="color: #673ab7;"></i>
+                        <span>Đổi hình nền</span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" id="change-background-btn">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Biệt danh section - CHỈ HIỂN THỊ KHI CHAT PRIVATE -->
+            <div class="chat-settings-section" id="nickname-section" style="display: none;">
+                <h6>
+                    <i class="fas fa-user-tag"></i> Biệt danh
+                    <small style="font-weight: 400; color: #999; font-size: 0.75rem;">(Chỉ bạn nhìn thấy)</small>
+                </h6>
+
+                <!-- Biệt danh của mình -->
+                <div class="nickname-input-group">
+                    <label>
+                        <span>Biệt danh của bạn</span>
+                    </label>
+                    <input type="text" id="my-nickname-input" placeholder="Nhập biệt danh của bạn..." />
+                    <div class="nickname-preview" id="my-nickname-preview">
+                        Để trống nếu muốn dùng tên thật
+                    </div>
+                </div>
+
+                <!-- Biệt danh của đối phương -->
+                <div class="nickname-input-group">
+                    <label>
+                        <i class="fas fa-user-friends"></i>
+                        <span id="partner-nickname-label">Biệt danh của đối phương</span>
+                    </label>
+                    <input type="text" id="partner-nickname-input" placeholder="Nhập biệt danh cho đối phương..." />
+                    <div class="nickname-preview" id="partner-nickname-preview">
+                        Chỉ bạn nhìn thấy biệt danh này
+                    </div>
+                </div>
+
+                <!-- Nút lưu -->
+                <button class="btn-save-nicknames" id="save-nicknames-btn">
+                    <i class="fas fa-check"></i> Lưu biệt danh
+                </button>
+            </div>
+
+            <!-- Accordion -->
+            <div class="accordion" id="infoAccordion">
+                <!-- Images/Videos -->
                 <div class="info-accordion-card">
                     <div class="card-header" id="headingImages">
-                        <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse" data-target="#collapseSecurity" aria-expanded="true" aria-controls="collapseSecurity">
+                        <button class="btn btn-link btn-block text-left" type="button" data-bs-toggle="collapse" data-bs-target="#collapseImages">
                             Ảnh/Video
                             <i class="fas fa-chevron-down float-right"></i>
                         </button>
                     </div>
-                    <div id="collapseImages" class="collapse show" aria-labelledby="headingImages" data-parent="#infoAccordion">
+                    <div id="collapseImages" class="collapse show" data-parent="#infoAccordion">
                         <div class="card-body" id="info-sidebar-images-list">
                             <p class="text-muted text-center small p-3">Chưa có ảnh/video nào.</p>
                         </div>
                     </div>
                 </div>
 
+                <!-- Files -->
                 <div class="info-accordion-card">
                     <div class="card-header" id="headingFiles">
-                        <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#collapseFiles" aria-expanded="false" aria-controls="collapseFiles">
+                        <button class="btn btn-link btn-block text-left collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFiles">
                             File
                             <i class="fas fa-chevron-down float-right"></i>
                         </button>
                     </div>
-                    <div id="collapseFiles" class="collapse" aria-labelledby="headingFiles" data-parent="#infoAccordion">
+                    <div id="collapseFiles" class="collapse" data-parent="#infoAccordion">
                         <div class="card-body" id="info-sidebar-files-list">
                             <p class="text-muted text-center small p-3">Chưa có file nào.</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="info-accordion-card">
-                    <div class="card-header" id="headingLinks">
-                        <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#collapseLinks" aria-expanded="false" aria-controls="collapseLinks">
-                            Link
-                            <i class="fas fa-chevron-down float-right"></i>
-                        </button>
-                    </div>
-                    <div id="collapseLinks" class="collapse" aria-labelledby="headingLinks" data-parent="#infoAccordion">
-                        <div class="card-body">
-                            <p class="text-muted text-center small p-3">Chưa có link nào.</p>
-                        </div>
-                    </div>
-                </div>
-
+                <!-- Security Settings -->
                 <div class="info-accordion-card">
                     <div class="card-header" id="headingSecurity">
-                        <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#collapseSecurity" aria-expanded="false" aria-controls="collapseSecurity">
+                        <button class="btn btn-link btn-block text-left collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSecurity">
                             Thiết lập bảo mật
                             <i class="fas fa-chevron-down float-right"></i>
                         </button>
                     </div>
-                    <div id="collapseSecurity" class="collapse show" aria-labelledby="headingSecurity" data-parent="#infoAccordion">
-
+                    <div id="collapseSecurity" class="collapse" data-parent="#infoAccordion">
                         <div class="card-body list-group list-group-flush" style="padding: 0;">
-
+                            <!-- ẨN TRÒ CHUYỆN -->
                             <div class="list-group-item d-flex justify-content-between align-items-center" style="border:none; background: #fff; padding: 14px 20px;">
                                 <span>
                                     <i class="fas fa-eye-slash"></i> Ẩn trò chuyện
@@ -283,65 +225,111 @@
                                     <span class="slider round"></span>
                                 </label>
                             </div>
-
+                            <!-- BÁO XẤU -->
                             <a href="#" class="list-group-item list-group-item-action text-danger" id="info-action-report">
                                 <i class="fas fa-exclamation-triangle"></i> Báo xấu
                             </a>
-
+                            <!-- XÓA LỊCH SỬ -->
                             <a href="#" class="list-group-item list-group-item-action text-danger" id="info-action-clear-history">
                                 <i class="fas fa-trash-alt"></i> Xóa lịch sử trò chuyện
                             </a>
-
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
-    <div id="search-sidebar" style="display: none;">
-        <div class="search-sidebar-header">
-            <h5>Tìm kiếm trong trò chuyện</h5>
-            <button id="close-search-sidebar-btn" type="button" class="close" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
 
-        <div class="search-sidebar-body">
-
-            <div class="search-input-wrapper">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" id="search-input" placeholder="Nhập từ khóa để tìm kiếm" autocomplete="off" />
-            </div>
-
-            <div id="search-welcome">
-                <div class="search-welcome-icon">
-                    <i class="fas fa-search"></i>
+    <!-- ========== MODALS ========== -->
+    <!-- Image Preview Modal -->
+    <div class="modal fade" id="imagePreviewModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Xem trước ảnh</h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                 </div>
-                <p>Hãy nhập từ khóa để bắt đầu tìm kiếm tin nhắn trong hội thoại này.</p>
+                <div class="modal-body text-center" id="imagePreviewContainer" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="sendImageButton">Gửi</button>
+                </div>
             </div>
-
-            <div id="search-results-list" style="display: none;">
-            </div>
-
         </div>
     </div>
-    <div class="modal fade" id="incomingCallModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
-        <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
-            <div class="modal-content" style="border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.2);">
+
+    <!-- Background Modal -->
+    <div class="modal fade" id="backgroundModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 16px;">
+                <div class="modal-header" style="border-bottom: 1px solid #e8f5e9;">
+                    <h5 class="modal-title" style="font-weight: 700; color: #2e7d32;">
+                        <i class="fas fa-image"></i> Chọn hình nền
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body" style="padding: 20px;">
+                    <ul class="nav nav-tabs mb-3" style="border-bottom: 2px solid #e8f5e9;">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-toggle="tab" href="#default-backgrounds">
+                                <i class="fas fa-palette"></i> Mặc định
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#custom-backgrounds">
+                                <i class="fas fa-upload"></i> Tùy chỉnh
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="default-backgrounds">
+                            <div class="background-themes" id="default-themes-grid"></div>
+                        </div>
+                        <div class="tab-pane fade" id="custom-backgrounds">
+                            <div id="admin-upload-section" style="display: none;">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> Chỉ admin mới có thể upload hình nền mới.
+                                </div>
+                                <div class="custom-file mb-3">
+                                    <input type="file" class="custom-file-input" id="customBackgroundInput" accept="image/*">
+                                    <label class="custom-file-label" for="customBackgroundInput">Chọn ảnh...</label>
+                                </div>
+                                <button class="btn btn-primary btn-block" id="uploadBackgroundBtn">
+                                    <i class="fas fa-cloud-upload-alt"></i> Upload hình nền
+                                </button>
+                            </div>
+                            <div id="user-upload-message" style="text-align: center; padding: 40px 20px; color: #999;">
+                                <i class="fas fa-lock" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                                <p>Chỉ admin mới có thể thêm hình nền mới.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #e8f5e9;">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-danger" id="removeBackgroundBtn">
+                        <i class="fas fa-times"></i> Xóa hình nền
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calling Modals (giữ nguyên như cũ) -->
+    <div class="modal fade" id="incomingCallModal" tabindex="-1" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 12px;">
                 <div class="modal-body text-center p-4">
                     <h5 class="mb-2">Cuộc gọi đến</h5>
-                    <img id="incoming-call-avatar" src="/Content/default-avatar.png"
-                         style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-bottom: 10px;" />
+                    <img id="incoming-call-avatar" src="/Content/default-avatar.png" style="width: 70px; height: 70px; border-radius: 50%; margin-bottom: 10px;" />
                     <h4 id="incoming-call-name" style="font-weight: 600;">...</h4>
-                    <p id="incoming-call-type" class="text-muted small">Đang gọi video...</p>
+                    <p id="incoming-call-type" class="text-muted small">Đang gọi...</p>
                     <div class="d-flex justify-content-around mt-4">
-                        <button id="decline-call-btn" type="button" class="btn btn-danger btn-lg"
-                                style="border-radius: 50%; width: 60px; height: 60px; font-size: 1.5rem;">
+                        <button id="decline-call-btn" class="btn btn-danger btn-lg" style="border-radius: 50%; width: 60px; height: 60px;">
                             <i class="fas fa-times"></i>
                         </button>
-                        <button id="accept-call-btn" type="button" class="btn btn-success btn-lg"
-                                style="border-radius: 50%; width: 60px; height: 60px; font-size: 1.5rem;">
+                        <button id="accept-call-btn" class="btn btn-success btn-lg" style="border-radius: 50%; width: 60px; height: 60px;">
                             <i class="fas fa-check"></i>
                         </button>
                     </div>
@@ -350,26 +338,98 @@
         </div>
     </div>
 
-    <div id="call-view" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #222; z-index: 2000; color: white;">
-
+    <div id="call-view" style="display: none; position: fixed; inset: 0; background: #222; z-index: 2000; color: white;">
         <video id="remoteVideo" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
-
         <video id="localVideo" autoplay playsinline muted style="position: absolute; top: 20px; right: 20px; width: 25%; max-width: 300px; border-radius: 10px; border: 2px solid white;"></video>
 
-        <div id="call-info-overlay" class="text-center" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
-            <img id="call-view-avatar" src="/Content/default-avatar.png" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 20px;" />
+        <div id="call-info-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+            <img id="call-view-avatar" src="/Content/default-avatar.png" style="width: 120px; height: 120px; border-radius: 50%; margin-bottom: 20px;" />
             <h2 id="call-view-name">Đang gọi...</h2>
-            <p id="call-view-status" class="text-muted">Đang kết nối...</p>
-            <p class_small" style="opacity: 0.7;"><i class="fas fa-lock"></i> Được mã hóa đầu cuối</p>
+            <p id="call-view-status">Đang kết nối...</p>
         </div>
 
         <div id="call-controls" style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px;">
-            <button id="toggle-video-btn" class="btn btn-light btn-lg" style="border-radius: 50%; width: 60px; height: 60px; font-size: 1.5rem;"><i class="fas fa-video"></i></button>
-            <button id="toggle-mic-btn" class="btn btn-light btn-lg" style="border-radius: 50%; width: 60px; height: 60px; font-size: 1.5rem;"><i class="fas fa-microphone"></i></button>
-            <button id="hang-up-btn" class="btn btn-danger btn-lg" style="border-radius: 50%; width: 60px; height: 60px; font-size: 1.5rem;"><i class="fas fa-phone-slash"></i></button>
+            <button id="toggle-video-btn" class="btn btn-light btn-lg" style="border-radius: 50%; width: 60px; height: 60px;">
+                <i class="fas fa-video"></i>
+            </button>
+            <button id="toggle-mic-btn" class="btn btn-light btn-lg" style="border-radius: 50%; width: 60px; height: 60px;">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <button id="hang-up-btn" class="btn btn-danger btn-lg" style="border-radius: 50%; width: 60px; height: 60px;">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+        </div>
+    </div>
+    <!-- Partner Profile Modal -->
+    <div class="modal fade" id="partnerProfileModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden;">
+                <!-- Cover Photo -->
+                <div id="partner-modal-cover" style="height: 150px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); background-size: cover; background-position: center;"></div>
+
+                <!-- Avatar -->
+                <div style="text-align: center; margin-top: -60px; position: relative;">
+                    <img id="partner-modal-avatar" src="/Content/default-avatar.png" style="width: 120px; height: 120px; border-radius: 50%; border: 5px solid white; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.2);" />
+                </div>
+
+                <div class="modal-body text-center" style="padding: 20px;">
+                    <!-- Name & Username -->
+                    <h4 id="partner-modal-display-name" style="font-weight: 700; margin-bottom: 5px;">Đang tải...</h4>
+                    <p id="partner-modal-username" style="color: #6c757d; font-size: 0.9rem; margin-bottom: 20px;">@@username</p>
+
+                    <!-- Info Grid -->
+                    <div style="text-align: left; margin: 0 auto; max-width: 400px;">
+                        <div style="display: grid; grid-template-columns: 100px 1fr; gap: 12px; margin-bottom: 12px;">
+                            <span style="font-weight: 600; color: #555;"><i class="fas fa-venus-mars"></i> Giới tính:</span>
+                            <span id="partner-modal-gender">Chưa cập nhật</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 100px 1fr; gap: 12px; margin-bottom: 12px;">
+                            <span style="font-weight: 600; color: #555;"><i class="fas fa-birthday-cake"></i> Ngày sinh:</span>
+                            <span id="partner-modal-dob">Chưa cập nhật</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 100px 1fr; gap: 12px; margin-bottom: 12px;">
+                            <span style="font-weight: 600; color: #555;"><i class="fas fa-phone"></i> SĐT:</span>
+                            <span id="partner-modal-phone">Chưa cập nhật</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 100px 1fr; gap: 12px; margin-bottom: 12px;">
+                            <span style="font-weight: 600; color: #555;"><i class="fas fa-envelope"></i> Email:</span>
+                            <span id="partner-modal-email">Chưa cập nhật</span>
+                        </div>
+                    </div>
+
+                    <!-- Bio -->
+                    <div style="margin-top: 20px; padding: 12px; background: #f8f9fa; border-radius: 8px; text-align: left;">
+                        <p style="margin: 0; font-size: 0.9rem; color: #555;" id="partner-modal-bio">Không có tiểu sử.</p>
+                    </div>
+
+                    <!-- Unfriend Form -->
+                    <form id="partner-unfriend-form" method="post" action="/Friend/Unfriend" style="display: none; margin-top: 20px;">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="friendshipId" id="partner-unfriend-id" value="" />
+                        <button type="submit" class="btn btn-danger btn-block">
+                            <i class="fas fa-user-times"></i> Xóa bạn bè
+                        </button>
+                    </form>
+
+                    <!-- Action Buttons -->
+                    <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                        <button class="btn btn-warning" id="partner-action-block">
+                            <i class="fas fa-ban"></i> Chặn
+                        </button>
+                        <button class="btn btn-danger" id="partner-action-report">
+                            <i class="fas fa-flag"></i> Báo xấu
+                        </button>
+                    </div>
+                </div>
+
+                <div class="modal-footer" style="border-top: 1px solid #e8f5e9; padding: 12px 20px;">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
 @section scripts {
     <script>
         window.chatConfig = {
@@ -378,14 +438,12 @@
             urls: {
                 getChatHistory: '@Url.Action("GetChatHistory", "Chat")',
                 getConversationInfo: '@Url.Action("GetConversationInfo", "Chat")',
-                getFriendsList: '@Url.Action("GetFriendsList", "Friend")', 
+                getFriendsList: '@Url.Action("GetFriendsList", "Friend")',
                 clearHistory: '@Url.Action("ClearHistory", "Chat")',
                 uploadFiles: '@Url.Action("UploadFiles", "Chat")',
-                declineOrRemoveFriend: '@Url.Action("DeclineOrRemoveFriend", "Friend")',
                 getUserPublicProfile: '/Profile/GetUserPublicProfile'
             }
         };
-        console.log('✅ Config loaded:', window.chatConfig); // ✅ Debug
     </script>
 
     <script src="~/Scripts/chat-client.js"></script>

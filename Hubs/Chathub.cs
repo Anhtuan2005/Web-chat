@@ -8,6 +8,7 @@ using System.Net.Http.Headers;
 using Newtonsoft.Json;
 using System.Configuration;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 namespace Online_chat.Hubs
 {
@@ -16,46 +17,111 @@ namespace Online_chat.Hubs
     {
         private readonly ApplicationDbContext _context = new ApplicationDbContext();
 
-        private static readonly Dictionary<string, List<object>> _aiConversations = new Dictionary<string, List<object>>();
+        private static readonly ConcurrentDictionary<string, string> ConnectedUsers = new ConcurrentDictionary<string, string>();
+        private static readonly ConcurrentDictionary<string, DateTime> UserLastSeen = new ConcurrentDictionary<string, DateTime>();
+        private static readonly ConcurrentDictionary<string, List<object>> _aiConversations = new ConcurrentDictionary<string, List<object>>();
 
-        public void SendMessage(string groupName, string messageContent)
+        // ========================================================
+        // QUẢN LÝ KẾT NỐI
+        // ========================================================
+
+        public override Task OnConnected()
         {
-            var senderUsername = Context.User.Identity.Name;
-            var user = _context.Users.FirstOrDefault(u => u.Username == senderUsername);
-
-            if (user == null || string.IsNullOrWhiteSpace(messageContent)) return;
-
-            Clients.Group(groupName).receiveMessage(
-                user.Username,
-                user.AvatarUrl,
-                messageContent,
-                DateTime.UtcNow
-            );
-
-            var group = _context.Groups.FirstOrDefault(g => g.GroupName == groupName);
-            if (group != null)
+            var username = Context.User.Identity.Name;
+            if (!string.IsNullOrEmpty(username))
             {
-                var message = new Message
-                {
-                    Content = messageContent,
-                    Timestamp = DateTime.UtcNow,
-                    SenderId = user.Id,
-                    GroupId = group.Id
-                };
-                _context.Messages.Add(message);
-                _context.SaveChanges();
+                ConnectedUsers[username] = Context.ConnectionId;
+                UserLastSeen.TryRemove(username, out _);
+                Clients.All.userConnected(username);
+                var onlineUsers = ConnectedUsers.Keys.ToList();
+                Clients.Caller.updateOnlineUsers(onlineUsers);
+                Console.WriteLine($"✅ {username} connected - ConnectionId: {Context.ConnectionId}");
             }
+            return base.OnConnected();
         }
 
-        // ✅ FIX: Gửi đúng thứ tự tham số
+        public override Task OnDisconnected(bool stopCalled)
+        {
+            var username = Context.User.Identity.Name;
+            if (!string.IsNullOrEmpty(username))
+            {
+                string connectionId;
+                ConnectedUsers.TryRemove(username, out connectionId);
+                UserLastSeen[username] = DateTime.UtcNow;
+                Clients.All.userDisconnected(username);
+                Console.WriteLine($"❌ {username} disconnected");
+                List<object> conversation;
+                _aiConversations.TryRemove(username, out conversation);
+            }
+            return base.OnDisconnected(stopCalled);
+        }
+
+        public override Task OnReconnected()
+        {
+            var username = Context.User.Identity.Name;
+            if (!string.IsNullOrEmpty(username))
+            {
+                ConnectedUsers[username] = Context.ConnectionId;
+                UserLastSeen.TryRemove(username, out _);
+                Clients.All.userConnected(username);
+                Console.WriteLine($"🔄 {username} reconnected");
+            }
+            return base.OnReconnected();
+        }
+
+        public void GetOnlineUsers()
+        {
+            var onlineUsers = ConnectedUsers.Keys.ToList();
+            Clients.Caller.updateOnlineUsers(onlineUsers);
+        }
+
+        public void Ping()
+        {
+            Clients.Caller.pong();
+        }
+
+        // ========================================================
+        // GỬI TIN NHẮN NHÓM
+        // ========================================================
+
+        public void SendGroupMessage(int groupId, string messageJson)
+        {
+            var username = Context.User.Identity.Name;
+            var timestamp = DateTime.Now;
+
+            var sender = _context.Users.FirstOrDefault(u => u.Username == username);
+            if (sender == null) return;
+
+            var senderAvatar = sender.AvatarUrl ?? "/Content/default-avatar.png";
+
+            var groupMessage = new GroupMessage
+            {
+                GroupId = groupId,
+                SenderId = sender.Id,
+                Content = messageJson,
+                Timestamp = timestamp
+            };
+            _context.GroupMessages.Add(groupMessage);
+            _context.SaveChanges();
+
+            var groupName = $"group_{groupId}";
+            Clients.Group(groupName).receiveGroupMessage(groupId, username, senderAvatar, messageJson, timestamp.ToString("o"));
+
+            Console.WriteLine($"👥💬 Group {groupId} - {username}: {messageJson}");
+        }
+
+
+        // ========================================================
+        // GỬI TIN NHẮN PRIVATE
+        // ========================================================
         public void SendPrivateMessage(string partnerUsername, string rawMessage)
         {
             var senderUsername = Context.User.Identity.Name;
             var senderUser = _context.Users.FirstOrDefault(u => u.Username == senderUsername && !u.IsDeleted);
             var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername && !u.IsDeleted);
+
             if (senderUser == null || partnerUser == null) return;
 
-            // Parse JSON message
             ChatMessageDTO msgObj;
             try
             {
@@ -66,53 +132,49 @@ namespace Online_chat.Hubs
                 msgObj = new ChatMessageDTO { Type = "text", Content = rawMessage };
             }
 
-            // Lưu vào database
+            var timestamp = DateTime.UtcNow;
             var msg = new PrivateMessage
             {
                 SenderId = senderUser.Id,
                 ReceiverId = partnerUser.Id,
-                Content = rawMessage,  // ✅ Lưu RAW JSON để parse lại khi load history
+                Content = rawMessage,
                 MessageType = msgObj.Type,
-                Timestamp = DateTime.UtcNow
+                Timestamp = timestamp
             };
             _context.PrivateMessages.Add(msg);
             _context.SaveChanges();
 
-            // ✅ FIX: Gửi đúng 4 tham số theo thứ tự: username, avatar, message (JSON), timestamp
             var groupName = GetPrivateGroupName(senderUser.Id, partnerUser.Id);
             Clients.Group(groupName).receiveMessage(
                 senderUser.Username,
                 senderUser.AvatarUrl,
-                rawMessage,              // ✅ Gửi JSON nguyên bản
-                DateTime.UtcNow          // ✅ Gửi DateTime object (không ToString)
+                rawMessage,
+                timestamp.ToString("o") // ISO 8601 format
             );
         }
 
-        // ✅ FIX: Đổi tên hàm từ ReceiveMessage -> receiveMessage
+        // ========================================================
+        // CHAT AI
+        // ========================================================
         public async Task SendMessageToAI(string messageContent)
         {
             var senderUsername = Context.User.Identity.Name;
             if (string.IsNullOrWhiteSpace(messageContent)) return;
 
-            // Khởi tạo lịch sử hội thoại
-            if (!_aiConversations.ContainsKey(senderUsername))
+            var conversation = _aiConversations.GetOrAdd(senderUsername, new List<object>
             {
-                _aiConversations[senderUsername] = new List<object>
-                {
-                    new { role = "system", content = "Bạn là một trợ lý ảo thân thiện, luôn trả lời bằng cùng ngôn ngữ mà người dùng đang sử dụng." }
-                };
-            }
-            _aiConversations[senderUsername].Add(new { role = "user", content = messageContent });
+                new { role = "system", content = "Bạn là một trợ lý ảo thân thiện, luôn trả lời bằng cùng ngôn ngữ mà người dùng đang sử dụng." }
+            });
+            conversation.Add(new { role = "user", content = messageContent });
 
             string apiKey = ConfigurationManager.AppSettings["OpenAIApiKey"];
             if (string.IsNullOrEmpty(apiKey))
             {
-                // ✅ FIX: Đổi từ ReceiveMessage -> receiveMessage
                 Clients.Caller.receiveMessage(
                     "AI Assistant",
-                    null,
+                    "/Content/default-avatar.png",
                     JsonConvert.SerializeObject(new { type = "text", content = "Xin lỗi, API AI chưa được cấu hình." }),
-                    DateTime.UtcNow
+                    DateTime.UtcNow.ToString("o")
                 );
                 return;
             }
@@ -121,7 +183,7 @@ namespace Online_chat.Hubs
             var requestBody = new
             {
                 model = "gpt-3.5-turbo",
-                messages = _aiConversations[senderUsername],
+                messages = conversation,
                 temperature = 0.7
             };
 
@@ -140,28 +202,24 @@ namespace Online_chat.Hubs
                         dynamic result = JsonConvert.DeserializeObject(responseString);
                         string aiReply = result.choices[0].message.content.ToString();
 
-                        _aiConversations[senderUsername].Add(new { role = "assistant", content = aiReply });
+                        conversation.Add(new { role = "assistant", content = aiReply });
 
-                        // ✅ FIX: Gửi đúng format JSON
                         Clients.Caller.receiveMessage(
                             "AI Assistant",
-                            null,
+                            "/Content/default-avatar.png",
                             JsonConvert.SerializeObject(new { type = "text", content = aiReply }),
-                            DateTime.UtcNow
+                            DateTime.UtcNow.ToString("o")
                         );
-
-                        Console.WriteLine($"✅ AI replied to {senderUsername}: {aiReply.Substring(0, Math.Min(50, aiReply.Length))}...");
                     }
                     else
                     {
                         var errorMsg = await response.Content.ReadAsStringAsync();
                         Console.WriteLine($"❌ AI API Error: {response.StatusCode} - {errorMsg}");
-
                         Clients.Caller.receiveMessage(
                             "AI Assistant",
-                            null,
+                            "/Content/default-avatar.png",
                             JsonConvert.SerializeObject(new { type = "text", content = "Xin lỗi, tôi đang gặp sự cố. Vui lòng thử lại sau." }),
-                            DateTime.UtcNow
+                            DateTime.UtcNow.ToString("o")
                         );
                     }
                 }
@@ -170,29 +228,30 @@ namespace Online_chat.Hubs
                     Console.WriteLine($"❌ AI Exception: {ex.Message}");
                     Clients.Caller.receiveMessage(
                         "AI Assistant",
-                        null,
+                        "/Content/default-avatar.png",
                         JsonConvert.SerializeObject(new { type = "text", content = $"Lỗi: {ex.Message}" }),
-                        DateTime.UtcNow
+                        DateTime.UtcNow.ToString("o")
                     );
                 }
             }
         }
 
-        public override Task OnDisconnected(bool stopCalled)
+        // ========================================================
+        // QUẢN LÝ NHÓM & PRIVATE CHAT
+        // ========================================================
+
+        public void JoinGroup(int groupId)
         {
             var username = Context.User.Identity.Name;
-            if (_aiConversations.ContainsKey(username))
-                _aiConversations.Remove(username);
-
-            return base.OnDisconnected(stopCalled);
+            var groupName = $"group_{groupId}";
+            Groups.Add(Context.ConnectionId, groupName);
+            Console.WriteLine($"👥 {username} joined group: {groupName}");
         }
 
-        public void SendFriendRequestNotification(string receiverUsername)
+        public void LeaveGroup(int groupId)
         {
-            var receiver = _context.Users.FirstOrDefault(u => u.Username == receiverUsername);
-            if (receiver == null) return;
-
-            Clients.User(receiverUsername).receiveFriendRequest();
+            var groupName = $"group_{groupId}";
+            Groups.Remove(Context.ConnectionId, groupName);
         }
 
         public void JoinPrivateGroup(string partnerUsername)
@@ -213,15 +272,94 @@ namespace Online_chat.Hubs
             return userId1 < userId2 ? $"private_{userId1}_{userId2}" : $"private_{userId2}_{userId1}";
         }
 
-        public async Task JoinGroup(string groupName)
+        // ========================================================
+        // VOICE/VIDEO CALLS
+        // ========================================================
+        public void SendCallOffer(string toUsername, string offerSdp, string callType)
         {
-            await Groups.Add(Context.ConnectionId, groupName);
+            var fromUsername = Context.User.Identity.Name;
+            string toConnectionId;
+            if (ConnectedUsers.TryGetValue(toUsername, out toConnectionId))
+            {
+                Clients.Client(toConnectionId).receiveCallOffer(fromUsername, offerSdp, callType);
+                Console.WriteLine($"📞 Call offer: {fromUsername} -> {toUsername} ({callType})");
+            }
         }
 
-        public override Task OnConnected()
+        public void SendCallAnswer(string toUsername, string answerSdp)
         {
-            return base.OnConnected();
+            var fromUsername = Context.User.Identity.Name;
+            string toConnectionId;
+            if (ConnectedUsers.TryGetValue(toUsername, out toConnectionId))
+            {
+                Clients.Client(toConnectionId).receiveCallAnswer(fromUsername, answerSdp);
+                Console.WriteLine($"📞 Call answered: {fromUsername} -> {toUsername}");
+            }
         }
+
+        public void SendIceCandidate(string toUsername, string candidate)
+        {
+            var fromUsername = Context.User.Identity.Name;
+            string toConnectionId;
+            if (ConnectedUsers.TryGetValue(toUsername, out toConnectionId))
+            {
+                Clients.Client(toConnectionId).receiveIceCandidate(fromUsername, candidate);
+            }
+        }
+
+        public void EndCall(string toUsername)
+        {
+            var fromUsername = Context.User.Identity.Name;
+            string toConnectionId;
+            if (ConnectedUsers.TryGetValue(toUsername, out toConnectionId))
+            {
+                Clients.Client(toConnectionId).callEnded(fromUsername);
+                Console.WriteLine($"📞 Call ended: {fromUsername} -> {toUsername}");
+            }
+        }
+
+        // ========================================================
+        // FRIEND REQUEST NOTIFICATION
+        // ========================================================
+        public void SendFriendRequestNotification(string receiverUsername)
+        {
+            var receiver = _context.Users.FirstOrDefault(u => u.Username == receiverUsername);
+            if (receiver == null) return;
+            Clients.User(receiverUsername).receiveFriendRequest();
+        }
+
+        // ========================================================
+        // TYPING INDICATOR
+        // ========================================================
+        public void UserTyping(string partnerUsername)
+        {
+            var currentUsername = Context.User.Identity.Name;
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+            var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername);
+
+            if (currentUser != null && partnerUser != null)
+            {
+                var groupName = GetPrivateGroupName(currentUser.Id, partnerUser.Id);
+                Clients.Group(groupName).userTyping(currentUsername);
+            }
+        }
+
+        public void UserStoppedTyping(string partnerUsername)
+        {
+            var currentUsername = Context.User.Identity.Name;
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+            var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername);
+
+            if (currentUser != null && partnerUser != null)
+            {
+                var groupName = GetPrivateGroupName(currentUser.Id, partnerUser.Id);
+                Clients.Group(groupName).userStoppedTyping(currentUsername);
+            }
+        }
+
+        // ========================================================
+        // CLEANUP
+        // ========================================================
 
         protected override void Dispose(bool disposing)
         {
@@ -232,35 +370,14 @@ namespace Online_chat.Hubs
             base.Dispose(disposing);
         }
 
+        // ========================================================
+        // DTO CLASS
+        // ========================================================
+
         public class ChatMessageDTO
         {
             public string Type { get; set; }
             public string Content { get; set; }
-        }
-       
-        public async Task SendCallOffer(string targetUsername, string offerSdp, string callType)
-        {
-            var callerUsername = Context.User.Identity.Name;
-           
-            await Clients.User(targetUsername).ReceiveCallOffer(callerUsername, offerSdp, callType);
-        }
-
-        public async Task SendCallAnswer(string targetUsername, string answerSdp)
-        {
-            var calleeUsername = Context.User.Identity.Name;
-            await Clients.User(targetUsername).ReceiveCallAnswer(calleeUsername, answerSdp);
-        }
-
-        public async Task SendIceCandidate(string targetUsername, string candidate)
-        {
-            var senderUsername = Context.User.Identity.Name;
-            await Clients.User(targetUsername).ReceiveIceCandidate(senderUsername, candidate);
-        }
-
-        public async Task EndCall(string targetUsername)
-        {
-            var senderUsername = Context.User.Identity.Name;
-            await Clients.User(targetUsername).CallEnded(senderUsername);
         }
     }
 }

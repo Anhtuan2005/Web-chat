@@ -24,7 +24,7 @@
    ========================================================*/
 .message-area {
     flex-grow: 1;
-    padding: 20px !important;
+    padding: 20px 0 !important;
     overflow-y: auto;
     background-size: cover;
     background-position: center;
@@ -32,7 +32,6 @@
     position: relative;
 }
 
-    /* Lớp phủ làm mờ background */
     .message-area::before {
         content: '';
         position: absolute;
@@ -40,18 +39,16 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(255, 255, 255, 0.85); /* Điều chỉnh độ mờ ở đây */
+        background: rgba(255, 255, 255, 0.85);
         pointer-events: none;
         z-index: 0;
     }
 
-    /* Đảm bảo tin nhắn nổi lên trên lớp phủ */
     .message-area > * {
         position: relative;
         z-index: 1;
     }
 
-    /* Scrollbar cho message area */
     .message-area::-webkit-scrollbar {
         width: 8px;
     }
@@ -87,11 +84,10 @@
     z-index: 10;
 }
 
-/* Wrapper cho avatar và status */
 .chat-header-avatar-wrapper {
     position: relative;
     display: inline-block;
-    margin-right: 10px; /* Thêm khoảng cách */
+    margin-right: 10px;
 }
 
 .chat-header-avatar {
@@ -122,13 +118,12 @@
         background-color: #95a5a6;
     }
 
-/* Thông tin user (để click) */
 .chat-header-info {
     cursor: pointer;
     transition: background-color 0.2s;
     padding: 5px;
     border-radius: 8px;
-    display: flex; /* Đảm bảo avatar và text nằm ngang */
+    display: flex;
     align-items: center;
 }
 
@@ -146,7 +141,6 @@
         color: #44b700;
     }
 
-/* Nút bấm trên header */
 .chat-header .btn-light {
     width: 38px;
     height: 38px;
@@ -161,7 +155,7 @@
 }
 
     .chat-header .btn-light:hover {
-        background-color: #f0f0f0; /* Đổi màu hover chung */
+        background-color: #f0f0f0;
         transform: scale(1.05);
     }
 
@@ -175,9 +169,9 @@
     background: linear-gradient(90deg, #43A047 0%, #26C6DA 50%, #81C784 100%);
     color: white;
     border-bottom: 1px solid rgba(255,255,255,0.2);
-    min-height: 66px; /* Đồng bộ với header private */
+    min-height: 66px;
     box-shadow: 0 2px 10px rgba(67, 160, 71, 0.3);
-    padding: 10px 15px; /* Đồng bộ */
+    padding: 10px 15px;
 }
 
     #ai-chat-header .ai-title {
@@ -194,7 +188,7 @@
         color: white !important;
         opacity: 0.8;
         transition: opacity 0.2s;
-        width: 38px; /* Đồng bộ nút */
+        width: 38px;
         height: 38px;
         display: flex;
         align-items: center;
@@ -272,7 +266,7 @@
     }
 
 /* ========================================================
-   TIN NHẮN 
+   TIN NHẮN - ĐỘ DÀI ĐỒNG ĐỀU
    ========================================================*/
 .chat-message {
     display: flex !important;
@@ -292,7 +286,6 @@
         justify-content: flex-end !important;
     }
 
-    /* Avatar trong tin nhắn */
     .chat-message .avatar {
         flex-shrink: 0;
         order: 1;
@@ -310,7 +303,7 @@
 
     .chat-message.other .avatar,
     .chat-message.ai-message .avatar {
-        background: #43a047; /* Màu xanh lá cho avatar chữ */
+        background: #43a047;
         color: #fff;
         font-weight: 600;
         display: flex;
@@ -322,8 +315,15 @@
 .message-container {
     display: flex;
     flex-direction: column;
-    max-width: 70%;
+    min-width: 120px;
+    max-width: 45%; 
     order: 2;
+}
+
+@media (max-width: 768px) {
+    .message-container {
+        max-width: 75%; 
+    }
 }
 
 .chat-message.self .message-container {
@@ -342,15 +342,19 @@
 .chat-message.self .message-nickname {
     display: none;
 }
+
 .chat-bubble {
-    display: flex;
+    display: inline-flex; /* Đã có */
     flex-direction: column;
     gap: 6px;
     padding: 10px 15px;
     border-radius: 18px;
     position: relative;
     word-wrap: break-word;
+    word-break: break-word;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    max-width: 100%;
+    width: fit-content; 
 }
 
 .chat-message.other .chat-bubble {
@@ -373,13 +377,13 @@
     border-bottom-right-radius: 4px !important;
 }
 
-/* Thời gian (timestamp) trong bubble */
 .bubble-time {
     align-self: flex-end;
     font-size: 0.72rem;
     line-height: 1;
     opacity: 0.75;
     margin-top: 2px;
+    flex-shrink: 0;
 }
 
 .chat-message.other .bubble-time,
@@ -392,7 +396,7 @@
 }
 
 /* ========================================================
-   MEDIA (Ảnh, Video, File, Call log)
+   MEDIA (Ảnh, Video, File) - VIỀN MỎNG HƠN
    ========================================================*/
 .chat-bubble img {
     border-radius: 12px;
@@ -401,6 +405,7 @@
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border: 0.5px solid rgba(0,0,0,0.08);
 }
 
     .chat-bubble img:hover {
@@ -413,41 +418,12 @@
     margin-top: 4px;
     max-width: 100%;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border: 0.5px solid rgba(0,0,0,0.08);
 }
 
-/* Lưới ảnh (nếu gửi nhiều ảnh 1 lúc) */
-.message-images-grid {
-    display: grid;
-    gap: 4px;
-    margin-top: 4px;
+.chat-bubble a[target="_blank"] {
+    border: 0.5px solid rgba(0,0,0,0.08) !important;
 }
-
-    .message-images-grid.grid-1 {
-        grid-template-columns: 1fr;
-    }
-
-    .message-images-grid.grid-2 {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .message-images-grid.grid-3,
-    .message-images-grid.grid-4 {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .message-images-grid img {
-        width: 100%;
-        height: 150px;
-        object-fit: cover;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-        .message-images-grid img:hover {
-            transform: scale(1.05);
-            z-index: 1;
-        }
 
 /* Call Log */
 .chat-bubble .call-back-btn {
@@ -475,7 +451,7 @@
     }
 
 /* ========================================================
-   INPUT AREA (KHUNG NHẬP LIỆU)
+   INPUT AREA
    ========================================================*/
 .input-area {
     display: flex;
@@ -501,7 +477,6 @@
             box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.1);
         }
 
-    /* Nút icon (emoji, ảnh, đính kèm) */
     .input-area .btn-light {
         background-color: transparent;
         border: none;
@@ -521,7 +496,6 @@
             transform: scale(1.1);
         }
 
-    /* Nút Send */
     .input-area #sendButton {
         margin-left: 0;
         border: none;
@@ -543,14 +517,14 @@
         }
 
 /* ========================================================
-   SIDEBAR THÔNG TIN (INFO)
+   SIDEBAR THÔNG TIN - FIXED
    ========================================================*/
 #conversation-info-sidebar {
-    width: 340px; /* Width mới từ Block 1 */
+    width: 340px;
     height: 100%;
     flex-shrink: 0;
-    background: #fafffe; /* Theme xanh lá (Block 2) */
-    border-left: 1px solid #e8f5e9; /* Theme xanh lá (Block 2) */
+    background: #fafffe;
+    border-left: 1px solid #e8f5e9;
     display: flex;
     flex-direction: column;
     transition: all 0.3s ease;
@@ -569,10 +543,9 @@
     .info-sidebar-header h5 {
         margin: 0;
         font-weight: 700;
-        color: #2e7d32; /* Theme xanh lá (Block 2) */
+        color: #2e7d32;
     }
 
-    /* Nút đóng 'x' (Style từ Block 2) */
     .info-sidebar-header .close,
     .search-sidebar-header .close {
         font-size: 1.5rem;
@@ -587,7 +560,7 @@
         line-height: 32px;
         padding: 0;
         transition: all 0.2s;
-        border: none; /* Đảm bảo không có border */
+        border: none;
     }
 
         .info-sidebar-header .close:hover,
@@ -595,7 +568,6 @@
             background-color: #e8f5e9;
             color: #333;
         }
-
 
 .info-sidebar-body {
     flex-grow: 1;
@@ -620,7 +592,6 @@
             background: #aaa;
         }
 
-/* Thông tin user trên sidebar */
 .info-sidebar-user {
     padding: 24px;
     text-align: center;
@@ -644,7 +615,147 @@
         margin-bottom: 0;
     }
 
-/* Accordion (File, Ảnh...) */
+/* ========== CUSTOMIZATION SECTION (MỚI) ========== */
+.chat-settings-section {
+    background: #fff;
+    padding: 16px 20px;
+    margin-bottom: 0;
+    border-bottom: 8px solid #f1f8e9;
+}
+
+    .chat-settings-section h6 {
+        font-weight: 700;
+        margin-bottom: 16px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+    }
+
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+}
+
+.setting-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+/* ========== NICKNAME SECTION ========== */
+#nickname-section {
+    background: #fff;
+    padding: 16px 20px;
+    border-bottom: 8px solid #f1f8e9;
+}
+
+    #nickname-section h6 {
+        font-weight: 700;
+        margin-bottom: 16px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+    }
+
+.nickname-input-group {
+    margin-bottom: 16px;
+}
+
+    .nickname-input-group label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #555;
+        margin-bottom: 6px;
+    }
+
+    .nickname-input-group input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+
+        .nickname-input-group input:focus {
+            outline: none;
+            border-color: #43a047;
+            box-shadow: 0 0 0 3px rgba(67, 160, 71, 0.1);
+        }
+
+.nickname-preview {
+    font-size: 0.75rem;
+    color: #999;
+    margin-top: 4px;
+    font-style: italic;
+}
+
+.btn-save-nicknames {
+    width: 100%;
+    padding: 10px;
+    background: linear-gradient(135deg, #43a047 0%, #66bb6a 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+}
+
+    .btn-save-nicknames:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(67, 160, 71, 0.3);
+    }
+
+    .btn-save-nicknames:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+/* ========== BACKGROUND THEMES ========== */
+.background-themes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 0;
+}
+
+.background-theme-item {
+    width: 100%;
+    padding-bottom: 100%;
+    background-size: cover;
+    background-position: center;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    border: 3px solid transparent;
+}
+
+    .background-theme-item:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .background-theme-item.active {
+        border-color: #43a047;
+        box-shadow: 0 0 0 4px rgba(67, 160, 71, 0.2);
+    }
+
+/* Accordion */
 .info-accordion-card {
     border-bottom: 1px solid #e8f5e9;
 }
@@ -663,6 +774,7 @@
         color: #444;
         text-decoration: none;
         transition: background-color 0.2s;
+        font-size: 0.95rem;
     }
 
         .info-accordion-card .btn-link:hover {
@@ -672,7 +784,7 @@
         .info-accordion-card .btn-link .fa-chevron-down {
             transition: transform 0.2s ease;
             color: #aaa;
-            float: right; /* Đảm bảo icon ở bên phải */
+            float: right;
         }
 
         .info-accordion-card .btn-link[aria-expanded="true"] .fa-chevron-down {
@@ -686,10 +798,10 @@
         background: #fff;
     }
 
-/* Danh sách ảnh trong sidebar */
+/* Images/Videos List */
 #info-sidebar-images-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 8px;
     padding: 16px;
 }
@@ -711,14 +823,14 @@
         height: 100%;
         object-fit: cover;
         cursor: pointer;
-        transition: transform 0.2s; /* Sửa transition */
+        transition: transform 0.2s;
     }
 
         .info-image-item img:hover {
             transform: scale(1.05);
         }
 
-/* Danh sách file trong sidebar */
+/* Files List */
 #info-sidebar-files-list {
     padding: 8px 0;
 }
@@ -754,14 +866,15 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        font-size: 0.9rem;
     }
 
     .info-file-item .file-meta {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         color: #6c757d;
     }
 
-/* Phần cài đặt bảo mật (Ẩn, Xóa...) */
+/* Security Settings */
 #collapseSecurity .list-group-item,
 #collapseSecurity .list-group-item-action {
     color: #333;
@@ -770,6 +883,7 @@
     border: 0;
     background: #fff;
     border-bottom: 1px solid #f1f8e9;
+    font-size: 0.9rem;
 }
 
     #collapseSecurity .list-group-item:last-child,
@@ -800,11 +914,60 @@
             color: #dc3545 !important;
         }
 
+/* Toggle Switch */
+.custom-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+    .custom-toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .custom-toggle-switch .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.3s;
+    }
+
+        .custom-toggle-switch .slider.round {
+            border-radius: 24px;
+        }
+
+        .custom-toggle-switch .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+    .custom-toggle-switch input:checked + .slider {
+        background-color: #4caf50;
+    }
+
+        .custom-toggle-switch input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
 /* ========================================================
-   SIDEBAR TÌM KIẾM 
+   SIDEBAR TÌM KIẾM
    ========================================================*/
 #search-sidebar {
-    width: 320px;
+    width: 340px;
     height: 100%;
     flex-shrink: 0;
     background: #fafffe;
@@ -829,7 +992,6 @@
         font-weight: 700;
         color: #2e7d32;
     }
-/* (Nút 'x' đã được định nghĩa chung ở trên) */
 
 .search-sidebar-body {
     flex-grow: 1;
@@ -901,7 +1063,7 @@
     border-bottom: 1px solid #f1f8e9;
     cursor: pointer;
     transition: background-color 0.2s;
-    text-decoration: none; /* Thêm để đảm bảo link không bị gạch chân */
+    text-decoration: none;
 }
 
     .search-result-item:hover {
@@ -947,33 +1109,104 @@
     }
 
 /* ========================================================
-   CÁC THÀNH PHẦN KHÁC (CALL, LIGHTBOX...)
+   CALL VIEW
    ========================================================*/
-#call-controls .btn-light {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: none;
-    backdrop-filter: blur(10px);
-    transition: background-color 0.2s;
-}
-
-    #call-controls .btn-light:hover {
-        background-color: rgba(255, 255, 255, 0.4);
-    }
-
-#call-controls .btn-danger {
-    transition: transform 0.2s;
-}
-
-    #call-controls .btn-danger:hover {
-        transform: scale(1.1);
-    }
-/* Ẩn overlay khi đã có video */
-#remoteVideo[srcObject] ~ #call-info-overlay {
+#call-view {
     display: none;
+    position: fixed;
+    inset: 0;
+    background: #222;
+    z-index: 2000;
+    color: white;
 }
 
-/* Image Lightbox (xem ảnh) */
+#remoteVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+#localVideo {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 25%;
+    max-width: 300px;
+    border-radius: 10px;
+    border: 2px solid white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+#call-info-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+#call-view-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    margin-bottom: 20px;
+    border: 4px solid white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+#call-view-name {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+#call-view-status {
+    font-size: 1rem;
+    color: #ccc;
+}
+
+#call-controls {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
+}
+
+    #call-controls .btn-light {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: none;
+        backdrop-filter: blur(10px);
+        transition: all 0.2s;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        font-size: 1.2rem;
+    }
+
+        #call-controls .btn-light:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+            transform: scale(1.1);
+        }
+
+    #call-controls .btn-danger {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        font-size: 1.2rem;
+        transition: all 0.2s;
+    }
+
+        #call-controls .btn-danger:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.5);
+        }
+
+/* ========================================================
+   IMAGE LIGHTBOX
+   ========================================================*/
 .image-lightbox {
     display: none;
     position: fixed;
@@ -1011,65 +1244,82 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.2s;
 }
 
-/* Toggle Switch */
-.custom-toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 28px;
-}
-
-    .custom-toggle-switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
+    .image-lightbox-close:hover {
+        background: rgba(0, 0, 0, 0.8);
+        transform: scale(1.1);
     }
 
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: 0.4s;
+/* ========================================================
+   MODALS
+   ========================================================*/
+.modal-content {
+    border-radius: 16px;
 }
 
-    .slider:before {
-        position: absolute;
-        content: "";
-        height: 20px;
-        width: 20px;
-        left: 4px;
-        bottom: 4px;
-        background-color: white;
-        transition: 0.4s;
-    }
-
-input:checked + .slider {
-    background-color: #43a047;
+.modal-header {
+    border-bottom: 1px solid #e8f5e9;
+    padding: 16px 20px;
 }
 
-    input:checked + .slider:before {
-        transform: translateX(22px);
-    }
-
-.slider.round {
-    border-radius: 28px;
+.modal-title {
+    font-weight: 700;
+    color: #2e7d32;
 }
 
-    .slider.round:before {
-        border-radius: 50%;
-    }
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    border-top: 1px solid #e8f5e9;
+    padding: 16px 20px;
+}
+
+/* Image Preview Modal */
+#imagePreviewContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* Incoming Call Modal */
+#incomingCallModal .modal-content {
+    border-radius: 12px;
+}
+
+#incomingCallModal .modal-body {
+    text-align: center;
+    padding: 24px;
+}
+
+#incoming-call-avatar {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+#incoming-call-name {
+    font-weight: 600;
+    font-size: 1.2rem;
+    margin-bottom: 4px;
+}
+
+#incoming-call-type {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
 
 /* ========================================================
    RESPONSIVE
    ========================================================*/
 @media (max-width: 768px) {
-    /* Ẩn sidebar trên mobile, trừ khi được gọi */
     #conversation-info-sidebar,
     #search-sidebar {
         width: 100%;
@@ -1077,14 +1327,292 @@ input:checked + .slider {
         right: 0;
         top: 0;
         z-index: 100;
-        /* display: none; (JavaScript sẽ xử lý việc này) */
     }
 
     .chat-message .chat-bubble {
-        max-width: 85%; /* Cho phép bubble rộng hơn trên mobile */
+        max-width: 85%;
     }
 
     .message-container {
         max-width: 85%;
     }
+
+    #localVideo {
+        width: 30%;
+        max-width: 150px;
+    }
+
+    #call-controls {
+        bottom: 20px;
+        gap: 15px;
+    }
+
+        #call-controls .btn-light,
+        #call-controls .btn-danger {
+            width: 50px;
+            height: 50px;
+            font-size: 1rem;
+        }
+}
+
+/* ========================================================
+   UTILITIES
+   ========================================================*/
+.text-muted {
+    color: #6c757d !important;
+}
+
+.small {
+    font-size: 0.875rem;
+}
+
+.p-3 {
+    padding: 1rem !important;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+.fw-bold {
+    font-weight: 700 !important;
+}
+
+.d-flex {
+    display: flex !important;
+}
+
+.align-items-center {
+    align-items: center !important;
+}
+
+.justify-content-between {
+    justify-content: space-between !important;
+}
+
+.gap-1 {
+    gap: 0.25rem;
+}
+
+.gap-2 {
+    gap: 0.5rem;
+}
+
+.me-2 {
+    margin-right: 0.5rem !important;
+}
+
+/* ========================================================
+   ANIMATIONS
+   ========================================================*/
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.chat-message {
+    animation: slideUp 0.3s ease;
+}
+
+/* ========================================================
+   CUSTOM SCROLLBAR (GLOBAL)
+   ========================================================*/
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #aaa;
+    }
+
+/* ========================================================
+   PRINT STYLES
+   ========================================================*/
+@media print {
+    .chat-header,
+    .input-area,
+    #conversation-info-sidebar,
+    #search-sidebar,
+    #call-view {
+        display: none !important;
+    }
+
+    .message-area {
+        background: white !important;
+    }
+
+    .chat-message {
+        page-break-inside: avoid;
+    }
+}
+
+/* ========================================================
+   DANH SÁCH BẠN BÈ (FRIENDS LIST)
+   ========================================================*/
+.list-group-item.friend-item {
+    position: relative; /* Để control pseudo-elements */
+}
+
+    .list-group-item.friend-item::before,
+    .list-group-item.friend-item::after {
+        display: none !important;
+        content: none !important;
+        visibility: hidden !important;
+    }
+
+    /* Ẩn mọi icon SVG hoặc i-tag con bên trong friend-item (bao gồm silhouette) */
+    .list-group-item.friend-item svg,
+    .list-group-item.friend-item i[class*="fa-"],
+    .list-group-item.friend-item i.fas,
+    .list-group-item.friend-item i.far,
+    .list-group-item.friend-item .fa-user-silhouette { /* Nếu dùng class cụ thể */
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        opacity: 0 !important;
+    }
+
+/* Đảm bảo avatar wrapper không có icon thừa bên dưới */
+.chat-header-avatar-wrapper {
+    position: relative;
+    display: inline-flex; /* Thay đổi để align tốt hơn */
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px; /* Tăng gap nếu cần */
+}
+
+    .chat-header-avatar-wrapper::before,
+    .chat-header-avatar-wrapper::after {
+        display: none !important;
+    }
+
+/* Ẩn bất kỳ icon nào bên dưới avatar trong strong tag */
+.list-group-item.friend-item strong i,
+.list-group-item.friend-item strong svg {
+    display: none !important;
+}
+
+/* Nếu icon là từ default-avatar.png (nếu nó là silhouette), override bằng CSS */
+.list-group-item.friend-item img[src="/Content/default-avatar.png"] {
+    background: none !important; /* Nếu avatar là silhouette PNG, ẩn background */
+    /* Hoặc thay bằng avatar khác nếu cần: content: url('new-avatar.png'); */
+}
+
+/* ========================================================
+   TYPING INDICATOR (GIỐNG ZALO/MESSENGER)
+   ========================================================*/
+#typing-indicator {
+    display: flex;
+    align-items: flex-end;
+    padding: 10px 20px;
+    animation: fadeInUp 0.3s ease;
+}
+
+.typing-dots {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.typing-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+    flex-shrink: 0;
+    background-size: cover;
+    background-position: center;
+}
+
+.typing-bubble {
+    background: #f0f0f0;
+    border-radius: 18px;
+    padding: 12px 16px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.typing-bubble .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #90949c;
+    animation: typingDot 1.4s infinite ease-in-out;
+}
+
+.typing-bubble .dot:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.typing-bubble .dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-bubble .dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typingDot {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.7;
+    }
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Dark mode support cho typing indicator */
+html.dark-mode .typing-bubble {
+    background: #3a3b3c;
+}
+
+html.dark-mode .typing-bubble .dot {
+    background-color: #b0b3b8;
+}
+
+html.dark-mode .typing-avatar {
+    background-color: #4e4f50;
 }

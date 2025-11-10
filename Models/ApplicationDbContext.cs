@@ -1,4 +1,5 @@
-﻿using System.Data.Entity;
+﻿using Online_chat.Models;
+using System.Data.Entity;
 
 namespace Online_chat.Models
 {
@@ -8,10 +9,13 @@ namespace Online_chat.Models
         {
             Database.SetInitializer<ApplicationDbContext>(null);
         }
-        public DbSet<PrivateMessage> PrivateMessages { get; set; }
+
         public DbSet<User> Users { get; set; }
         public DbSet<Message> Messages { get; set; }
+        public DbSet<PrivateMessage> PrivateMessages { get; set; }
         public DbSet<Group> Groups { get; set; }
+        public DbSet<GroupMember> GroupMembers { get; set; }
+        public DbSet<GroupMessage> GroupMessages { get; set; }
         public DbSet<Friendship> Friendships { get; set; }
         public DbSet<Setting> Settings { get; set; }
 
@@ -19,40 +23,55 @@ namespace Online_chat.Models
         {
             base.OnModelCreating(modelBuilder);
 
-            // GROUP
-            modelBuilder.Entity<Group>()
-                .HasRequired(g => g.Owner)
-                .WithMany()
-                .WillCascadeOnDelete(false);
-
             // MESSAGE
             modelBuilder.Entity<Message>()
                 .HasRequired(m => m.Sender)
                 .WithMany()
+                .HasForeignKey(m => m.SenderId)
+                .WillCascadeOnDelete(false);
+
+            modelBuilder.Entity<Message>()
+                .HasRequired(m => m.Receiver)
+                .WithMany()
+                .HasForeignKey(m => m.ReceiverId)
                 .WillCascadeOnDelete(false);
 
             // PRIVATE MESSAGE
             modelBuilder.Entity<PrivateMessage>()
                 .HasRequired(pm => pm.Sender)
                 .WithMany()
+                .HasForeignKey(pm => pm.SenderId)
                 .WillCascadeOnDelete(false);
 
             modelBuilder.Entity<PrivateMessage>()
                 .HasRequired(pm => pm.Receiver)
                 .WithMany()
+                .HasForeignKey(pm => pm.ReceiverId)
                 .WillCascadeOnDelete(false);
 
-            // FRIENDSHIP
             modelBuilder.Entity<Friendship>()
                 .HasRequired(f => f.Sender)
-                .WithMany()
+                .WithMany(u => u.InitiatedFriendships)
+                .HasForeignKey(f => f.SenderId)
                 .WillCascadeOnDelete(false);
 
             modelBuilder.Entity<Friendship>()
                 .HasRequired(f => f.Receiver)
+                .WithMany(u => u.ReceivedFriendships)
+                .HasForeignKey(f => f.ReceiverId)
+                .WillCascadeOnDelete(false);
+
+            modelBuilder.Entity<GroupMember>()
+                .HasRequired(gm => gm.User)
                 .WithMany()
+                .HasForeignKey(gm => gm.UserId)
+                .WillCascadeOnDelete(false);
+
+            modelBuilder.Entity<GroupMessage>()
+                .HasRequired(gm => gm.Sender)
+                .WithMany()
+                .HasForeignKey(gm => gm.SenderId)
                 .WillCascadeOnDelete(false);
         }
-
     }
 }

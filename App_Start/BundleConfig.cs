@@ -26,6 +26,9 @@ namespace Online_chat
             bundles.Add(new Bundle("~/bundles/bootstrap").Include(
                   "~/Scripts/bootstrap.bundle.min.js"));
 
+            bundles.Add(new StyleBundle("~/Content/chat-styles").Include(
+                "~/Content/chat-styles.css"));
+
             bundles.Add(new StyleBundle("~/Content/css").Include(
                       "~/Content/bootstrap.min.css",
                       "~/Content/site.css"));

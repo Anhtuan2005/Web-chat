@@ -13,31 +13,29 @@ namespace Online_chat.Controllers
         private readonly ApplicationDbContext _context = new ApplicationDbContext();
 
         // ============================================
-        // DASHBOARD (Trang chủ Admin)
+        // DASHBOARD
         // ============================================
         public ActionResult Index()
         {
-            // Thống kê tổng quan
             ViewBag.UserCount = _context.Users.Count(u => !u.IsDeleted);
             ViewBag.GroupCount = _context.Groups.Count();
-            ViewBag.MessageCount = _context.Messages.Count();
+            ViewBag.MessageCount = _context.GroupMessages.Count();
             ViewBag.PrivateMessageCount = _context.PrivateMessages.Count();
 
-            // Thống kê 30 ngày qua
             var thirtyDaysAgo = DateTime.Now.AddDays(-30);
             ViewBag.NewUsersLast30Days = _context.Users.Count(u => u.CreatedAt >= thirtyDaysAgo && !u.IsDeleted);
-            ViewBag.MessagesLast30Days = _context.Messages.Count(m => m.Timestamp >= thirtyDaysAgo);
+            ViewBag.MessagesLast30Days = _context.GroupMessages.Count(m => m.Timestamp >= thirtyDaysAgo);
 
             ViewBag.RecentUsers = _context.Users
-            .OrderByDescending(u => u.CreatedAt)
-            .Take(5)
-            .ToList();
+                .OrderByDescending(u => u.CreatedAt)
+                .Take(5)
+                .ToList();
 
             ViewBag.ActiveGroups = _context.Groups
-            .Include(g => g.Messages) 
-            .OrderByDescending(g => g.Messages.Count())
-            .Take(5)
-            .ToList();
+                .Include(g => g.Messages)
+                .OrderByDescending(g => g.Messages.Count())
+                .Take(5)
+                .ToList();
 
             return View();
         }
@@ -49,7 +47,6 @@ namespace Online_chat.Controllers
         {
             var query = _context.Users.Where(u => !u.IsDeleted);
 
-            // Tìm kiếm
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.ToLower();
@@ -61,7 +58,6 @@ namespace Online_chat.Controllers
                 ViewBag.SearchQuery = search;
             }
 
-            // Phân trang
             int totalUsers = query.Count();
             ViewBag.TotalPages = (int)Math.Ceiling((double)totalUsers / pageSize);
             ViewBag.CurrentPage = page;
@@ -108,7 +104,6 @@ namespace Online_chat.Controllers
             return View(user);
         }
 
-        // ✅ KHÓA USER (Thay vì xóa)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult BanUser(int id)
@@ -130,7 +125,6 @@ namespace Online_chat.Controllers
             return RedirectToAction("ManageUsers");
         }
 
-        // ✅ MỞ KHÓA USER
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult UnbanUser(int id)
@@ -146,7 +140,6 @@ namespace Online_chat.Controllers
             return RedirectToAction("ManageUsers");
         }
 
-        // Danh sách User bị khóa
         public ActionResult BannedUsers()
         {
             var bannedUsers = _context.Users.Where(u => u.IsDeleted).ToList();
@@ -163,7 +156,7 @@ namespace Online_chat.Controllers
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.ToLower();
-                query = query.Where(g => g.GroupName.ToLower().Contains(search));
+                query = query.Where(g => g.Name.ToLower().Contains(search));
                 ViewBag.SearchQuery = search;
             }
 
@@ -178,12 +171,15 @@ namespace Online_chat.Controllers
             var group = _context.Groups.Find(id);
             if (group == null) return HttpNotFound();
 
-            var messagesInGroup = _context.Messages.Where(m => m.GroupId == id);
-            _context.Messages.RemoveRange(messagesInGroup);
+            var messagesInGroup = _context.GroupMessages.Where(m => m.GroupId == id);
+            _context.GroupMessages.RemoveRange(messagesInGroup);
+
+            var membersInGroup = _context.GroupMembers.Where(m => m.GroupId == id);
+            _context.GroupMembers.RemoveRange(membersInGroup);
 
             _context.Groups.Remove(group);
             _context.SaveChanges();
-            TempData["SuccessMessage"] = $"Đã xóa nhóm: {group.GroupName}";
+            TempData["SuccessMessage"] = $"Đã xóa nhóm: {group.Name}";
 
             return RedirectToAction("ManageGroups");
         }
@@ -193,7 +189,6 @@ namespace Online_chat.Controllers
             var group = _context.Groups.Find(id);
             if (group == null) return HttpNotFound();
 
-            // Lấy danh sách user để chọn Owner mới
             ViewBag.Users = _context.Users
                 .Where(u => !u.IsDeleted)
                 .Select(u => new SelectListItem { Value = u.Id.ToString(), Text = u.DisplayName })
@@ -204,7 +199,7 @@ namespace Online_chat.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult EditGroup([Bind(Include = "Id,GroupName,CreatedAt,OwnerId")] Group group)
+        public ActionResult EditGroup([Bind(Include = "Id,Name,CreatedAt,CreatedBy,OwnerId")] Group group)
         {
             if (ModelState.IsValid)
             {
@@ -222,19 +217,17 @@ namespace Online_chat.Controllers
             return View(group);
         }
 
-        // ✅ XEM THÀNH VIÊN NHÓM
         public ActionResult GroupMembers(int id)
         {
             var group = _context.Groups.Find(id);
             if (group == null) return HttpNotFound();
 
-            ViewBag.GroupName = group.GroupName;
+            ViewBag.GroupName = group.Name;
             ViewBag.GroupId = id;
 
-            // Lấy danh sách user đã gửi tin nhắn trong nhóm
-            var members = _context.Messages
-                .Where(m => m.GroupId == id)
-                .Select(m => m.Sender)
+            var members = _context.GroupMembers
+                .Where(gm => gm.GroupId == id)
+                .Select(gm => gm.User)
                 .Distinct()
                 .ToList();
 
@@ -246,19 +239,17 @@ namespace Online_chat.Controllers
         // ============================================
         public ActionResult ManageMessages(string search, int? groupId)
         {
-            var query = _context.Messages
+            var query = _context.GroupMessages
                 .Include(m => m.Sender)
                 .Include(m => m.Group)
                 .AsQueryable();
 
-            // Lọc theo nhóm
             if (groupId.HasValue)
             {
                 query = query.Where(m => m.GroupId == groupId.Value);
                 ViewBag.SelectedGroupId = groupId.Value;
             }
 
-            // Tìm kiếm
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.ToLower();
@@ -272,7 +263,7 @@ namespace Online_chat.Controllers
                 .ToList();
 
             ViewBag.Groups = _context.Groups
-                .Select(g => new SelectListItem { Value = g.Id.ToString(), Text = g.GroupName })
+                .Select(g => new SelectListItem { Value = g.Id.ToString(), Text = g.Name })
                 .ToList();
 
             return View(messages);
@@ -282,28 +273,39 @@ namespace Online_chat.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteMessage(int id)
         {
-            var message = _context.Messages.Find(id);
+            var message = _context.GroupMessages.Find(id);
             if (message == null) return HttpNotFound();
 
-            _context.Messages.Remove(message);
+            _context.GroupMessages.Remove(message);
             _context.SaveChanges();
             TempData["SuccessMessage"] = "Đã xóa tin nhắn thành công!";
 
             return RedirectToAction("ManageMessages");
         }
 
-        // ✅ XÓA TẤT CẢ TIN NHẮN CỦA MỘT USER
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult DeleteUserMessages(int userId)
         {
-            var messages = _context.Messages.Where(m => m.SenderId == userId);
+            var user = _context.Users.Find(userId);
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy user.";
+                return RedirectToAction("ManageMessages");
+            }
+
+            var messages = _context.GroupMessages.Where(m => m.SenderId == userId);
             var count = messages.Count();
 
-            _context.Messages.RemoveRange(messages);
+            _context.GroupMessages.RemoveRange(messages);
+
+            var privateMessages = _context.PrivateMessages
+                .Where(m => m.SenderId == userId || m.ReceiverId == userId);
+
+            _context.PrivateMessages.RemoveRange(privateMessages);
             _context.SaveChanges();
 
-            TempData["SuccessMessage"] = $"Đã xóa {count} tin nhắn của user này.";
+            TempData["SuccessMessage"] = $"Đã xóa {count} tin nhắn nhóm và các tin nhắn riêng của user {user.Username}.";
             return RedirectToAction("ManageMessages");
         }
 
@@ -362,7 +364,6 @@ namespace Online_chat.Controllers
         public ActionResult SystemSettings()
         {
             var settings = _context.Settings.FirstOrDefault();
-
             if (settings == null)
             {
                 settings = new Setting
@@ -373,7 +374,6 @@ namespace Online_chat.Controllers
                 _context.Settings.Add(settings);
                 _context.SaveChanges();
             }
-
             return View(settings);
         }
 
@@ -381,6 +381,7 @@ namespace Online_chat.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult SystemSettings(Setting settings)
         {
+
             if (ModelState.IsValid)
             {
                 _context.Entry(settings).State = EntityState.Modified;
@@ -399,70 +400,53 @@ namespace Online_chat.Controllers
             return View();
         }
 
-        // API: Dữ liệu người dùng mới
         public JsonResult GetNewUserData()
         {
             var startDate = DateTime.Now.AddDays(-30);
-
             var data = _context.Users
                 .Where(u => u.CreatedAt >= startDate && !u.IsDeleted)
                 .GroupBy(u => DbFunctions.TruncateTime(u.CreatedAt))
                 .Select(g => new { Date = g.Key, Count = g.Count() })
                 .OrderBy(x => x.Date)
                 .ToList();
-
             var labels = data.Select(d => d.Date.Value.ToString("dd/MM")).ToArray();
             var values = data.Select(d => d.Count).ToArray();
-
             return Json(new { labels, values }, JsonRequestBehavior.AllowGet);
         }
 
-        // API: Dữ liệu tin nhắn theo ngày
         public JsonResult GetMessageData()
         {
             var startDate = DateTime.Now.AddDays(-30);
-
-            var data = _context.Messages
+            var data = _context.GroupMessages
                 .Where(m => m.Timestamp >= startDate)
                 .GroupBy(m => DbFunctions.TruncateTime(m.Timestamp))
                 .Select(g => new { Date = g.Key, Count = g.Count() })
                 .OrderBy(x => x.Date)
                 .ToList();
-
             var labels = data.Select(d => d.Date.Value.ToString("dd/MM")).ToArray();
             var values = data.Select(d => d.Count).ToArray();
-
             return Json(new { labels, values }, JsonRequestBehavior.AllowGet);
         }
 
-        // API: Top nhóm hoạt động
         public JsonResult GetTopGroups()
         {
             var startDate = DateTime.Now.AddDays(-30);
-
-            var data = _context.Messages
+            var data = _context.GroupMessages
                 .Where(m => m.Timestamp >= startDate)
-                .GroupBy(m => m.Group.GroupName)
+                .GroupBy(m => m.Group.Name)
                 .Select(g => new { GroupName = g.Key, MessageCount = g.Count() })
                 .OrderByDescending(x => x.MessageCount)
                 .Take(10)
                 .ToList();
-
             var labels = data.Select(d => d.GroupName).ToArray();
             var values = data.Select(d => d.MessageCount).ToArray();
-
             return Json(new { labels, values }, JsonRequestBehavior.AllowGet);
         }
 
-        // ============================================
-        // HOẠT ĐỘNG NGƯỜI DÙNG
-        // ============================================
         public ActionResult UserActivity()
         {
             var thirtyDaysAgo = DateTime.Now.AddDays(-30);
-
-            // User hoạt động gần đây (đã gửi tin nhắn)
-            var activeUsers = _context.Messages
+            var activeUsers = _context.GroupMessages
                 .Where(m => m.Timestamp >= thirtyDaysAgo)
                 .GroupBy(m => m.Sender)
                 .Select(g => new
@@ -474,7 +458,6 @@ namespace Online_chat.Controllers
                 .OrderByDescending(x => x.MessageCount)
                 .Take(50)
                 .ToList();
-
             return View(activeUsers);
         }
 

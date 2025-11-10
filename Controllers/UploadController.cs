@@ -142,17 +142,22 @@ namespace Online_chat.Controllers
             {
                 var uploadedFiles = new List<object>();
 
-                foreach (string fileKey in Request.Files)
+                for (int i = 0; i < Request.Files.Count; i++)
                 {
-                    var file = Request.Files[fileKey];
+                    var file = Request.Files[i]; 
+
                     if (file == null || file.ContentLength == 0) continue;
+
+                    if (file.ContentLength > 50 * 1024 * 1024)
+                    {
+                        return Json(new { success = false, message = $"File '{file.FileName}' vượt quá 50MB" });
+                    }
 
                     var extension = Path.GetExtension(file.FileName).ToLower();
                     var fileName = Guid.NewGuid().ToString() + extension;
                     string uploadDir = "";
                     string type = "";
 
-                    // Phân loại file
                     var imageExts = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp" };
                     var videoExts = new[] { ".mp4", ".mov", ".avi", ".webm", ".mkv" };
 
@@ -202,6 +207,7 @@ namespace Online_chat.Controllers
                 return Json(new { success = false, message = "Lỗi upload: " + ex.Message });
             }
         }
+
 
         private string FormatFileSize(long bytes)
         {

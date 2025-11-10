@@ -16,11 +16,9 @@ namespace Online_chat.Controllers.Api
         // GET /api/messages
         public IHttpActionResult GetMessages()
         {
-            var messages = _context.Messages
+            var messages = _context.PrivateMessages
                 .Include(m => m.Sender)
-                .OrderByDescending(m => m.Timestamp)
-                .Take(50)
-                .ToList();
+                .OrderByDescending(m => m.Timestamp);
             return Ok(messages);
         }
     }

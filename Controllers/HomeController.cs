@@ -20,9 +20,10 @@ namespace Online_chat.Controllers
             {
                 using (var context = new ApplicationDbContext())
                 {
-                    var messageCount = context.Messages.Count();
+                    var privateCount = context.PrivateMessages.Count();
+                    var groupCount = context.GroupMessages.Count();
                     ViewBag.Status = "Thành công!";
-                    ViewBag.Message = $"Kết nối tới SQL Server thành công! Hiện có {messageCount} tin nhắn trong bảng ChatMessages.";
+                    ViewBag.Message = $"Kết nối tới SQL Server thành công! Hiện có {privateCount} tin nhắn riêng tư và {groupCount} tin nhắn nhóm.";
                 }
             }
             catch (Exception ex)
