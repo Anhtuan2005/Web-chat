@@ -15,7 +15,6 @@ namespace Online_chat.Hubs
     [Authorize]
     public class ChatHub : Hub
     {
-        private readonly ApplicationDbContext _context = new ApplicationDbContext();
 
         private static readonly ConcurrentDictionary<string, string> ConnectedUsers = new ConcurrentDictionary<string, string>();
         private static readonly ConcurrentDictionary<string, DateTime> UserLastSeen = new ConcurrentDictionary<string, DateTime>();
@@ -87,25 +86,28 @@ namespace Online_chat.Hubs
             var username = Context.User.Identity.Name;
             var timestamp = DateTime.Now;
 
-            var sender = _context.Users.FirstOrDefault(u => u.Username == username);
-            if (sender == null) return;
-
-            var senderAvatar = sender.AvatarUrl ?? "/Content/default-avatar.png";
-
-            var groupMessage = new GroupMessage
+            using (var db = new ApplicationDbContext())
             {
-                GroupId = groupId,
-                SenderId = sender.Id,
-                Content = messageJson,
-                Timestamp = timestamp
-            };
-            _context.GroupMessages.Add(groupMessage);
-            _context.SaveChanges();
+                var sender = db.Users.FirstOrDefault(u => u.Username == username);
+                if (sender == null) return;
 
-            var groupName = $"group_{groupId}";
-            Clients.Group(groupName).receiveGroupMessage(groupId, username, senderAvatar, messageJson, timestamp.ToString("o"));
+                var senderAvatar = sender.AvatarUrl ?? "/Content/default-avatar.png";
 
-            Console.WriteLine($"👥💬 Group {groupId} - {username}: {messageJson}");
+                var groupMessage = new GroupMessage
+                {
+                    GroupId = groupId,
+                    SenderId = sender.Id,
+                    Content = messageJson,
+                    Timestamp = timestamp
+                };
+                db.GroupMessages.Add(groupMessage);
+                db.SaveChanges();
+
+                var groupName = $"group_{groupId}";
+                Clients.Group(groupName).receiveGroupMessage(groupId, username, senderAvatar, messageJson, timestamp.ToString("o"));
+
+                Console.WriteLine($"👥💬 Group {groupId} - {username}: {messageJson}");
+            }
         }
 
 
@@ -115,29 +117,50 @@ namespace Online_chat.Hubs
         public void SendPrivateMessage(string partnerUsername, string rawMessage)
         {
             var senderUsername = Context.User.Identity.Name;
-            var senderUser = _context.Users.FirstOrDefault(u => u.Username == senderUsername && !u.IsDeleted);
-            var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername && !u.IsDeleted);
 
-            if (senderUser == null || partnerUser == null) return;
-
-            var timestamp = DateTime.UtcNow;
-            var msg = new PrivateMessage
+            using (var db = new ApplicationDbContext())
             {
-                SenderId = senderUser.Id,
-                ReceiverId = partnerUser.Id,
-                Content = rawMessage,
-                Timestamp = timestamp
-            };
-            _context.PrivateMessages.Add(msg);
-            _context.SaveChanges();
+                var senderUser = db.Users.FirstOrDefault(u => u.Username == senderUsername && !u.IsDeleted);
+                var partnerUser = db.Users.FirstOrDefault(u => u.Username == partnerUsername && !u.IsDeleted);
 
-            var groupName = GetPrivateGroupName(senderUser.Id, partnerUser.Id);
-            Clients.Group(groupName).receiveMessage(
-                senderUser.Username,
-                senderUser.AvatarUrl,
-                rawMessage,
-                timestamp.ToString("o")
-            );
+                if (senderUser == null || partnerUser == null) return;
+
+                // Xác định MessageType từ nội dung JSON
+                string messageType = "text"; // Mặc định là text
+                try
+                {
+                    dynamic contentObj = JsonConvert.DeserializeObject(rawMessage);
+                    if (contentObj.type != null)
+                    {
+                        messageType = contentObj.type;
+                    }
+                }
+                catch
+                {
+                    // Nếu không parse được JSON, giữ nguyên là "text"
+                }
+
+                var timestamp = DateTime.UtcNow;
+                var msg = new PrivateMessage
+                {
+                    SenderId = senderUser.Id,
+                    ReceiverId = partnerUser.Id,
+                    Content = rawMessage,
+                    Timestamp = timestamp,
+                    MessageType = messageType, // Gán giá trị cho MessageType
+                    IsRead = false
+                };
+                db.PrivateMessages.Add(msg);
+                db.SaveChanges();
+
+                var groupName = GetPrivateGroupName(senderUser.Id, partnerUser.Id);
+                Clients.Group(groupName).receiveMessage(
+                    senderUser.Username,
+                    senderUser.AvatarUrl,
+                    rawMessage,
+                    timestamp.ToString("o")
+                );
+            }
         }
 
         // ========================================================
@@ -244,14 +267,17 @@ namespace Online_chat.Hubs
         public void JoinPrivateGroup(string partnerUsername)
         {
             var currentUsername = Context.User.Identity.Name;
-            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername && !u.IsDeleted);
-            var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername && !u.IsDeleted);
-
-            if (currentUser != null && partnerUser != null)
+            using (var db = new ApplicationDbContext())
             {
-                var groupName = GetPrivateGroupName(currentUser.Id, partnerUser.Id);
-                Groups.Add(Context.ConnectionId, groupName);
-                Console.WriteLine($"👥 {currentUsername} joined private group: {groupName}");
+                var currentUser = db.Users.FirstOrDefault(u => u.Username == currentUsername && !u.IsDeleted);
+                var partnerUser = db.Users.FirstOrDefault(u => u.Username == partnerUsername && !u.IsDeleted);
+
+                if (currentUser != null && partnerUser != null)
+                {
+                    var groupName = GetPrivateGroupName(currentUser.Id, partnerUser.Id);
+                    Groups.Add(Context.ConnectionId, groupName);
+                    Console.WriteLine($"👥 {currentUsername} joined private group: {groupName}");
+                }
             }
         }
 
@@ -314,9 +340,12 @@ namespace Online_chat.Hubs
         // ========================================================
         public void SendFriendRequestNotification(string receiverUsername)
         {
-            var receiver = _context.Users.FirstOrDefault(u => u.Username == receiverUsername);
-            if (receiver == null) return;
-            Clients.User(receiverUsername).receiveFriendRequest();
+            using (var db = new ApplicationDbContext())
+            {
+                var receiver = db.Users.FirstOrDefault(u => u.Username == receiverUsername);
+                if (receiver == null) return;
+                Clients.User(receiverUsername).receiveFriendRequest();
+            }
         }
 
         // ========================================================
@@ -327,23 +356,20 @@ namespace Online_chat.Hubs
             try
             {
                 var currentUsername = Context.User.Identity.Name;
-                Console.WriteLine($"[DEBUG] UserTyping called: {currentUsername} -> {partnerUsername}");
-
-                var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername && !u.IsDeleted);
-                var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername && !u.IsDeleted);
-
-                if (currentUser == null || partnerUser == null)
+                using (var db = new ApplicationDbContext())
                 {
-                    Console.WriteLine($"[ERROR] User not found: current={currentUser?.Id}, partner={partnerUser?.Id}");
-                    return;
+                    var currentUser = db.Users.FirstOrDefault(u => u.Username == currentUsername && !u.IsDeleted);
+                    var partnerUser = db.Users.FirstOrDefault(u => u.Username == partnerUsername && !u.IsDeleted);
+
+                    if (currentUser == null || partnerUser == null)
+                    {
+                        Console.WriteLine($"[ERROR] User not found: current={currentUser?.Id}, partner={partnerUser?.Id}");
+                        return;
+                    }
+
+                    var groupName = GetPrivateGroupName(currentUser.Id, partnerUser.Id);
+                    Clients.Group(groupName).userTyping(currentUsername);
                 }
-
-                var groupName = GetPrivateGroupName(currentUser.Id, partnerUser.Id);
-                Console.WriteLine($"[DEBUG] Sending typing to group: {groupName}");
-
-                Clients.Group(groupName).userTyping(currentUsername);
-
-                Console.WriteLine($"⌨️ Typing: {currentUsername} -> {partnerUsername}");
             }
             catch (Exception ex)
             {
@@ -356,33 +382,21 @@ namespace Online_chat.Hubs
             try
             {
                 var currentUsername = Context.User.Identity.Name;
-                var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername && !u.IsDeleted);
-                var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername && !u.IsDeleted);
+                using (var db = new ApplicationDbContext())
+                {
+                    var currentUser = db.Users.FirstOrDefault(u => u.Username == currentUsername && !u.IsDeleted);
+                    var partnerUser = db.Users.FirstOrDefault(u => u.Username == partnerUsername && !u.IsDeleted);
 
-                if (currentUser == null || partnerUser == null) return;
+                    if (currentUser == null || partnerUser == null) return;
 
-                var groupName = GetPrivateGroupName(currentUser.Id, partnerUser.Id);
-                Clients.Group(groupName).userStoppedTyping(currentUsername);
-
-                Console.WriteLine($"⏹ Stopped typing: {currentUsername} -> {partnerUsername}");
+                    var groupName = GetPrivateGroupName(currentUser.Id, partnerUser.Id);
+                    Clients.Group(groupName).userStoppedTyping(currentUsername);
+                }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[ERROR] UserStoppedTyping exception: {ex.Message}");
             }
-        }
-
-        // ========================================================
-        // CLEANUP
-        // ========================================================
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                _context.Dispose();
-            }
-            base.Dispose(disposing);
         }
 
         // ========================================================

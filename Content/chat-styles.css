@@ -270,11 +270,12 @@
    ========================================================*/
 .chat-message {
     display: flex !important;
-    align-items: flex-end !important;
-    margin-bottom: 15px !important;
+    align-items: flex-end !important; /* Căn đáy */
+    margin-bottom: 10px !important;
     width: 100% !important;
     position: relative;
-    gap: 8px;
+    gap: 6px !important; 
+    padding: 0 20px;
 }
 
     .chat-message.other,
@@ -288,13 +289,12 @@
 
     .chat-message .avatar {
         flex-shrink: 0;
-        order: 1;
-        width: 36px;
-        height: 36px;
+        width: 28px !important; /* Nhỏ hơn */
+        height: 28px !important;
         border-radius: 50%;
         object-fit: cover;
-        border: 2px solid #fff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border: none !important;
+        box-shadow: none !important;
     }
 
     .chat-message.self .avatar {
@@ -303,13 +303,13 @@
 
     .chat-message.other .avatar,
     .chat-message.ai-message .avatar {
-        background: #43a047;
-        color: #fff;
+        background: #ddd !important; 
+        color: #666 !important;
         font-weight: 600;
         display: flex;
         justify-content: center;
         align-items: center;
-        font-size: 0.95rem;
+        font-size: 0.75rem !important; 
     }
 
 .message-container {
@@ -344,17 +344,18 @@
 }
 
 .chat-bubble {
-    display: inline-flex; /* Đã có */
+    display: inline-flex;
     flex-direction: column;
     gap: 6px;
-    padding: 10px 15px;
+    padding: 10px 14px;
     border-radius: 18px;
     position: relative;
     word-wrap: break-word;
     word-break: break-word;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
     max-width: 100%;
-    width: fit-content; 
+    width: fit-content;
+    line-height: 1.4;
 }
 
 .chat-message.other .chat-bubble {
@@ -423,6 +424,81 @@
 
 .chat-bubble a[target="_blank"] {
     border: 0.5px solid rgba(0,0,0,0.08) !important;
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.03);
+    transition: all 0.2s;
+}
+.chat-bubble a[target="_blank"]:hover {
+    background: rgba(0,0,0,0.05);
+    transform: translateY(-1px);
+}
+
+/* Message Area scrollbar */
+.message-area {
+    flex-grow: 1;
+    padding: 20px 0 !important;
+    overflow-y: auto;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+}
+
+.message-area::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.85);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.message-area > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Smooth scroll */
+.message-area {
+    scroll-behavior: smooth;
+}
+
+.message-area::-webkit-scrollbar {
+    width: 8px;
+}
+
+.message-area::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 10px;
+    margin: 8px 0;
+}
+
+.message-area::-webkit-scrollbar-thumb {
+    background: #d8d8d8;
+    border-radius: 10px;
+}
+
+.message-area::-webkit-scrollbar-thumb:hover {
+    background: #bbb;
+}
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chat-message {
+    animation: slideUp 0.3s ease;
 }
 
 /* Call Log */
@@ -1616,3 +1692,20 @@ html.dark-mode .typing-bubble .dot {
 html.dark-mode .typing-avatar {
     background-color: #4e4f50;
 }
+
+html.dark-mode .chat-message.other .chat-bubble {
+    background: #3a3b3c !important;
+    color: #e4e6eb !important;
+}
+
+html.dark-mode .chat-message.other .bubble-time {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+html.dark-mode .chat-bubble a[target="_blank"] {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+    html.dark-mode .chat-bubble a[target="_blank"]:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }

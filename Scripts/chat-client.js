@@ -1335,6 +1335,12 @@
 
             currentChat.partnerUsername = $(target).data('username');
 
+            // Cập nhật trạng thái cho toggle "Ẩn trò chuyện"
+            const hiddenChats = JSON.parse(localStorage.getItem('hiddenChats') || '[]');
+            const isChatHidden = hiddenChats.includes(currentChat.partnerUsername);
+            $('#info-action-hide-chat').prop('checked', isChatHidden);
+
+
             if (chatHub.server.joinPrivateGroup) {
                 chatHub.server.joinPrivateGroup(currentChat.partnerUsername)
                     .done(() => console.log(`✅ Joined private group with ${currentChat.partnerUsername}`))
@@ -1789,12 +1795,19 @@
     function loadFriendsList() {
         const container = $('#conversation-list-ul');
         container.find('.friend-item').remove();
+        const hiddenChats = JSON.parse(localStorage.getItem('hiddenChats') || '[]');
 
         $.getJSON(urls.getFriendsList, function (friends) {
             if (!friends || friends.length === 0) return;
 
             friends.forEach(function (friend) {
                 if (friend.Username === currentUsername) return;
+
+                // Bỏ qua những người dùng trong danh sách ẩn
+                if (hiddenChats.includes(friend.Username)) {
+                    console.log(`Hiding friend: ${friend.Username}`);
+                    return;
+                }
 
                 const isOnline = onlineUsers.has(friend.Username);
                 const statusIndicator = `<span class="status-indicator ${isOnline ? 'online' : 'offline'}" data-username="${friend.Username}"></span>`;
