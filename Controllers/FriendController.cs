@@ -272,14 +272,14 @@ namespace Online_chat.Controllers
         }
 
         [HttpGet]
-        public JsonResult GetFriendsList()
+        public JsonResult GetFriends()
         {
             var currentUsername = User.Identity.Name;
             var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername && u.IsDeleted == false);
 
             if (currentUser == null)
             {
-                return Json(new List<FriendInfoViewModel>(), JsonRequestBehavior.AllowGet);
+                return Json(new { success = false, message = "User not found" }, JsonRequestBehavior.AllowGet);
             }
             var currentUserId = currentUser.Id;
 
@@ -287,16 +287,16 @@ namespace Online_chat.Controllers
                 .Where(f => f.Status == FriendshipStatus.Accepted &&
                             (
                                 (f.SenderId == currentUserId && f.Receiver.IsDeleted == false) ||
-                                (f.ReceiverId == currentUserId && f.Sender.IsDeleted == false)  
+                                (f.ReceiverId == currentUserId && f.Sender.IsDeleted == false)
                             ))
                 .Include(f => f.Sender)
                 .Include(f => f.Receiver)
                 .ToList();
 
-            var friendsViewModel = friendships.Select(f => {
+            var friends = friendships.Select(f => {
                 var friendUser = f.SenderId == currentUserId ? f.Receiver : f.Sender;
 
-                return new FriendInfoViewModel
+                return new
                 {
                     Id = friendUser.Id,
                     Username = friendUser.Username,
@@ -305,7 +305,7 @@ namespace Online_chat.Controllers
                 };
             }).ToList();
 
-            return Json(friendsViewModel, JsonRequestBehavior.AllowGet);
+            return Json(new { success = true, friends = friends }, JsonRequestBehavior.AllowGet);
         }
 
         protected override void Dispose(bool disposing)

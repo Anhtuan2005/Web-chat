@@ -43,6 +43,7 @@ namespace Online_chat.Controllers
         // ============================================
         // QUẢN LÝ USERS
         // ============================================
+
         public ActionResult ManageUsers(string search, int page = 1, int pageSize = 20)
         {
             var query = _context.Users.Where(u => !u.IsDeleted);
@@ -69,6 +70,21 @@ namespace Online_chat.Controllers
                 .ToList();
 
             return View(users);
+        }
+
+        public ActionResult ManageGroups(string search)
+        {
+            var query = _context.Groups.Include(g => g.Owner).AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.ToLower();
+                query = query.Where(g => g.Name.ToLower().Contains(search));
+                ViewBag.SearchQuery = search;
+            }
+
+            var groups = query.OrderByDescending(g => g.CreatedAt).ToList();
+            return View(groups);
         }
 
         public ActionResult EditUser(int id)
@@ -149,20 +165,6 @@ namespace Online_chat.Controllers
         // ============================================
         // QUẢN LÝ NHÓM
         // ============================================
-        public ActionResult ManageGroups(string search)
-        {
-            var query = _context.Groups.Include(g => g.Owner).AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                search = search.ToLower();
-                query = query.Where(g => g.Name.ToLower().Contains(search));
-                ViewBag.SearchQuery = search;
-            }
-
-            var groups = query.OrderByDescending(g => g.CreatedAt).ToList();
-            return View(groups);
-        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -237,19 +239,55 @@ namespace Online_chat.Controllers
         // ============================================
         // QUẢN LÝ TIN NHẮN NHÓM
         // ============================================
-        public ActionResult ManageMessages(string search, int? groupId)
+        public ActionResult MessageDetail(int id)
+        {
+            var message = _context.GroupMessages
+                .Include(m => m.Sender)
+                .Include(m => m.Group)
+                .FirstOrDefault(m => m.Id == id);
+
+            if (message == null) return HttpNotFound();
+
+            return View(message);
+        }
+
+        // Lọc theo người gửi
+        public ActionResult ManageMessages(string search, int? groupId, int? senderId, DateTime? fromDate, DateTime? toDate)
         {
             var query = _context.GroupMessages
                 .Include(m => m.Sender)
                 .Include(m => m.Group)
                 .AsQueryable();
 
+            // Lọc theo nhóm
             if (groupId.HasValue)
             {
                 query = query.Where(m => m.GroupId == groupId.Value);
                 ViewBag.SelectedGroupId = groupId.Value;
             }
 
+            // Lọc theo người gửi
+            if (senderId.HasValue)
+            {
+                query = query.Where(m => m.SenderId == senderId.Value);
+                ViewBag.SelectedSenderId = senderId.Value;
+            }
+
+            // Lọc theo thời gian
+            if (fromDate.HasValue)
+            {
+                query = query.Where(m => m.Timestamp >= fromDate.Value);
+                ViewBag.FromDate = fromDate.Value.ToString("yyyy-MM-dd");
+            }
+
+            if (toDate.HasValue)
+            {
+                var endDate = toDate.Value.AddDays(1);
+                query = query.Where(m => m.Timestamp < endDate);
+                ViewBag.ToDate = toDate.Value.ToString("yyyy-MM-dd");
+            }
+
+            // Tìm kiếm nội dung
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.ToLower();
@@ -266,7 +304,164 @@ namespace Online_chat.Controllers
                 .Select(g => new SelectListItem { Value = g.Id.ToString(), Text = g.Name })
                 .ToList();
 
+            ViewBag.Users = _context.Users
+                .Where(u => !u.IsDeleted)
+                .OrderBy(u => u.Username)
+                .Select(u => new SelectListItem { Value = u.Id.ToString(), Text = u.Username })
+                .ToList();
+
             return View(messages);
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult DeleteMessagesByDateRange(DateTime fromDate, DateTime toDate)
+        {
+            var endDate = toDate.AddDays(1);
+            var messages = _context.GroupMessages
+                .Where(m => m.Timestamp >= fromDate && m.Timestamp < endDate);
+
+            var count = messages.Count();
+            _context.GroupMessages.RemoveRange(messages);
+            _context.SaveChanges();
+
+            TempData["SuccessMessage"] = $"Đã xóa {count} tin nhắn từ {fromDate:dd/MM/yyyy} đến {toDate:dd/MM/yyyy}";
+            return RedirectToAction("ManageMessages");
+        }
+
+        // Xóa hàng loạt tin nhắn
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult DeleteMultipleMessages(int[] messageIds)
+        {
+            if (messageIds == null || messageIds.Length == 0)
+            {
+                TempData["ErrorMessage"] = "Chưa chọn tin nhắn nào để xóa.";
+                return RedirectToAction("ManageMessages");
+            }
+
+            var messages = _context.GroupMessages.Where(m => messageIds.Contains(m.Id));
+            var count = messages.Count();
+
+            _context.GroupMessages.RemoveRange(messages);
+            _context.SaveChanges();
+
+            TempData["SuccessMessage"] = $"Đã xóa {count} tin nhắn.";
+            return RedirectToAction("ManageMessages");
+        }
+
+        // Thống kê tin nhắn
+        public ActionResult MessageStatistics()
+        {
+            var stats = new
+            {
+                TotalMessages = _context.GroupMessages.Count(),
+                TotalUsers = _context.Users.Count(u => !u.IsDeleted),
+                TotalGroups = _context.Groups.Count(),
+
+                // Top 10 user gửi nhiều tin nhất
+                TopSenders = _context.GroupMessages
+                    .GroupBy(m => m.Sender)
+                    .Select(g => new
+                    {
+                        User = g.Key,
+                        MessageCount = g.Count()
+                    })
+                    .OrderByDescending(x => x.MessageCount)
+                    .Take(10)
+                    .ToList(),
+
+                // Top 10 nhóm có nhiều tin nhắn nhất
+                TopGroups = _context.GroupMessages
+                    .GroupBy(m => m.Group)
+                    .Select(g => new
+                    {
+                        Group = g.Key,
+                        MessageCount = g.Count()
+                    })
+                    .OrderByDescending(x => x.MessageCount)
+                    .Take(10)
+                    .ToList(),
+
+                // Tin nhắn trong 7 ngày gần nhất
+                MessagesLast7Days = _context.GroupMessages
+                    .Where(m => m.Timestamp >= DbFunctions.AddDays(DateTime.Now, -7))
+                    .GroupBy(m => DbFunctions.TruncateTime(m.Timestamp))
+                    .Select(g => new
+                    {
+                        Date = g.Key,
+                        Count = g.Count()
+                    })
+                    .OrderBy(x => x.Date)
+                    .ToList()
+            };
+
+            return View(stats);
+        }
+
+        // Tìm tin nhắn có từ khóa nhạy cảm
+        public ActionResult SensitiveMessages(string keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                keyword = "spam|fuck|shit|bitch"; // Từ khóa mặc định
+            }
+
+            ViewBag.Keyword = keyword;
+
+            var keywords = keyword.ToLower().Split('|');
+
+            var messages = _context.GroupMessages
+                .Include(m => m.Sender)
+                .Include(m => m.Group)
+                .AsEnumerable()
+                .Where(m => keywords.Any(k => m.Content.ToLower().Contains(k)))
+                .OrderByDescending(m => m.Timestamp)
+                .Take(100)
+                .ToList();
+
+            return View(messages);
+        }
+
+        // Export tin nhắn ra CSV
+        public ActionResult ExportMessages(int? groupId, DateTime? fromDate, DateTime? toDate)
+        {
+            var query = _context.GroupMessages
+                .Include(m => m.Sender)
+                .Include(m => m.Group)
+                .AsQueryable();
+
+            if (groupId.HasValue)
+                query = query.Where(m => m.GroupId == groupId.Value);
+
+            if (fromDate.HasValue)
+                query = query.Where(m => m.Timestamp >= fromDate.Value);
+
+            if (toDate.HasValue)
+                query = query.Where(m => m.Timestamp <= toDate.Value.AddDays(1));
+
+            var messages = query
+                .OrderBy(m => m.Timestamp)
+                .Select(m => new
+                {
+                    m.Id,
+                    Group = m.Group.Name,
+                    Sender = m.Sender.Username,
+                    Content = m.Content,
+                    Timestamp = m.Timestamp
+                })
+                .ToList();
+
+            // Tạo CSV
+            var csv = new System.Text.StringBuilder();
+            csv.AppendLine("ID,Group,Sender,Content,Timestamp");
+
+            foreach (var msg in messages)
+            {
+                csv.AppendLine($"{msg.Id},\"{msg.Group}\",\"{msg.Sender}\",\"{msg.Content.Replace("\"", "\"\"")}\",{msg.Timestamp:yyyy-MM-dd HH:mm:ss}");
+            }
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+            return File(bytes, "text/csv", $"messages_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
         }
 
         [HttpPost]
@@ -312,13 +507,42 @@ namespace Online_chat.Controllers
         // ============================================
         // QUẢN LÝ TIN NHẮN RIÊNG TƯ
         // ============================================
-        public ActionResult ManagePrivateMessages(string search, int page = 1)
+        public ActionResult ManagePrivateMessages(string search, int? senderId, int? receiverId, DateTime? fromDate, DateTime? toDate, int page = 1)
         {
             var query = _context.PrivateMessages
                 .Include(m => m.Sender)
                 .Include(m => m.Receiver)
                 .AsQueryable();
 
+            // Lọc theo người gửi
+            if (senderId.HasValue)
+            {
+                query = query.Where(m => m.SenderId == senderId.Value);
+                ViewBag.SelectedSenderId = senderId.Value;
+            }
+
+            // Lọc theo người nhận
+            if (receiverId.HasValue)
+            {
+                query = query.Where(m => m.ReceiverId == receiverId.Value);
+                ViewBag.SelectedReceiverId = receiverId.Value;
+            }
+
+            // Lọc theo thời gian
+            if (fromDate.HasValue)
+            {
+                query = query.Where(m => m.Timestamp >= fromDate.Value);
+                ViewBag.FromDate = fromDate.Value.ToString("yyyy-MM-dd");
+            }
+
+            if (toDate.HasValue)
+            {
+                var endDate = toDate.Value.AddDays(1);
+                query = query.Where(m => m.Timestamp < endDate);
+                ViewBag.ToDate = toDate.Value.ToString("yyyy-MM-dd");
+            }
+
+            // Tìm kiếm
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.ToLower();
@@ -335,13 +559,114 @@ namespace Online_chat.Controllers
             ViewBag.TotalPages = (int)Math.Ceiling((double)totalMessages / pageSize);
             ViewBag.CurrentPage = page;
 
+            // Thống kê
+            ViewBag.TotalPrivateMessages = _context.PrivateMessages.Count();
+            ViewBag.UnreadMessages = _context.PrivateMessages.Count(m => !m.IsRead);
+            var topSenders = _context.PrivateMessages
+            .GroupBy(m => m.Sender)
+            .Select(g => new TopSenderViewModel
+            {
+                Username = g.Key.Username,
+                MessageCount = g.Count()
+            })
+            .OrderByDescending(x => x.MessageCount)
+            .Take(10)
+            .ToList();
+
+            ViewBag.TopSenders = topSenders;
+
             var messages = query
                 .OrderByDescending(m => m.Timestamp)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
 
+            ViewBag.Users = _context.Users
+                .Where(u => !u.IsDeleted)
+                .OrderBy(u => u.Username)
+                .Select(u => new SelectListItem { Value = u.Id.ToString(), Text = u.Username })
+                .ToList();
+
             return View(messages);
+        }
+
+        // Xóa nhiều tin nhắn
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult DeleteMultiplePrivateMessages(int[] messageIds)
+        {
+            if (messageIds == null || messageIds.Length == 0)
+            {
+                TempData["ErrorMessage"] = "Chưa chọn tin nhắn nào để xóa.";
+                return RedirectToAction("ManagePrivateMessages");
+            }
+
+            var messages = _context.PrivateMessages.Where(m => messageIds.Contains(m.Id));
+            var count = messages.Count();
+
+            _context.PrivateMessages.RemoveRange(messages);
+            _context.SaveChanges();
+
+            TempData["SuccessMessage"] = $"Đã xóa {count} tin nhắn riêng tư.";
+            return RedirectToAction("ManagePrivateMessages");
+        }
+
+        // Chi tiết tin nhắn riêng tư
+        public ActionResult PrivateMessageDetail(int id)
+        {
+            var message = _context.PrivateMessages
+                .Include(m => m.Sender)
+                .Include(m => m.Receiver)
+                .FirstOrDefault(m => m.Id == id);
+
+            if (message == null) return HttpNotFound();
+
+            return View(message);
+        }
+
+        // Export CSV
+        public ActionResult ExportPrivateMessages(string search, int? senderId, int? receiverId)
+        {
+            var query = _context.PrivateMessages
+                .Include(m => m.Sender)
+                .Include(m => m.Receiver)
+                .AsQueryable();
+
+            if (senderId.HasValue)
+                query = query.Where(m => m.SenderId == senderId.Value);
+
+            if (receiverId.HasValue)
+                query = query.Where(m => m.ReceiverId == receiverId.Value);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.ToLower();
+                query = query.Where(m => m.Content.ToLower().Contains(search));
+            }
+
+            var messages = query
+                .OrderBy(m => m.Timestamp)
+                .Select(m => new
+                {
+                    m.Id,
+                    Sender = m.Sender.Username,
+                    Receiver = m.Receiver.Username,
+                    Content = m.Content,
+                    IsRead = m.IsRead,
+                    Timestamp = m.Timestamp
+                })
+                .ToList();
+
+            var csv = new System.Text.StringBuilder();
+            csv.AppendLine("ID,Sender,Receiver,Content,IsRead,Timestamp");
+
+            foreach (var msg in messages)
+            {
+                csv.AppendLine($"{msg.Id},\"{msg.Sender}\",\"{msg.Receiver}\",\"{msg.Content.Replace("\"", "\"\"")}\",{msg.IsRead},{msg.Timestamp:yyyy-MM-dd HH:mm:ss}");
+            }
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+            return File(bytes, "text/csv", $"private_messages_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
         }
 
         [HttpPost]

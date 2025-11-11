@@ -1,12 +1,29 @@
-﻿@model IEnumerable<Online_chat.Models.Message>
+﻿@model IEnumerable<Online_chat.Models.GroupMessage>
+
 @{
-    ViewBag.Title = "Quản lý tin nhắn nhóm";
+    ViewBag.Title = "Quản lý tin nhắn";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="page-header">
-    <h1 class="page-title">Quản lý tin nhắn nhóm</h1>
-    <p class="page-subtitle">Giám sát và quản lý tin nhắn trong các nhóm chat</p>
+    <h1 class="page-title">
+        <i class="fas fa-comments me-2"></i>
+        Quản lý tin nhắn nhóm
+    </h1>
+    <div class="d-flex gap-2">
+        <a href="@Url.Action("MessageStatistics")" class="btn btn-info">
+            <i class="fas fa-chart-bar me-2"></i>Thống kê
+        </a>
+        <a href="@Url.Action("SensitiveMessages")" class="btn btn-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>Từ khóa nhạy cảm
+        </a>
+        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteRangeModal">
+            <i class="fas fa-calendar-times me-2"></i>Xóa theo thời gian
+        </button>
+        <a href="@Url.Action("ExportMessages", new { groupId = ViewBag.SelectedGroupId, fromDate = ViewBag.FromDate, toDate = ViewBag.ToDate })" class="btn btn-success">
+            <i class="fas fa-file-excel me-2"></i>Export CSV
+        </a>
+    </div>
 </div>
 
 @if (TempData["SuccessMessage"] != null)
@@ -18,103 +35,306 @@
     </div>
 }
 
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
 <div class="content-card">
     <div class="content-card-header">
         <h5 class="content-card-title">
-            <i class="fas fa-comment-dots me-2"></i>
-            Tin nhắn gần đây (100 tin mới nhất)
+            <i class="fas fa-filter me-2"></i>
+            Bộ lọc tìm kiếm
         </h5>
     </div>
 
-    <!-- LỌC & TÌM KIẾM -->
+    <!-- BỘ LỌC NÂNG CAO -->
     <div class="content-card-body border-bottom">
-        <form method="get" action="@Url.Action("ManageMessages")" class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label small fw-bold">Lọc theo nhóm</label>
-                <select name="groupId" class="form-select">
-                    <option value="">-- Tất cả nhóm --</option>
-                    @foreach (var group in ViewBag.Groups as IEnumerable<SelectListItem>)
-                    {
-                        <option value="@group.Value" @(group.Value == ViewBag.SelectedGroupId?.ToString() ? "selected" : "")>
-                            @group.Text
-                        </option>
-                    }
-                </select>
+        @using (Html.BeginForm("ManageMessages", "Admin", FormMethod.Get))
+        {
+            <div class="row g-3">
+                <!-- Tìm kiếm nội dung -->
+                <div class="col-md-3">
+                    <label class="form-label">
+                        <i class="fas fa-search me-1"></i>Tìm kiếm nội dung
+                    </label>
+                    <input type="text" name="search" value="@ViewBag.SearchQuery"
+                           class="form-control" placeholder="Nhập từ khóa..." />
+                </div>
+
+                <!-- Lọc theo nhóm -->
+                <div class="col-md-3">
+                    <label class="form-label">
+                        <i class="fas fa-users me-1"></i>Nhóm chat
+                    </label>
+                    @Html.DropDownList("groupId", ViewBag.Groups as IEnumerable<SelectListItem>,
+                        "-- Tất cả nhóm --", new { @class = "form-control" })
+                </div>
+
+                <!-- Lọc theo người gửi -->
+                <div class="col-md-2">
+                    <label class="form-label">
+                        <i class="fas fa-user me-1"></i>Người gửi
+                    </label>
+                    @Html.DropDownList("senderId", ViewBag.Users as IEnumerable<SelectListItem>,
+                        "-- Tất cả --", new { @class = "form-control" })
+                </div>
+
+                <!-- Từ ngày -->
+                <div class="col-md-2">
+                    <label class="form-label">
+                        <i class="fas fa-calendar-alt me-1"></i>Từ ngày
+                    </label>
+                    <input type="date" name="fromDate" value="@ViewBag.FromDate" class="form-control" />
+                </div>
+
+                <!-- Đến ngày -->
+                <div class="col-md-2">
+                    <label class="form-label">
+                        <i class="fas fa-calendar-check me-1"></i>Đến ngày
+                    </label>
+                    <input type="date" name="toDate" value="@ViewBag.ToDate" class="form-control" />
+                </div>
+
+                <!-- Nút tìm kiếm và reset -->
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>Lọc kết quả
+                    </button>
+                    <a href="@Url.Action("ManageMessages")" class="btn btn-secondary">
+                        <i class="fas fa-redo me-2"></i>Đặt lại
+                    </a>
+                </div>
             </div>
-            <div class="col-md-6">
-                <label class="form-label small fw-bold">Tìm kiếm nội dung</label>
-                <input type="text" name="search" class="form-control"
-                       placeholder="Tìm kiếm trong tin nhắn..."
-                       value="@ViewBag.SearchQuery">
+        }
+    </div>
+
+    <!-- BẢNG TIN NHẮN -->
+    <div class="content-card-body">
+        <form id="deleteMultipleForm" method="post" action="@Url.Action("DeleteMultipleMessages")">
+            @Html.AntiForgeryToken()
+
+            <!-- Toolbar -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <span class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Hiển thị <strong>@Model.Count()</strong> tin nhắn (Tối đa 100)
+                    </span>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleSelectAll()">
+                        <i class="fas fa-check-square me-1"></i>
+                        <span id="selectAllText">Chọn tất cả</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="deleteSelected()">
+                        <i class="fas fa-trash me-1"></i>Xóa đã chọn
+                    </button>
+                </div>
             </div>
-            <div class="col-md-2">
-                <label class="form-label small">&nbsp;</label>
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-search me-2"></i>Lọc
-                </button>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="checkAll" class="form-check-input" />
+                            </th>
+                            <th style="width: 60px;">ID</th>
+                            <th style="width: 150px;">Nhóm</th>
+                            <th style="width: 130px;">Người gửi</th>
+                            <th>Nội dung</th>
+                            <th style="width: 140px;">Thời gian</th>
+                            <th style="width: 150px;" class="text-center">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Any())
+                        {
+                            foreach (var message in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" name="messageIds" value="@message.Id"
+                                               class="form-check-input message-checkbox" />
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">#@message.Id</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            <i class="fas fa-users text-success me-1"></i>
+                                            @message.Group.Name
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="@(message.Sender.AvatarUrl ?? "/Content/default-avatar.png")"
+                                                 class="rounded-circle me-2"
+                                                 style="width: 28px; height: 28px; object-fit: cover;"
+                                                 alt="Avatar" />
+                                            <small>@message.Sender.Username</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style="max-width: 350px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                             title="@message.Content">
+                                            @message.Content
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>
+                                            @message.Timestamp.ToString("dd/MM/yyyy HH:mm")
+                                        </small>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group" role="group">
+                                            <a href="@Url.Action("MessageDetail", new { id = message.Id })"
+                                               class="btn btn-sm btn-info"
+                                               title="Xem chi tiết">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            @using (Html.BeginForm("DeleteMessage", "Admin", new { id = message.Id }, FormMethod.Post, new { style = "display:inline;" }))
+                                            {
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-danger"
+                                                        title="Xóa tin nhắn"
+                                                        onclick="return confirm('Xác nhận xóa tin nhắn này?');">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-5">
+                                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">Không có tin nhắn nào</p>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
         </form>
     </div>
+</div>
 
-    <!-- BẢNG -->
-    <div class="content-card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th style="width: 50px;">ID</th>
-                        <th style="width: 150px;">Người gửi</th>
-                        <th>Nội dung</th>
-                        <th style="width: 150px;">Nhóm</th>
-                        <th style="width: 150px;">Thời gian</th>
-                        <th style="width: 120px;" class="text-center">Hành động</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var msg in Model)
-                    {
-                        <tr>
-                            <td><strong>#@msg.Id</strong></td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <img src="@(msg.Sender.AvatarUrl ?? "/Content/default-avatar.png")"
-                                         class="rounded-circle me-2"
-                                         style="width: 32px; height: 32px; object-fit: cover;">
-                                    <small>@msg.Sender.Username</small>
-                                </div>
-                            </td>
-                            <td>
-                                <small class="text-muted" style="max-width: 400px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                    @msg.Content
-                                </small>
-                            </td>
-                            <td>
-                                <span class="badge bg-success">
-                                    <i class="fas fa-users me-1"></i>
-                                    @msg.Group.GroupName
-                                </span>
-                            </td>
-                            <td>
-                                <small class="text-muted">
-                                    @msg.Timestamp.ToString("dd/MM/yyyy HH:mm")
-                                </small>
-                            </td>
-                            <td class="text-center">
-                                @using (Html.BeginForm("DeleteMessage", "Admin", new { id = msg.Id }, FormMethod.Post, new { style = "display:inline;" }))
-                                {
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit"
-                                            class="btn btn-sm btn-danger"
-                                            title="Xóa tin nhắn"
-                                            onclick="return confirm('Xóa tin nhắn này?');">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+<!-- MODAL XÓA THEO THỜI GIAN -->
+<div class="modal fade" id="deleteRangeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            @using (Html.BeginForm("DeleteMessagesByDateRange", "Admin", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-calendar-times me-2"></i>
+                        Xóa tin nhắn theo thời gian
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Cảnh báo:</strong> Hành động này không thể hoàn tác!
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Từ ngày</label>
+                        <input type="date" name="fromDate" class="form-control" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Đến ngày</label>
+                        <input type="date" name="toDate" class="form-control" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Hủy
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Xác nhận xóa
+                    </button>
+                </div>
+            }
         </div>
     </div>
 </div>
+
+@section scripts {
+    <script>
+        // Toggle checkbox tất cả
+        document.getElementById('checkAll').addEventListener('change', function () {
+            const checkboxes = document.querySelectorAll('.message-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateSelectAllButton();
+        });
+
+        // Cập nhật trạng thái nút "Chọn tất cả"
+        document.querySelectorAll('.message-checkbox').forEach(cb => {
+            cb.addEventListener('change', updateSelectAllButton);
+        });
+
+        function updateSelectAllButton() {
+            const checkboxes = document.querySelectorAll('.message-checkbox');
+            const checked = document.querySelectorAll('.message-checkbox:checked');
+            const checkAll = document.getElementById('checkAll');
+
+            checkAll.checked = checkboxes.length > 0 && checkboxes.length === checked.length;
+            checkAll.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
+
+            document.getElementById('selectAllText').textContent =
+                checked.length > 0 ? `Đã chọn ${checked.length}` : 'Chọn tất cả';
+        }
+
+        function toggleSelectAll() {
+            const checkAll = document.getElementById('checkAll');
+            checkAll.checked = !checkAll.checked;
+            checkAll.dispatchEvent(new Event('change'));
+        }
+
+        function deleteSelected() {
+            const checked = document.querySelectorAll('.message-checkbox:checked');
+
+            if (checked.length === 0) {
+                alert('Vui lòng chọn ít nhất 1 tin nhắn để xóa!');
+                return;
+            }
+
+            if (confirm(`Xác nhận xóa ${checked.length} tin nhắn đã chọn?\n\nHành động này không thể hoàn tác!`)) {
+                document.getElementById('deleteMultipleForm').submit();
+            }
+        }
+
+        // Highlight row khi hover checkbox
+        document.querySelectorAll('.message-checkbox').forEach(cb => {
+            cb.addEventListener('mouseenter', function () {
+                this.closest('tr').classList.add('table-active');
+            });
+            cb.addEventListener('mouseleave', function () {
+                if (!this.checked) {
+                    this.closest('tr').classList.remove('table-active');
+                }
+            });
+            cb.addEventListener('change', function () {
+                if (this.checked) {
+                    this.closest('tr').classList.add('table-active');
+                } else {
+                    this.closest('tr').classList.remove('table-active');
+                }
+            });
+        });
+    </script>
+}

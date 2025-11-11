@@ -9,22 +9,34 @@ namespace Online_chat.Models
         [Key]
         public int Id { get; set; }
 
-        [ForeignKey("Sender")]
-        public int SenderId { get; set; } // Phải là INT
+        public int SenderId { get; set; }
 
-        [ForeignKey("Receiver")]
-        public int ReceiverId { get; set; } // Phải là INT
+        public int ReceiverId { get; set; }
 
         [Required]
-        public string Content { get; set; } // Nội dung JSON
-
-        public string MessageType { get; set; } // "text", "image", "file", "call_log"
+        public string Content { get; set; }
 
         public DateTime Timestamp { get; set; }
 
         public bool IsRead { get; set; }
 
+        [StringLength(20)]
+        public string MessageType { get; set; } = "text";
+
+        public MessageStatus Status { get; set; }
+
+        // Navigation properties
+        [ForeignKey("SenderId")]
         public virtual User Sender { get; set; }
+
+        [ForeignKey("ReceiverId")]
         public virtual User Receiver { get; set; }
+    }
+
+    public enum MessageStatus
+    {
+        Sent,
+        Delivered,
+        Read
     }
 }

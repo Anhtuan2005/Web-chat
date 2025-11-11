@@ -1709,3 +1709,165 @@ html.dark-mode .chat-bubble a[target="_blank"] {
     html.dark-mode .chat-bubble a[target="_blank"]:hover {
         background: rgba(255, 255, 255, 0.1);
     }
+groupMembersList .custom-control-input:checked ~ .custom-control-label::before {
+    background: linear-gradient(135deg, #667eea, #764ba2) !important;
+    border-color: #667eea !important;
+}
+
+#groupMembersList .list-group-item {
+    border: none !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    padding: 16px 20px !important;
+    transition: all 0.3s !important;
+    background: white !important;
+    margin: 0 !important;
+}
+
+    #groupMembersList .list-group-item:first-child {
+        border-radius: 14px 14px 0 0 !important;
+    }
+
+    #groupMembersList .list-group-item:last-child {
+        border-radius: 0 0 14px 14px !important;
+        border-bottom: none !important;
+    }
+
+    #groupMembersList .list-group-item:hover {
+        background: linear-gradient(90deg, #f8f9ff, #fff) !important;
+        transform: translateX(4px);
+    }
+
+#groupMembersList .avatar-sm {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s;
+}
+
+#groupMembersList .custom-control-input:checked ~ .custom-control-label .avatar-sm {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+#groupMembersList .custom-control-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    padding-left: 0;
+    font-weight: 500;
+    color: #333;
+    width: 100%;
+}
+
+#groupMembersList::-webkit-scrollbar {
+    width: 8px;
+}
+
+#groupMembersList::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 10px;
+}
+
+#groupMembersList::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #667eea, #764ba2);
+    border-radius: 10px;
+}
+
+#groupNameInput:focus,
+#groupMemberSearchInput:focus {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1) !important;
+    outline: none;
+}
+
+#confirmCreateGroupBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5) !important;
+}
+
+#confirmCreateGroupBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Animation for member items */
+#groupMembersList .list-group-item {
+    animation: fadeInUp 0.3s ease forwards;
+    opacity: 0;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#groupMembersList .list-group-item:nth-child(1) {
+    animation-delay: 0.05s;
+}
+
+#groupMembersList .list-group-item:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+#groupMembersList .list-group-item:nth-child(3) {
+    animation-delay: 0.15s;
+}
+
+#groupMembersList .list-group-item:nth-child(4) {
+    animation-delay: 0.2s;
+}
+
+#groupMembersList .list-group-item:nth-child(5) {
+    animation-delay: 0.25s;
+}
+
+/* Empty state styling */
+#groupMembersList .text-muted {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+/* ========================================================
+   CREATE GROUP MODAL - GREEN THEME
+   ========================================================*/
+#createGroupModal .modal-header {
+    background: linear-gradient(135deg, #43a047 0%, #66bb6a 100%) !important;
+    border: none !important;
+}
+
+#createGroupModal .modal-title {
+    color: white !important;
+}
+
+#groupMembersList .custom-control-input:checked ~ .custom-control-label::before {
+    background: linear-gradient(135deg, #43a047, #66bb6a) !important;
+    border-color: #43a047 !important;
+}
+
+#groupMembersList .list-group-item {
+    border: none !important;
+    border-bottom: 1px solid #e8f5e9 !important;
+    padding: 16px 20px !important;
+    transition: all 0.3s !important;
+    background: white !important;
+    margin: 0 !important;
+}

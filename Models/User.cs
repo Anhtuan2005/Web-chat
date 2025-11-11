@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Online_chat.Models
 {
@@ -11,8 +10,7 @@ namespace Online_chat.Models
         public int Id { get; set; }
 
         [Required]
-        [StringLength(256)]
-        [Index(IsUnique = true)]
+        [StringLength(50)]
         public string Username { get; set; }
 
         [Required]
@@ -21,40 +19,41 @@ namespace Online_chat.Models
 
         [Required]
         [EmailAddress]
-        [StringLength(256)]
-        [Index(IsUnique = true)]
+        [StringLength(100)]
         public string Email { get; set; }
 
         [Required]
         public string PasswordHash { get; set; }
 
+        public string PhoneNumber { get; set; }
+
         public string AvatarUrl { get; set; }
 
-        public string CoverPhotoUrl { get; set; }
+        public long AvatarVersion { get; set; }
 
-        public string Bio { get; set; }
+        public string CoverPhotoUrl { get; set; }
 
         public string Gender { get; set; }
 
         public DateTime? DateOfBirth { get; set; }
 
-        public string PhoneNumber { get; set; }
+        public string Bio { get; set; }
 
-        [StringLength(8)]
-        [Index(IsUnique = true)]
+        public bool IsAdmin { get; set; }
+
+        public bool IsDeleted { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        [StringLength(50)]
         public string UserCode { get; set; }
 
-        public long AvatarVersion { get; set; } = 0; 
-
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-
-        public bool IsAdmin { get; set; } = false;
-
-        public bool IsDeleted { get; set; } = false;
-
         // Navigation properties
-        public virtual ICollection<Message> SentMessages { get; set; }
-        public virtual ICollection<Friendship> InitiatedFriendships { get; set; }
-        public virtual ICollection<Friendship> ReceivedFriendships { get; set; }
+        public virtual ICollection<GroupMember> GroupMembers { get; set; }
+        public virtual ICollection<GroupMessage> SentGroupMessages { get; set; }
+        public virtual ICollection<PrivateMessage> SentPrivateMessages { get; set; }
+        public virtual ICollection<PrivateMessage> ReceivedPrivateMessages { get; set; }
+        public virtual ICollection<Friendship> SentFriendRequests { get; set; }
+        public virtual ICollection<Friendship> ReceivedFriendRequests { get; set; }
     }
 }

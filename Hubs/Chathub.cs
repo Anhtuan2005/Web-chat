@@ -15,7 +15,6 @@ namespace Online_chat.Hubs
     [Authorize]
     public class ChatHub : Hub
     {
-
         private static readonly ConcurrentDictionary<string, string> ConnectedUsers = new ConcurrentDictionary<string, string>();
         private static readonly ConcurrentDictionary<string, DateTime> UserLastSeen = new ConcurrentDictionary<string, DateTime>();
         private static readonly ConcurrentDictionary<string, List<object>> _aiConversations = new ConcurrentDictionary<string, List<object>>();
@@ -110,7 +109,6 @@ namespace Online_chat.Hubs
             }
         }
 
-
         // ========================================================
         // GỬI TIN NHẮN PRIVATE
         // ========================================================
@@ -125,8 +123,7 @@ namespace Online_chat.Hubs
 
                 if (senderUser == null || partnerUser == null) return;
 
-                // Xác định MessageType từ nội dung JSON
-                string messageType = "text"; // Mặc định là text
+                string messageType = "text";
                 try
                 {
                     dynamic contentObj = JsonConvert.DeserializeObject(rawMessage);
@@ -135,10 +132,7 @@ namespace Online_chat.Hubs
                         messageType = contentObj.type;
                     }
                 }
-                catch
-                {
-                    // Nếu không parse được JSON, giữ nguyên là "text"
-                }
+                catch { }
 
                 var timestamp = DateTime.UtcNow;
                 var msg = new PrivateMessage
@@ -147,8 +141,8 @@ namespace Online_chat.Hubs
                     ReceiverId = partnerUser.Id,
                     Content = rawMessage,
                     Timestamp = timestamp,
-                    MessageType = messageType, // Gán giá trị cho MessageType
-                    IsRead = false
+                    MessageType = messageType,
+                    Status = MessageStatus.Sent
                 };
                 db.PrivateMessages.Add(msg);
                 db.SaveChanges();
@@ -281,7 +275,6 @@ namespace Online_chat.Hubs
             }
         }
 
-
         private string GetPrivateGroupName(int userId1, int userId2)
         {
             return userId1 < userId2
@@ -402,7 +395,6 @@ namespace Online_chat.Hubs
         // ========================================================
         // DTO CLASS
         // ========================================================
-
         public class ChatMessageDTO
         {
             public string Type { get; set; }

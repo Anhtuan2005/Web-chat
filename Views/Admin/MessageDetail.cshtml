@@ -1,0 +1,101 @@
+﻿@model Online_chat.Models.GroupMessage
+
+@{
+    ViewBag.Title = "Chi tiết tin nhắn";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="fas fa-envelope-open-text me-2"></i>
+        Chi tiết tin nhắn
+    </h1>
+    <a href="@Url.Action("ManageMessages")" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Quay lại
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    Thông tin tin nhắn #@Model.Id
+                </h5>
+            </div>
+            <div class="content-card-body">
+                <table class="table table-bordered">
+                    <tbody>
+                        <tr>
+                            <th style="width: 200px;">
+                                <i class="fas fa-hashtag me-2"></i>ID
+                            </th>
+                            <td><span class="badge bg-secondary">#@Model.Id</span></td>
+                        </tr>
+                        <tr>
+                            <th>
+                                <i class="fas fa-users me-2"></i>Nhóm
+                            </th>
+                            <td>
+                                <strong>@Model.Group.Name</strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                <i class="fas fa-user me-2"></i>Người gửi
+                            </th>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="@(Model.Sender.AvatarUrl ?? "/Content/default-avatar.png")"
+                                         class="rounded-circle me-2"
+                                         style="width: 40px; height: 40px; object-fit: cover;"
+                                         alt="Avatar" />
+                                    <div>
+                                        <strong>@Model.Sender.Username</strong><br />
+                                        <small class="text-muted">@Model.Sender.Email</small>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                <i class="fas fa-clock me-2"></i>Thời gian
+                            </th>
+                            <td>
+                                @Model.Timestamp.ToString("dddd, dd/MM/yyyy - HH:mm:ss")
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                <i class="fas fa-comment me-2"></i>Nội dung
+                            </th>
+                            <td>
+                                <div class="p-3 bg-light rounded" style="white-space: pre-wrap; word-wrap: break-word;">@Model.Content</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="mt-4 d-flex gap-2">
+                    @using (Html.BeginForm("DeleteMessage", "Admin", new { id = Model.Id }, FormMethod.Post))
+                    {
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-danger"
+                                onclick="return confirm('Xác nhận xóa tin nhắn này?');">
+                            <i class="fas fa-trash me-2"></i>Xóa tin nhắn
+                        </button>
+                    }
+
+                    @using (Html.BeginForm("DeleteUserMessages", "Admin", new { userId = Model.SenderId }, FormMethod.Post))
+                    {
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-warning"
+                                onclick="return confirm('Xác nhận xóa TẤT CẢ tin nhắn của user @Model.Sender.Username?');">
+                            <i class="fas fa-user-times me-2"></i>Xóa tất cả tin nhắn của user này
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -586,9 +586,16 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="@Url.Action("ManageMessages", "Admin")" class="nav-link @(ViewContext.RouteData.Values["Action"].ToString() == "ManageMessages" ? "active" : "")">
+                    <a class="nav-link" href="@Url.Action("ManageMessages", "Admin")">
                         <i class="fas fa-comments"></i>
-                        <span>Tin nhắn</span>
+                        <span>Tin nhắn nhóm</span>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="@Url.Action("ManagePrivateMessages", "Admin")">
+                        <i class="fas fa-envelope"></i>
+                        <span>Tin nhắn riêng tư</span>
                     </a>
                 </li>
             </ul>

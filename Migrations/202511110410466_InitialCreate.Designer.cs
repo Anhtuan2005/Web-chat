@@ -6,14 +6,14 @@ namespace WebChat_Online_MVC.Migrations
     using System.Data.Entity.Migrations.Infrastructure;
     using System.Resources;
     
-    [GeneratedCode("EntityFramework.Migrations", "6.5.1")]
+    [GeneratedCode("EntityFramework.Migrations", "6.4.4")]
     public sealed partial class InitialCreate : IMigrationMetadata
     {
         private readonly ResourceManager Resources = new ResourceManager(typeof(InitialCreate));
         
         string IMigrationMetadata.Id
         {
-            get { return "202511061206047_InitialCreate"; }
+            get { return "202511110410466_InitialCreate"; }
         }
         
         string IMigrationMetadata.Source

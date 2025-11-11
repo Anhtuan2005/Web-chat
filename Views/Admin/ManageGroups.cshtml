@@ -62,7 +62,7 @@
                             <td><strong>#@group.Id</strong></td>
                             <td>
                                 <i class="fas fa-users text-success me-2"></i>
-                                <strong>@group.GroupName</strong>
+                                <strong>@group.Name</strong>
                             </td>
                             <td>
                                 @if (group.Owner != null)
@@ -100,7 +100,7 @@
                                         <button type="submit"
                                                 class="btn btn-sm btn-danger"
                                                 title="Xóa nhóm"
-                                                onclick="return confirm('Xóa nhóm @group.GroupName? Tất cả tin nhắn sẽ bị xóa!');">
+                                                onclick="return confirm('Xóa nhóm @group.Name? Tất cả tin nhắn sẽ bị xóa!');">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     }

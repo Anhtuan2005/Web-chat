@@ -1,212 +1,224 @@
 ﻿using System;
 using System.Collections.Generic;
-using Online_chat.Models;
 using System.Linq;
 using System.Web.Mvc;
-using System.IO;
-using Newtonsoft.Json;
-using System.Threading.Tasks;
+using Online_chat.Models;
+using Microsoft.AspNet.Identity;
 using System.Data.Entity;
 
 namespace Online_chat.Controllers
 {
     [Authorize]
-    public class ChatController : BaseController
+    public class ChatController : Controller
     {
+        private ApplicationDbContext db = new ApplicationDbContext();
 
-        public ActionResult Index(string friendUsername)
+        public ActionResult Index(string friend)
         {
-            var currentUsername = User.Identity.Name;
-            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
-
-            ViewBag.CurrentUserAvatarUrl = currentUser?.AvatarUrl;
-            ViewBag.CurrentUserAvatarVersion = currentUser?.AvatarVersion ?? 0;
-            ViewBag.SelectedFriendUsername = friendUsername;
-
+            ViewBag.SelectedFriendUsername = friend;
             return View();
+        }
+
+        [HttpGet]
+        public JsonResult GetConversations(string filter)
+        {
+            try
+            {
+                var currentUsername = User.Identity.Name;
+                var currentUser = db.Users.FirstOrDefault(u => u.Username == currentUsername);
+
+                if (currentUser == null)
+                {
+                    return Json(new List<ConversationViewModel>(), JsonRequestBehavior.AllowGet);
+                }
+
+                var currentUserId = currentUser.Id;
+                var conversations = new List<ConversationViewModel>();
+
+                // Lấy các cuộc trò chuyện cá nhân
+                var privateMessages = db.PrivateMessages
+                    .Where(m => m.SenderId == currentUserId || m.ReceiverId == currentUserId)
+                    .ToList() // Execute query first
+                    .GroupBy(m => m.SenderId == currentUserId ? m.ReceiverId : m.SenderId)
+                    .Select(g => new
+                    {
+                        PartnerId = g.Key,
+                        LastMessage = g.OrderByDescending(m => m.Timestamp).FirstOrDefault()
+                    })
+                    .ToList();
+
+                foreach (var pm in privateMessages)
+                {
+                    var partner = db.Users.Find(pm.PartnerId);
+                    if (partner != null && partner.Username != currentUsername)
+                    {
+                        var unreadCount = db.PrivateMessages.Count(m =>
+                            m.SenderId == pm.PartnerId &&
+                            m.ReceiverId == currentUserId &&
+                            !m.IsRead);
+
+                        conversations.Add(new ConversationViewModel
+                        {
+                            Type = "Private",
+                            Id = partner.Id,
+                            Username = partner.Username,
+                            DisplayName = partner.DisplayName ?? partner.Username,
+                            Name = partner.DisplayName ?? partner.Username,
+                            AvatarUrl = partner.AvatarUrl ?? "/Content/default-avatar.png",
+                            LastMessage = pm.LastMessage?.Content ?? "",
+                            LastMessageTimestamp = pm.LastMessage?.Timestamp ?? DateTime.MinValue,
+                            UnreadCount = unreadCount
+                        });
+                    }
+                }
+
+                // Lấy các cuộc trò chuyện nhóm
+                var groupMemberships = db.GroupMembers
+                    .Where(gm => gm.UserId == currentUserId)
+                    .Include(gm => gm.Group)
+                    .ToList();
+
+                foreach (var membership in groupMemberships)
+                {
+                    var group = membership.Group;
+                    if (group != null)
+                    {
+                        var lastMessage = db.GroupMessages
+                            .Where(gm => gm.GroupId == group.Id)
+                            .OrderByDescending(m => m.Timestamp)
+                            .FirstOrDefault();
+
+                        conversations.Add(new ConversationViewModel
+                        {
+                            Type = "Group",
+                            Id = group.Id,
+                            Name = group.Name,
+                            Username = null,
+                            DisplayName = group.Name,
+                            AvatarUrl = group.AvatarUrl ?? "/Content/default-group-avatar.png",
+                            LastMessage = lastMessage?.Content ?? "",
+                            LastMessageTimestamp = lastMessage?.Timestamp ?? DateTime.MinValue,
+                            UnreadCount = 0
+                        });
+                    }
+                }
+
+                // Lọc dựa trên tham số
+                if (filter == "unread")
+                {
+                    conversations = conversations.Where(c => c.UnreadCount > 0).ToList();
+                }
+                else if (filter == "groups")
+                {
+                    conversations = conversations.Where(c => c.Type == "Group").ToList();
+                }
+
+                // Sắp xếp theo thời gian tin nhắn cuối
+                var sortedConversations = conversations
+                    .OrderByDescending(c => c.LastMessageTimestamp)
+                    .ToList();
+
+                return Json(sortedConversations, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                // Log error (you should add logging here)
+                System.Diagnostics.Debug.WriteLine($"Error in GetConversations: {ex.Message}");
+                return Json(new List<ConversationViewModel>(), JsonRequestBehavior.AllowGet);
+            }
         }
 
         [HttpGet]
         public JsonResult GetChatHistory(string partnerUsername)
         {
             var currentUsername = User.Identity.Name;
-            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername && !u.IsDeleted);
-            var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername && !u.IsDeleted);
+            var currentUser = db.Users.FirstOrDefault(u => u.Username == currentUsername);
+            var partnerUser = db.Users.FirstOrDefault(u => u.Username == partnerUsername);
 
             if (currentUser == null || partnerUser == null)
-                return Json(new { success = false, message = "Người dùng không hợp lệ" }, JsonRequestBehavior.AllowGet);
+            {
+                return Json(new { success = false, message = "User not found" }, JsonRequestBehavior.AllowGet);
+            }
 
-            var messages = _context.PrivateMessages
-                .Where(m =>
-                    (m.SenderId == currentUser.Id && m.ReceiverId == partnerUser.Id) ||
-                    (m.SenderId == partnerUser.Id && m.ReceiverId == currentUser.Id))
+            var messages = db.PrivateMessages
+                .Where(m => (m.SenderId == currentUser.Id && m.ReceiverId == partnerUser.Id) ||
+                             (m.SenderId == partnerUser.Id && m.ReceiverId == currentUser.Id))
                 .OrderBy(m => m.Timestamp)
                 .Select(m => new
                 {
                     SenderUsername = m.Sender.Username,
-                    SenderAvatar = m.Sender.AvatarUrl ?? "/Content/default-avatar.png",
+                    SenderAvatar = m.Sender.AvatarUrl,
                     Content = m.Content,
                     Timestamp = m.Timestamp
                 })
                 .ToList();
 
-            var messagesFormatted = messages.Select(m => new
-            {
-                m.SenderUsername,
-                m.SenderAvatar,
-                m.Content,
-                Timestamp = m.Timestamp.ToString("o") 
-            }).ToList();
-
-            return Json(new { success = true, messages = messagesFormatted }, JsonRequestBehavior.AllowGet);
-        }
-
-        [HttpPost]
-        public JsonResult UploadFiles()
-        {
-            try
-            {
-                var uploadedUrls = new List<string>();
-                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".mp4", ".mov", ".webm", ".pdf", ".docx", ".xlsx", ".zip" };
-                var maxSize = 20 * 1024 * 1024; // 20MB
-
-                foreach (string fileKey in Request.Files)
-                {
-                    var file = Request.Files[fileKey];
-                    if (file == null || file.ContentLength == 0 || file.ContentLength > maxSize) continue;
-
-                    var ext = Path.GetExtension(file.FileName).ToLower();
-                    if (!allowedExtensions.Contains(ext)) continue;
-
-                    var fileName = Guid.NewGuid() + ext;
-                    var uploadsDir = Server.MapPath("~/Uploads/Files/");
-                    if (!Directory.Exists(uploadsDir))
-                        Directory.CreateDirectory(uploadsDir);
-
-                    var path = Path.Combine(uploadsDir, fileName);
-                    file.SaveAs(path);
-
-                    var timestamp = DateTime.Now.Ticks;
-                    uploadedUrls.Add($"/Uploads/Files/{fileName}?v={timestamp}");
-                }
-
-                return Json(new { success = uploadedUrls.Any(), urls = uploadedUrls });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = "Upload lỗi: " + ex.Message });
-            }
-        }
-
-        [HttpGet]
-        public async Task<JsonResult> GetConversationInfo(string partnerUsername)
-        {
-            var currentUsername = User.Identity.Name;
-            var messages = await _context.PrivateMessages
-                .Include(m => m.Sender)
-                .Include(m => m.Receiver)
-                .Where(m =>
-                    (m.Sender.Username == currentUsername && m.Receiver.Username == partnerUsername) ||
-                    (m.Sender.Username == partnerUsername && m.Receiver.Username == currentUsername)
-                )
-                .OrderByDescending(m => m.Timestamp)
-                .ToListAsync();
-
-            var files = new List<FileLinkInfo>();
-            var images = new List<FileLinkInfo>();
-
-            foreach (var msg in messages)
-            {
-                try
-                {
-                    var content = JsonConvert.DeserializeObject<MessageContent>(msg.Content);
-                    if (content != null)
-                    {
-                        var timeAgo = GetTimeAgo(msg.Timestamp);
-
-                        if (content.type == "file")
-                        {
-                            files.Add(new FileLinkInfo
-                            {
-                                Url = content.content,
-                                FileName = Path.GetFileName(content.content),
-                                Timestamp = timeAgo
-                            });
-                        }
-                        else if (content.type == "image" || content.type == "video")
-                        {
-                            images.Add(new FileLinkInfo
-                            {
-                                Url = content.content,
-                                FileName = "Hình ảnh/Video",
-                                Timestamp = timeAgo
-                            });
-                        }
-                    }
-                }
-                catch { }
-            }
-
-            return Json(new { success = true, files = files, images = images }, JsonRequestBehavior.AllowGet);
+            return Json(new { success = true, messages = messages }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<JsonResult> ClearHistory(string partnerUsername)
+        public JsonResult ClearHistory(string partnerUsername)
         {
             var currentUsername = User.Identity.Name;
-            var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == currentUsername);
-            var partnerUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == partnerUsername);
+            var currentUser = db.Users.FirstOrDefault(u => u.Username == currentUsername);
+            var partnerUser = db.Users.FirstOrDefault(u => u.Username == partnerUsername);
 
             if (currentUser == null || partnerUser == null)
             {
-                return Json(new { success = false, message = "Không tìm thấy người dùng." });
+                return Json(new { success = false, message = "User not found" });
             }
 
-            try
+            var messagesToDelete = db.PrivateMessages
+                .Where(m => (m.SenderId == currentUser.Id && m.ReceiverId == partnerUser.Id) ||
+                             (m.SenderId == partnerUser.Id && m.ReceiverId == currentUser.Id));
+
+            db.PrivateMessages.RemoveRange(messagesToDelete);
+            db.SaveChanges();
+
+            return Json(new { success = true });
+        }
+
+        [HttpGet]
+        public JsonResult GetConversationInfo(string partnerUsername)
+        {
+            var currentUsername = User.Identity.Name;
+            var currentUser = db.Users.FirstOrDefault(u => u.Username == currentUsername);
+            var partnerUser = db.Users.FirstOrDefault(u => u.Username == partnerUsername);
+
+            if (currentUser == null || partnerUser == null)
             {
-                var messagesToDelete = _context.PrivateMessages
-                    .Where(m =>
-                        (m.SenderId == currentUser.Id && m.ReceiverId == partnerUser.Id) ||
-                        (m.SenderId == partnerUser.Id && m.ReceiverId == currentUser.Id)
-                    );
-
-                if (await messagesToDelete.AnyAsync())
-                {
-                    _context.PrivateMessages.RemoveRange(messagesToDelete);
-                    await _context.SaveChangesAsync();
-                }
-
-                return Json(new { success = true, message = "Đã xóa lịch sử trò chuyện." });
+                return Json(new { success = false, message = "User not found" }, JsonRequestBehavior.AllowGet);
             }
-            catch (Exception ex)
+
+            var messages = db.PrivateMessages
+                .Where(m => (m.SenderId == currentUser.Id && m.ReceiverId == partnerUser.Id) ||
+                             (m.SenderId == partnerUser.Id && m.ReceiverId == currentUser.Id))
+                .OrderByDescending(m => m.Timestamp)
+                .ToList();
+
+            var images = messages
+                .Where(m => m.MessageType == "image")
+                .Select(m => new { Url = m.Content, Timestamp = m.Timestamp })
+                .Take(20)
+                .ToList();
+
+            var files = messages
+                .Where(m => m.MessageType == "file")
+                .Select(m => new { Url = m.Content, FileName = "File", Timestamp = m.Timestamp })
+                .Take(20)
+                .ToList();
+
+            return Json(new { success = true, images = images, files = files }, JsonRequestBehavior.AllowGet);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
             {
-                return Json(new { success = false, message = "Lỗi máy chủ: " + ex.Message });
+                db.Dispose();
             }
-        }
-
-        private string GetTimeAgo(DateTime timestamp)
-        {
-            var span = DateTime.Now - timestamp;
-            if (span.Days > 365) return $"{span.Days / 365} năm trước";
-            if (span.Days > 30) return $"{span.Days / 30} tháng trước";
-            if (span.Days > 0) return $"{span.Days} ngày trước";
-            if (span.Hours > 0) return $"{span.Hours} giờ trước";
-            if (span.Minutes > 0) return $"{span.Minutes} phút trước";
-            return "Vừa xong";
-        }
-
-        public class MessageContent
-        {
-            public string type { get; set; }
-            public string content { get; set; }
-        }
-
-        public class FileLinkInfo
-        {
-            public string Url { get; set; }
-            public string FileName { get; set; }
-            public string Timestamp { get; set; }
+            base.Dispose(disposing);
         }
     }
 }

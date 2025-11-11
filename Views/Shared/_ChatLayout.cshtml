@@ -1,732 +1,782 @@
-﻿    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>@ViewBag.Title</title>
-        @Styles.Render("~/Content/css")
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <style>
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
-
-            body {
-                overflow: hidden;
-                font-family: 'Inter', sans-serif;
-                background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
-            }
-
-            .app-layout {
-                display: flex;
-                height: 100vh;
-                padding: 12px;
-                gap: 12px;
-            }
-
-            .main-nav-bar {
-                width: 80px;
-                background: linear-gradient(180deg, #2e7d32 0%, #388e3c 50%, #43a047 100%);
-                box-shadow: 0 8px 32px rgba(46, 125, 50, 0.25);
-                display: flex;
-                flex-direction: column;
-                justify-content: space-between;
-                align-items: center;
-                padding: 25px 0;
-                flex-shrink: 0;
-                z-index: 10;
-                position: relative;
-                border-radius: 28px;
-                border: 3px solid rgba(255, 255, 255, 0.2);
-            }
-
-            .nav-separator {
-                width: 32px;
-                height: 2px;
-                background-color: #40444b;
-                border-radius: 1px;
-                margin: 10px 0;
-            }
-
-            .nav-group {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 15px;
-            }
-
-            .nav-icon {
-                font-size: 1.5rem;
-                color: #b9bbbe;
-                background-color: #40444b;
-                cursor: pointer;
-                width: 50px;
-                height: 50px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 50%;
-                transition: all 0.2s ease-in-out;
-                position: relative;
-            }
-
-                .nav-icon:hover {
-                    border-radius: 15px;
-                    background-color: #3ba55d;
-                    color: #fff;
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title</title>
+    @Styles.Render("~/Content/css")
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
                 }
 
-                .nav-icon.active {
-                    border-radius: 15px;
-                    background-color: #3ba55d;
-                    color: #fff;
+                body {
+                    overflow: hidden;
+                    font-family: 'Inter', sans-serif;
+                    background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
                 }
 
-            .profile-section {
-                position: relative;
-            }
-
-            #user-avatar {
-                width: 50px;
-                height: 50px;
-                padding: 0;
-                background-color: #7289da;
-                color: white;
-                font-weight: 600;
-                font-size: 1.5rem;
-            }
-
-                #user-avatar:hover {
-                    border-radius: 15px;
-                }
-
-            .profile-dropdown-menu {
-                display: none;
-                position: absolute;
-                top: 5px;
-                left: 90px;
-                width: 250px;
-                background-color: #2c2f33;
-                border-radius: 8px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-                z-index: 1000;
-                padding: 8px;
-                color: #fff;
-            }
-
-            .dropdown-header {
-                padding: 12px 16px;
-                font-size: 1.1rem;
-                font-weight: 600;
-                border-bottom: 1px solid #4f545c;
-                margin-bottom: 8px;
-            }
-
-            .dropdown-item {
-                display: block;
-                padding: 10px 16px;
-                color: #dcddde;
-                text-decoration: none;
-                border-radius: 4px;
-                transition: background-color 0.2s;
-            }
-
-                .dropdown-item:hover {
-                    background-color: #40444b;
-                    color: #fff;
-                    text-decoration: none;
-                }
-
-            .dropdown-divider {
-                height: 1px;
-                margin: 8px 0;
-                background-color: #4f545c;
-            }
-
-            .main-nav-bar::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                height: 6px;
-                background: linear-gradient(90deg, #66bb6a, #81c784, #a5d6a7, #81c784, #66bb6a);
-                background-size: 200% 100%;
-                animation: shimmer 3s linear infinite;
-                border-radius: 28px 28px 0 0;
-            }
-
-            @@keyframes shimmer {
-                0% {
-                    background-position: 0% 0%;
-                }
-
-                100% {
-                    background-position: 200% 0%;
-                }
-            }
-
-            .main-nav-bar .nav-icon {
-                font-size: 1.6rem;
-                color: rgba(255, 255, 255, 0.85);
-                margin-bottom: 22px;
-                cursor: pointer;
-                padding: 16px;
-                border-radius: 20px;
-                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-                position: relative;
-                background: rgba(255, 255, 255, 0.08);
-                backdrop-filter: blur(10px);
-            }
-
-                .main-nav-bar .nav-icon::before {
-                    content: '';
-                    position: absolute;
-                    inset: 0;
-                    border-radius: 20px;
-                    padding: 2px;
-                    background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
-                    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-                    -webkit-mask-composite: xor;
-                    mask-composite: exclude;
-                    opacity: 0;
-                    transition: opacity 0.4s ease;
-                }
-
-                .main-nav-bar .nav-icon:hover {
-                    background: rgba(255, 255, 255, 0.25);
-                    color: #fff;
-                    transform: translateY(-4px) scale(1.08);
-                    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-                }
-
-                    .main-nav-bar .nav-icon:hover::before {
-                        opacity: 1;
-                    }
-
-                .main-nav-bar .nav-icon.active {
-                    background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.2));
-                    color: #fff;
-                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 2px 8px rgba(255, 255, 255, 0.2);
-                    transform: scale(1.05);
-                }
-
-                    .main-nav-bar .nav-icon.active::after {
-                        content: '';
-                        position: absolute;
-                        right: -18px;
-                        top: 50%;
-                        transform: translateY(-50%);
-                        width: 5px;
-                        height: 35px;
-                        background: linear-gradient(180deg, #fff, #e8f5e9);
-                        border-radius: 10px 0 0 10px;
-                        box-shadow: 0 4px 12px rgba(255, 255, 255, 0.5);
-                    }
-
-            /* 2. Cột danh sách hội thoại */
-            .conversation-list {
-                width: 360px;
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                flex-direction: column;
-                flex-shrink: 0;
-                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-                border-radius: 28px;
-                overflow: hidden;
-                box-shadow: 0 8px 32px rgba(46, 125, 50, 0.15);
-                border: 2px solid rgba(255, 255, 255, 0.8);
-            }
-
-            .conv-header {
-                padding: 24px;
-                font-size: 1.4rem;
-                font-weight: 700;
-                background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
-                color: white;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                position: relative;
-                overflow: hidden;
-            }
-
-                .conv-header::before {
-                    content: '';
-                    position: absolute;
-                    top: -50%;
-                    right: -50%;
-                    width: 200%;
-                    height: 200%;
-                    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
-                    animation: pulse 4s ease-in-out infinite;
-                }
-
-            @@keyframes pulse {
-                0%, 100% {
-                    transform: scale(1) translate(0, 0);
-                    opacity: 0.5;
-                }
-
-                50% {
-                    transform: scale(1.1) translate(-10%, -10%);
-                    opacity: 0.8;
-                }
-            }
-
-            /* ĐÃ XÓA .message-area TẠI ĐÂY */
-
-            @@keyframes slideIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(10px);
-                }
-
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-
-            /* ĐÃ XÓA .chat-message VÀ .chat-bubble TẠI ĐÂY */
-            /* ĐÃ XÓA .input-area TẠI ĐÂY */
-
-            .conv-header i {
-                font-size: 1.5rem;
-                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-                position: relative;
-                z-index: 1;
-            }
-
-            .conv-header span {
-                position: relative;
-                z-index: 1;
-            }
-
-            .conv-items {
-                flex-grow: 1;
-                overflow-y: auto;
-                padding: 16px;
-            }
-
-                .conv-items::-webkit-scrollbar {
-                    width: 8px;
-                }
-
-                .conv-items::-webkit-scrollbar-track {
-                    background: #f1f8e9;
-                    border-radius: 10px;
-                    margin: 8px 0;
-                }
-
-                .conv-items::-webkit-scrollbar-thumb {
-                    background: linear-gradient(180deg, #81c784, #66bb6a);
-                    border-radius: 10px;
-                    border: 2px solid #f1f8e9;
-                }
-
-                    .conv-items::-webkit-scrollbar-thumb:hover {
-                        background: linear-gradient(180deg, #66bb6a, #4caf50);
-                    }
-
-            .list-group {
-                margin-bottom: 0;
-            }
-
-            .list-group-item {
-                border: none;
-                border-radius: 18px;
-                margin-bottom: 10px;
-                padding: 16px 20px;
-                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-                background: linear-gradient(135deg, #f9fdf9 0%, #ffffff 100%);
-                border: 2px solid transparent;
-                position: relative;
-                overflow: hidden;
-            }
-
-                .list-group-item:hover {
-                    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-                    transform: translateX(8px) scale(1.02);
-                    box-shadow: 0 6px 24px rgba(46, 125, 50, 0.2);
-                }
-
-
-                .list-group-item.active {
-                    background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
-                    color: white;
-                    transform: translateX(8px) scale(1.02);
-                    box-shadow: 0 8px 32px rgba(46, 125, 50, 0.4);
-                    border: 2px solid rgba(255, 255, 255, 0.3);
-                }
-
-                    .list-group-item.active::before {
-                        opacity: 0;
-                    }
-
-                    .list-group-item.active strong {
-                        color: white !important;
-                    }
-
-                .list-group-item strong {
-                    font-weight: 600;
-                    color: #2e7d32;
+                .app-layout {
                     display: flex;
-                    align-items: center;
+                    height: 100vh;
+                    padding: 12px;
                     gap: 12px;
                 }
 
-                .list-group-item i {
-                    font-size: 1.15rem;
-                    width: 24px;
-                    text-align: center;
+                .main-nav-bar {
+                    width: 80px;
+                    background: linear-gradient(180deg, #2e7d32 0%, #388e3c 50%, #43a047 100%);
+                    box-shadow: 0 8px 32px rgba(46, 125, 50, 0.25);
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 25px 0;
+                    flex-shrink: 0;
+                    z-index: 10;
+                    position: relative;
+                    border-radius: 28px;
+                    border: 3px solid rgba(255, 255, 255, 0.2);
                 }
 
-            .chat-area {
-                flex-grow: 1;
-                display: flex;
-                flex-direction: column;
-                background: linear-gradient(135deg, #fafffe 0%, #f1f8f4 100%);
-                border-radius: 28px;
-                overflow: hidden;
-                box-shadow: 0 8px 32px rgba(46, 125, 50, 0.15);
-                border: 2px solid rgba(255, 255, 255, 0.8);
-            }
-
-            /* Hiệu ứng lá cây nền */
-            body::before {
-                content: '🌿';
-                position: fixed;
-                font-size: 300px;
-                opacity: 0.03;
-                right: -50px;
-                top: 50%;
-                transform: translateY(-50%) rotate(-25deg);
-                pointer-events: none;
-                z-index: 0;
-                animation: float 6s ease-in-out infinite;
-            }
-
-            @@keyframes float {
-                0%, 100% {
-                    transform: translateY(-50%) rotate(-25deg);
+                .nav-separator {
+                    width: 32px;
+                    height: 2px;
+                    background-color: #40444b;
+                    border-radius: 1px;
+                    margin: 10px 0;
                 }
 
-                50% {
-                    transform: translateY(-55%) rotate(-20deg);
-                }
-            }
-
-            body::after {
-                content: '🍃';
-                position: fixed;
-                font-size: 200px;
-                opacity: 0.02;
-                left: -30px;
-                bottom: 10%;
-                transform: rotate(15deg);
-                pointer-events: none;
-                z-index: 0;
-                animation: float 8s ease-in-out infinite reverse;
-            }
-
-            .notification-badge {
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                min-width: 22px;
-                height: 22px;
-                padding: 0 6px;
-                background-color: #f04747;
-                border-radius: 12px;
-                border: 2px solid #2e7d32;
-                color: white;
-                font-size: 0.8rem;
-                font-weight: 700;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                animation: popIn 0.3s ease;
-            }
-
-            @@keyframes popIn {
-                from {
-                    transform: scale(0.5);
-                    opacity: 0;
+                .nav-group {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 15px;
                 }
 
-                to {
-                    transform: scale(1);
-                    opacity: 1;
-                }
-            }
-
-            #layout-user-avatar-img {
-                width: 100%;
-                height: 100%;
-                border-radius: 50%;
-                object-fit: cover;
-                border: 2px solid rgba(255, 255, 255, 0.5); /* viền nhẹ */
-                transition: transform 0.2s ease;
-            }
-
-                #layout-user-avatar-img:hover {
-                    transform: scale(1.05);
+                .nav-icon {
+                    font-size: 1.5rem;
+                    color: #b9bbbe;
+                    background-color: #40444b;
+                    cursor: pointer;
+                    width: 50px;
+                    height: 50px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 50%;
+                    transition: all 0.2s ease-in-out;
+                    position: relative;
                 }
 
-            .profile-section .nav-icon {
-                padding: 0;
-                border-radius: 50%;
-                overflow: hidden;
-            }
-            /* ===========================================
-   CSS CHO DARK MODE
-=========================================== */
-            html.dark-mode body {
-                background: #18191a; /* Nền chính */
-                color: #e4e6eb; /* Chữ chính */
-            }
-
-            html.dark-mode .main-nav-bar {
-                background: #242526; /* Nền navbar */
-                border-color: #3e4042;
-            }
-
-                html.dark-mode .main-nav-bar .nav-icon {
-                    background: #3a3b3c;
-                    color: #e4e6eb;
-                }
-
-                    html.dark-mode .main-nav-bar .nav-icon:hover,
-                    html.dark-mode .main-nav-bar .nav-icon.active {
-                        background: #4e4f50; /* Màu highlight */
+                    .nav-icon:hover {
+                        border-radius: 15px;
+                        background-color: #3ba55d;
+                        color: #fff;
                     }
 
-            html.dark-mode .conversation-list,
-            html.dark-mode .chat-area,
-            html.dark-mode .settings-card {
-                background: #242526; /* Nền các cột */
-                border-color: #3e4042;
-            }
+                    .nav-icon.active {
+                        border-radius: 15px;
+                        background-color: #3ba55d;
+                        color: #fff;
+                    }
 
-            html.dark-mode .conv-header,
-            html.dark-mode .modal-header {
-                background: #3a3b3c; /* Nền header cột trái */
-            }
-
-            html.dark-mode .list-group-item {
-                background: #3a3b3c;
-                border-color: #3e4042;
-            }
-
-                html.dark-mode .list-group-item:hover,
-                html.dark-mode .info-accordion-card .btn-link:hover {
-                    background: #4e4f50;
+                .profile-section {
+                    position: relative;
                 }
 
-                html.dark-mode .list-group-item strong,
-                html.dark-mode .list-group-item,
-                html.dark-mode h2, html.dark-mode h3, html.dark-mode h5,
-                html.dark-mode .btn-link,
-                html.dark-mode .settings-item-label strong,
-                html.dark-mode label,
-                html.dark-mode .form-control {
-                    color: #e4e6eb !important; /* Màu chữ */
+                #user-avatar {
+                    width: 50px;
+                    height: 50px;
+                    padding: 0;
+                    background-color: #7289da;
+                    color: white;
+                    font-weight: 600;
+                    font-size: 1.5rem;
                 }
 
-            html.dark-mode .btn-light,
-            html.dark-mode .btn-light i {
-                color: #b0b3b8 !important;
-            }
+                    #user-avatar:hover {
+                        border-radius: 15px;
+                    }
 
-                html.dark-mode .btn-light:hover {
-                    background-color: #3a3b3c !important;
+                .profile-dropdown-menu {
+                    display: none;
+                    position: absolute;
+                    top: 5px;
+                    left: 90px;
+                    width: 250px;
+                    background-color: #2c2f33;
+                    border-radius: 8px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                    z-index: 1000;
+                    padding: 8px;
+                    color: #fff;
                 }
 
-            html.dark-mode .info-sidebar-body,
-            html.dark-mode #conversation-info-sidebar {
-                background: #242526;
-                border-color: #3e4042;
-            }
+                .dropdown-header {
+                    padding: 12px 16px;
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    border-bottom: 1px solid #4f545c;
+                    margin-bottom: 8px;
+                }
 
-            html.dark-mode .info-accordion-card,
-            html.dark-mode .info-sidebar-user {
-                border-color: #3e4042;
-            }
+                .dropdown-item {
+                    display: block;
+                    padding: 10px 16px;
+                    color: #dcddde;
+                    text-decoration: none;
+                    border-radius: 4px;
+                    transition: background-color 0.2s;
+                }
 
-                html.dark-mode .info-accordion-card .card-body,
-                html.dark-mode #collapseSecurity .list-group-item-action {
+                    .dropdown-item:hover {
+                        background-color: #40444b;
+                        color: #fff;
+                        text-decoration: none;
+                    }
+
+                .dropdown-divider {
+                    height: 1px;
+                    margin: 8px 0;
+                    background-color: #4f545c;
+                }
+
+                .conv-filter-tabs {
+                    display: flex;
+                    padding: 8px 16px;
+                    background: #e8f5e9;
+                    border-bottom: 1px solid #d1e7dd;
+                }
+
+                .filter-tab {
+                    flex: 1;
+                    padding: 8px 12px;
+                    border: none;
+                    background: transparent;
+                    color: #388e3c;
+                    font-weight: 600;
+                    border-radius: 12px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                }
+
+                .filter-tab:hover {
+                    background: #d1e7dd;
+                }
+
+                .filter-tab.active {
+                    background: #4caf50;
+                    color: white;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                }
+
+                .main-nav-bar::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 6px;
+                    background: linear-gradient(90deg, #66bb6a, #81c784, #a5d6a7, #81c784, #66bb6a);
+                    background-size: 200% 100%;
+                    animation: shimmer 3s linear infinite;
+                    border-radius: 28px 28px 0 0;
+                }
+
+                @@keyframes shimmer {
+                    0% {
+                        background-position: 0% 0%;
+                    }
+
+                    100% {
+                        background-position: 200% 0%;
+                    }
+                }
+
+                .main-nav-bar .nav-icon {
+                    font-size: 1.6rem;
+                    color: rgba(255, 255, 255, 0.85);
+                    margin-bottom: 22px;
+                    cursor: pointer;
+                    padding: 16px;
+                    border-radius: 20px;
+                    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                    position: relative;
+                    background: rgba(255, 255, 255, 0.08);
+                    backdrop-filter: blur(10px);
+                }
+
+                    .main-nav-bar .nav-icon::before {
+                        content: '';
+                        position: absolute;
+                        inset: 0;
+                        border-radius: 20px;
+                        padding: 2px;
+                        background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+                        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+                        -webkit-mask-composite: xor;
+                        mask-composite: exclude;
+                        opacity: 0;
+                        transition: opacity 0.4s ease;
+                    }
+
+                    .main-nav-bar .nav-icon:hover {
+                        background: rgba(255, 255, 255, 0.25);
+                        color: #fff;
+                        transform: translateY(-4px) scale(1.08);
+                        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+                    }
+
+                        .main-nav-bar .nav-icon:hover::before {
+                            opacity: 1;
+                        }
+
+                    .main-nav-bar .nav-icon.active {
+                        background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.2));
+                        color: #fff;
+                        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 2px 8px rgba(255, 255, 255, 0.2);
+                        transform: scale(1.05);
+                    }
+
+                        .main-nav-bar .nav-icon.active::after {
+                            content: '';
+                            position: absolute;
+                            right: -18px;
+                            top: 50%;
+                            transform: translateY(-50%);
+                            width: 5px;
+                            height: 35px;
+                            background: linear-gradient(180deg, #fff, #e8f5e9);
+                            border-radius: 10px 0 0 10px;
+                            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.5);
+                        }
+
+                /* 2. Cột danh sách hội thoại */
+                .conversation-list {
+                    width: 360px;
+                    background: rgba(255, 255, 255, 0.95);
+                    backdrop-filter: blur(20px);
+                    flex-direction: column;
+                    flex-shrink: 0;
+                    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                    border-radius: 28px;
+                    overflow: hidden;
+                    box-shadow: 0 8px 32px rgba(46, 125, 50, 0.15);
+                    border: 2px solid rgba(255, 255, 255, 0.8);
+                }
+
+                .conv-header {
+                    padding: 24px;
+                    font-size: 1.4rem;
+                    font-weight: 700;
+                    background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
+                    color: white;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    position: relative;
+                    overflow: hidden;
+                }
+
+                    .conv-header::before {
+                        content: '';
+                        position: absolute;
+                        top: -50%;
+                        right: -50%;
+                        width: 200%;
+                        height: 200%;
+                        background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+                        animation: pulse 4s ease-in-out infinite;
+                    }
+
+                @@keyframes pulse {
+                    0%, 100% {
+                        transform: scale(1) translate(0, 0);
+                        opacity: 0.5;
+                    }
+
+                    50% {
+                        transform: scale(1.1) translate(-10%, -10%);
+                        opacity: 0.8;
+                    }
+                }
+
+                /* ĐÃ XÓA .message-area TẠI ĐÂY */
+
+                @@keyframes slideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(10px);
+                    }
+
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+
+                /* ĐÃ XÓA .chat-message VÀ .chat-bubble TẠI ĐÂY */
+                /* ĐÃ XÓA .input-area TẠI ĐÂY */
+
+                .conv-header i {
+                    font-size: 1.5rem;
+                    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+                    position: relative;
+                    z-index: 1;
+                }
+
+                .conv-header span {
+                    position: relative;
+                    z-index: 1;
+                }
+
+                .conv-items {
+                    flex-grow: 1;
+                    overflow-y: auto;
+                    padding: 16px;
+                }
+
+                    .conv-items::-webkit-scrollbar {
+                        width: 8px;
+                    }
+
+                    .conv-items::-webkit-scrollbar-track {
+                        background: #f1f8e9;
+                        border-radius: 10px;
+                        margin: 8px 0;
+                    }
+
+                    .conv-items::-webkit-scrollbar-thumb {
+                        background: linear-gradient(180deg, #81c784, #66bb6a);
+                        border-radius: 10px;
+                        border: 2px solid #f1f8e9;
+                    }
+
+                        .conv-items::-webkit-scrollbar-thumb:hover {
+                            background: linear-gradient(180deg, #66bb6a, #4caf50);
+                        }
+
+                .list-group {
+                    margin-bottom: 0;
+                }
+
+                .list-group-item {
+                    border: none;
+                    border-radius: 18px;
+                    margin-bottom: 10px;
+                    padding: 16px 20px;
+                    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                    background: linear-gradient(135deg, #f9fdf9 0%, #ffffff 100%);
+                    border: 2px solid transparent;
+                    position: relative;
+                    overflow: hidden;
+                }
+
+                    .list-group-item:hover {
+                        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+                        transform: translateX(8px) scale(1.02);
+                        box-shadow: 0 6px 24px rgba(46, 125, 50, 0.2);
+                    }
+
+
+                    .list-group-item.active {
+                        background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
+                        color: white;
+                        transform: translateX(8px) scale(1.02);
+                        box-shadow: 0 8px 32px rgba(46, 125, 50, 0.4);
+                        border: 2px solid rgba(255, 255, 255, 0.3);
+                    }
+
+                        .list-group-item.active::before {
+                            opacity: 0;
+                        }
+
+                        .list-group-item.active strong {
+                            color: white !important;
+                        }
+
+                    .list-group-item strong {
+                        font-weight: 600;
+                        color: #2e7d32;
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                    }
+
+                    .list-group-item i {
+                        font-size: 1.15rem;
+                        width: 24px;
+                        text-align: center;
+                    }
+
+                .chat-area {
+                    flex-grow: 1;
+                    display: flex;
+                    flex-direction: column;
+                    background: linear-gradient(135deg, #fafffe 0%, #f1f8f4 100%);
+                    border-radius: 28px;
+                    overflow: hidden;
+                    box-shadow: 0 8px 32px rgba(46, 125, 50, 0.15);
+                    border: 2px solid rgba(255, 255, 255, 0.8);
+                }
+
+                /* Hiệu ứng lá cây nền */
+                body::before {
+                    content: '🌿';
+                    position: fixed;
+                    font-size: 300px;
+                    opacity: 0.03;
+                    right: -50px;
+                    top: 50%;
+                    transform: translateY(-50%) rotate(-25deg);
+                    pointer-events: none;
+                    z-index: 0;
+                    animation: float 6s ease-in-out infinite;
+                }
+
+                @@keyframes float {
+                    0%, 100% {
+                        transform: translateY(-50%) rotate(-25deg);
+                    }
+
+                    50% {
+                        transform: translateY(-55%) rotate(-20deg);
+                    }
+                }
+
+                body::after {
+                    content: '🍃';
+                    position: fixed;
+                    font-size: 200px;
+                    opacity: 0.02;
+                    left: -30px;
+                    bottom: 10%;
+                    transform: rotate(15deg);
+                    pointer-events: none;
+                    z-index: 0;
+                    animation: float 8s ease-in-out infinite reverse;
+                }
+
+                .notification-badge {
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    min-width: 22px;
+                    height: 22px;
+                    padding: 0 6px;
+                    background-color: #f04747;
+                    border-radius: 12px;
+                    border: 2px solid #2e7d32;
+                    color: white;
+                    font-size: 0.8rem;
+                    font-weight: 700;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    animation: popIn 0.3s ease;
+                }
+
+                @@keyframes popIn {
+                    from {
+                        transform: scale(0.5);
+                        opacity: 0;
+                    }
+
+                    to {
+                        transform: scale(1);
+                        opacity: 1;
+                    }
+                }
+
+                #layout-user-avatar-img {
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 50%;
+                    object-fit: cover;
+                    border: 2px solid rgba(255, 255, 255, 0.5); /* viền nhẹ */
+                    transition: transform 0.2s ease;
+                }
+
+                    #layout-user-avatar-img:hover {
+                        transform: scale(1.05);
+                    }
+
+                .profile-section .nav-icon {
+                    padding: 0;
+                    border-radius: 50%;
+                    overflow: hidden;
+                }
+                /* ===========================================
+           CSS CHO DARK MODE
+        =========================================== */
+                html.dark-mode body {
+                    background: #18191a; /* Nền chính */
+                    color: #e4e6eb; /* Chữ chính */
+                }
+
+                html.dark-mode .main-nav-bar {
+                    background: #242526; /* Nền navbar */
+                    border-color: #3e4042;
+                }
+
+                    html.dark-mode .main-nav-bar .nav-icon {
+                        background: #3a3b3c;
+                        color: #e4e6eb;
+                    }
+
+                        html.dark-mode .main-nav-bar .nav-icon:hover,
+                        html.dark-mode .main-nav-bar .nav-icon.active {
+                            background: #4e4f50; /* Màu highlight */
+                        }
+
+                html.dark-mode .conversation-list,
+                html.dark-mode .chat-area,
+                html.dark-mode .settings-card {
+                    background: #242526; /* Nền các cột */
+                    border-color: #3e4042;
+                }
+
+                html.dark-mode .conv-header,
+                html.dark-mode .modal-header {
+                    background: #3a3b3c; /* Nền header cột trái */
+                }
+
+                html.dark-mode .list-group-item {
+                    background: #3a3b3c;
+                    border-color: #3e4042;
+                }
+
+                    html.dark-mode .list-group-item:hover,
+                    html.dark-mode .info-accordion-card .btn-link:hover {
+                        background: #4e4f50;
+                    }
+
+                    html.dark-mode .list-group-item strong,
+                    html.dark-mode .list-group-item,
+                    html.dark-mode h2, html.dark-mode h3, html.dark-mode h5,
+                    html.dark-mode .btn-link,
+                    html.dark-mode .settings-item-label strong,
+                    html.dark-mode label,
+                    html.dark-mode .form-control {
+                        color: #e4e6eb !important; /* Màu chữ */
+                    }
+
+                html.dark-mode .btn-light,
+                html.dark-mode .btn-light i {
+                    color: #b0b3b8 !important;
+                }
+
+                    html.dark-mode .btn-light:hover {
+                        background-color: #3a3b3c !important;
+                    }
+
+                html.dark-mode .info-sidebar-body,
+                html.dark-mode #conversation-info-sidebar {
                     background: #242526;
                     border-color: #3e4042;
                 }
 
-                    html.dark-mode .info-accordion-card .card-body:hover,
-                    html.dark-mode #collapseSecurity .list-group-item-action:hover {
+                html.dark-mode .info-accordion-card,
+                html.dark-mode .info-sidebar-user {
+                    border-color: #3e4042;
+                }
+
+                    html.dark-mode .info-accordion-card .card-body,
+                    html.dark-mode #collapseSecurity .list-group-item-action {
+                        background: #242526;
+                        border-color: #3e4042;
+                    }
+
+                        html.dark-mode .info-accordion-card .card-body:hover,
+                        html.dark-mode #collapseSecurity .list-group-item-action:hover {
+                            background: #3a3b3c;
+                        }
+
+                html.dark-mode .info-sidebar-header,
+                html.dark-mode .search-sidebar-header {
+                    border-color: #3e4042;
+                }
+
+                    html.dark-mode .info-sidebar-header .close:hover,
+                    html.dark-mode .search-sidebar-header .close:hover {
+                        background-color: #4e4f50;
+                        color: #e4e6eb;
+                    }
+
+                    html.dark-mode .info-sidebar-header .close,
+                    html.dark-mode .search-sidebar-header .close {
                         background: #3a3b3c;
+                        color: #b0b3b8;
                     }
 
-            html.dark-mode .info-sidebar-header,
-            html.dark-mode .search-sidebar-header {
-                border-color: #3e4042;
-            }
-
-                html.dark-mode .info-sidebar-header .close:hover,
-                html.dark-mode .search-sidebar-header .close:hover {
-                    background-color: #4e4f50;
-                    color: #e4e6eb;
-                }
-
-                html.dark-mode .info-sidebar-header .close,
-                html.dark-mode .search-sidebar-header .close {
+                html.dark-mode .form-control,
+                html.dark-mode .input-area #messageInput {
                     background: #3a3b3c;
-                    color: #b0b3b8;
+                    border-color: #4e4f50;
                 }
 
-            html.dark-mode .form-control,
-            html.dark-mode .input-area #messageInput {
-                background: #3a3b3c;
-                border-color: #4e4f50;
-            }
-
-                html.dark-mode .form-control:focus,
-                html.dark-mode .input-area #messageInput:focus {
-                    background: #18191a;
-                    border-color: #43a047;
-                    color: #e4e6eb;
-                }
-
-            html.dark-mode .chat-bubble.other {
-                background: #3a3b3c !important;
-                color: #e4e6eb !important;
-            }
-
-                html.dark-mode .chat-bubble.other .bubble-time {
-                    color: rgba(255,255,255,.45);
-                }
-
-        </style>
-    </head>
-    <body>
-        <div class="app-layout">
-
-            <nav class="main-nav-bar">
-                <div class="profile-section">
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#myProfileModal" class="nav-icon" title="@User.Identity.Name">
-                        <img id="layout-user-avatar-img"
-                             src="@Url.Content(string.IsNullOrEmpty(ViewBag.CurrentUserAvatarUrl) ? "/Content/default-avatar.png" : ViewBag.CurrentUserAvatarUrl + "?v=" + (ViewBag.CurrentUserAvatarVersion ?? "1"))"
-                             onerror="this.onerror=null;this.src='/Content/default-avatar.png';"
-                             alt="Avatar"
-                             style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.5);" />
-                    </a>
-                </div>
-
-                <div class="nav-separator"></div>
-
-                <div class="nav-group">
-                    <a href="@Url.Action("Index", "Chat")" id="chat-nav-icon" class="nav-icon @(ViewBag.Title == "Chat" ? "active" : "")" title="Tin nhắn">
-                        <i class="fas fa-comments"></i>
-                    </a>
-
-                    <a href="@Url.Action("Index", "Friend")" id="friend-nav-icon" class="nav-icon @(ViewBag.Title == "Friends" ? "active" : "")" title="Danh bạ">
-                        <i class="fas fa-user-friends"></i>
-                    </a>
-                </div>
-
-                <div class="nav-separator"></div>
-
-                <div class="nav-group">
-                    <a href="@Url.Action("Index", "Settings")" class="nav-icon" title="Cài đặt">
-                        <i class="fas fa-cog"></i>
-                    </a>
-                    @using (Html.BeginForm("Logout", "Account", FormMethod.Post, new { id = "logoutForm" }))
-                    {
-                        @Html.AntiForgeryToken()
-                        <a href="javascript:document.getElementById('logoutForm').submit()" class="nav-icon" title="Đăng xuất">
-                            <i class="fas fa-sign-out-alt"></i>
-                        </a>
+                    html.dark-mode .form-control:focus,
+                    html.dark-mode .input-area #messageInput:focus {
+                        background: #18191a;
+                        border-color: #43a047;
+                        color: #e4e6eb;
                     }
-                </div>
-            </nav>
 
-            @if (ViewBag.Title != "Hồ sơ của bạn")
-            {
-                if (ViewBag.Title == "Chat")
-                {
-                    <aside class="conversation-list">
-                        <div class="conv-header">
-                            <i class="fas fa-leaf"></i>
-                            <span>Tin nhắn</span>
-                        </div>
-                        <div class="conv-items">
-                            <ul class="list-group list-group-flush" id="conversation-list-ul">
-                                <a href="#" class="list-group-item list-group-item-action" id="ai-chat-btn" data-chat-mode="ai">
-                                    <strong><i class="fas fa-robot"></i> AI Assistant</strong>
-                                </a>
-                            </ul>
-                        </div>
-                    </aside>
+                html.dark-mode .chat-bubble.other {
+                    background: #3a3b3c !important;
+                    color: #e4e6eb !important;
                 }
-            }
 
+                    html.dark-mode .chat-bubble.other .bubble-time {
+                        color: rgba(255,255,255,.45);
+                    }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
 
-            <main class="chat-area">
-                @RenderBody()
-            </main>
-        </div>
-        <audio id="notification-sound" src="~/Sounds/notification.mp3" preload="auto"></audio>
-        <div class="app-layout">
-        </div>
+        <nav class="main-nav-bar">
+            <div class="profile-section">
+                <a href="#" data-bs-toggle="modal" data-bs-target="#myProfileModal" class="nav-icon" title="@User.Identity.Name">
+                    <img id="layout-user-avatar-img"
+                         src="@Url.Content(string.IsNullOrEmpty(ViewBag.CurrentUserAvatarUrl) ? "/Content/default-avatar.png" : ViewBag.CurrentUserAvatarUrl + "?v=" + (ViewBag.CurrentUserAvatarVersion ?? "1"))"
+                         onerror="this.onerror=null;this.src='/Content/default-avatar.png';"
+                         alt="Avatar"
+                         style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.5);" />
+                </a>
+            </div>
 
-        <div class="modal fade" id="myProfileModal" tabindex="-1" role="dialog">
-            <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content" style="border-radius: 20px; overflow: hidden; background: #f1f8e9;">
-                    <div id="modal-cover" style="height: 150px; background-size: cover; background-position: center; background-color: #c8e6c9;"></div>
-                    <img id="modal-avatar" src="" style="width: 100px; height: 100px; border-radius: 50%; border: 4px solid #fff; position: absolute; top: 100px; left: 50%; transform: translateX(-50%); background-color: #fff;" />
-                    <div class="modal-body" style="padding-top: 65px; text-align: center;">
-                        <h3 id="modal-display-name" style="font-weight: 700; color: #2e7d32; margin-bottom: 5px;"></h3>
-                        <hr style="margin-top: 20px; margin-bottom: 20px;" />
-                        <div style="text-align: left; padding: 0 20px; color: #388e3c;">
-                            <p><i class="fas fa-phone-alt" style="width: 20px;"></i> <strong id="modal-phone"></strong></p>
-                            <p><i class="fas fa-envelope" style="width: 20px;"></i> <strong id="modal-email"></strong></p>
+            <div class="nav-separator"></div>
+
+            <div class="nav-group">
+                <a href="@Url.Action("Index", "Chat")" id="chat-nav-icon" class="nav-icon @(ViewBag.Title == "Chat" ? "active" : "")" title="Tin nhắn">
+                    <i class="fas fa-comments"></i>
+                </a>
+
+                <a href="@Url.Action("Index", "Friend")" id="friend-nav-icon" class="nav-icon @(ViewBag.Title == "Friends" ? "active" : "")" title="Danh bạ">
+                    <i class="fas fa-user-friends"></i>
+                </a>
+            </div>
+
+            <div class="nav-separator"></div>
+
+            <div class="nav-group">
+                <a href="@Url.Action("Index", "Settings")" class="nav-icon" title="Cài đặt">
+                    <i class="fas fa-cog"></i>
+                </a>
+                @using (Html.BeginForm("Logout", "Account", FormMethod.Post, new { id = "logoutForm" }))
+                {
+                    @Html.AntiForgeryToken()
+                    <a href="javascript:document.getElementById('logoutForm').submit()" class="nav-icon" title="Đăng xuất">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                }
+            </div>
+        </nav>
+
+        @if (ViewBag.Title != "Hồ sơ của bạn")
+        {
+            if (ViewBag.Title == "Chat")
+            {
+                <aside class="conversation-list">
+                    <div class="conv-header">
+                        <div class="d-flex justify-content-between align-items-center w-100">
+                            <span>
+                                <i class="fas fa-leaf"></i>
+                                Tin nhắn
+                            </span>
+                            <button id="create-group-btn" class="btn btn-outline-light btn-sm" title="Tạo nhóm mới">
+                                <i class="fas fa-users-cog"></i>
+                            </button>
                         </div>
-                        <hr style="margin-top: 20px; margin-bottom: 20px;" />
-                        <h5 style="color: #388e3c; font-weight: 600;">Quét mã để kết bạn</h5>
-                        <img id="modal-qr-code" src="" style="width: 200px; height: 200px; border-radius: 10px; border: 2px solid #c8e6c9;" />
                     </div>
-                    <div class="modal-footer" style="background-color: #e8f5e9; border-top: 1px solid #c8e6c9;">
-                        <a href="@Url.Action("Index", "Profile")" class="btn btn-success" style="background: #43a047; border: none; border-radius: 10px;">
-                            <i class="fas fa-edit"></i> Chỉnh sửa hồ sơ
-                        </a>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 10px;">Đóng</button>
+                    <div class="conv-filter-tabs">
+                        <button class="filter-tab active" data-filter="all">
+                            <i class="fas fa-inbox"></i> Tất cả
+                        </button>
+                        <button class="filter-tab" data-filter="unread">
+                            <i class="fas fa-envelope-open-text"></i> Chưa đọc
+                        </button>
+                        <button class="filter-tab" data-filter="groups">
+                            <i class="fas fa-users"></i> Nhóm
+                        </button>
                     </div>
+                    <div class="conv-items">
+                        <ul class="list-group list-group-flush" id="conversation-list-ul">
+                            <!-- AI Chat -->
+                            <a href="#" class="list-group-item list-group-item-action" id="ai-chat-btn" data-chat-mode="ai">
+                                <strong><i class="fas fa-robot"></i> AI Assistant</strong>
+                            </a>
+                            <!-- Friend list will be loaded here -->
+                        </ul>
+                    </div>
+                </aside>
+            }
+        }
+
+
+        <main class="chat-area">
+            @RenderBody()
+        </main>
+    </div>
+    <audio id="notification-sound" src="~/Sounds/notification.mp3" preload="auto"></audio>
+    <div class="app-layout">
+    </div>
+
+    <div class="modal fade" id="myProfileModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content" style="border-radius: 20px; overflow: hidden; background: #f1f8e9;">
+                <div id="modal-cover" style="height: 150px; background-size: cover; background-position: center; background-color: #c8e6c9;"></div>
+                <img id="modal-avatar" src="" style="width: 100px; height: 100px; border-radius: 50%; border: 4px solid #fff; position: absolute; top: 100px; left: 50%; transform: translateX(-50%); background-color: #fff;" />
+                <div class="modal-body" style="padding-top: 65px; text-align: center;">
+                    <h3 id="modal-display-name" style="font-weight: 700; color: #2e7d32; margin-bottom: 5px;"></h3>
+                    <hr style="margin-top: 20px; margin-bottom: 20px;" />
+                    <div style="text-align: left; padding: 0 20px; color: #388e3c;">
+                        <p><i class="fas fa-phone-alt" style="width: 20px;"></i> <strong id="modal-phone"></strong></p>
+                        <p><i class="fas fa-envelope" style="width: 20px;"></i> <strong id="modal-email"></strong></p>
+                    </div>
+                    <hr style="margin-top: 20px; margin-bottom: 20px;" />
+                    <h5 style="color: #388e3c; font-weight: 600;">Quét mã để kết bạn</h5>
+                    <img id="modal-qr-code" src="" style="width: 200px; height: 200px; border-radius: 10px; border: 2px solid #c8e6c9;" />
+                </div>
+                <div class="modal-footer" style="background-color: #e8f5e9; border-top: 1px solid #c8e6c9;">
+                    <a href="@Url.Action("Index", "Profile")" class="btn btn-success" style="background: #43a047; border: none; border-radius: 10px;">
+                        <i class="fas fa-edit"></i> Chỉnh sửa hồ sơ
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 10px;">Đóng</button>
                 </div>
             </div>
         </div>
+    </div>
 
-        @Scripts.Render("~/bundles/jquery")
-        @Scripts.Render("~/bundles/popper")
-        @Scripts.Render("~/bundles/bootstrap")
-        <script src="~/Scripts/jquery-3.6.0.min.js"></script>
-        <script src="~/Scripts/jquery.signalR-2.4.3.min.js"></script>
-        <script src="~/signalr/hubs"></script>
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/popper")
+    @Scripts.Render("~/bundles/bootstrap")
+    <script src="~/Scripts/jquery-3.6.0.min.js"></script>
+    <script src="~/Scripts/jquery.signalR-2.4.3.min.js"></script>
+    <script src="~/signalr/hubs"></script>
 
-        <!-- Picmo Emoji Picker -->
-        <script src="https://cdn.jsdelivr.net/npm/picmo@latest/dist/umd/picmo.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/picmo/popup-picker@latest/dist/umd/picmo-popup.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js" type="module"></script>
+                        @RenderSection("scripts", required: false)
 
-        @RenderSection("scripts", required: false)
-        <script>
-            (function () {
-                var theme = localStorage.getItem('theme');
-                if (theme === 'dark') {
-                    document.documentElement.classList.add('dark-mode');
-                } else {
-                    document.documentElement.classList.remove('dark-mode');
-                }
-            })();
-        </script>
-    </body>
+    <script>
+        (function () {
+            var theme = localStorage.getItem('theme');
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            } else {
+                document.documentElement.classList.remove('dark-mode');
+            }
+        })();
+    </script>
+</body>
 </html>

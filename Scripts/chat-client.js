@@ -1676,39 +1676,43 @@
         $('#fileUploadInput').click();
     });
 
-    // ========== EMOJI PICKER (PICMO IMPLEMENTATION - JQUERY EVENT FIX) ==========
-    $(window).on('load', function () {
+    $(document).ready(function () {
         const button = document.querySelector('#emoji-button');
         const messageInput = document.querySelector('#messageInput');
 
         if (button && messageInput) {
-            try {
-                const picker = PicmoPopup.createPopup({}, {
-                    referenceElement: button,
-                    triggerElement: button,
-                    position: 'top-start',
-                    showCloseButton: false
-                });
+            // Tạo emoji picker
+            const picker = document.createElement('emoji-picker');
+            picker.style.cssText = 'position:absolute; bottom:60px; left:15px; display:none; z-index:1000;';
+            document.querySelector('.input-area').appendChild(picker);
 
-                picker.addEventListener('emoji:select', (selection) => {
-                    const start = messageInput.selectionStart;
-                    const end = messageInput.selectionEnd;
-                    const text = messageInput.value;
-                    messageInput.value = text.substring(0, start) + selection.emoji + text.substring(end);
-                    messageInput.focus();
-                    messageInput.selectionEnd = start + selection.emoji.length;
-                });
+            // Toggle picker
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+            });
 
-                // Sử dụng jQuery để xử lý click để đảm bảo tính nhất quán
-                $(button).on('click', function (e) {
-                    e.stopPropagation(); // Ngăn sự kiện lan ra ngoài
-                    picker.toggle();
-                });
+            // Chọn emoji
+            picker.addEventListener('emoji-click', (event) => {
+                const emoji = event.detail.unicode;
+                const start = messageInput.selectionStart;
+                const end = messageInput.selectionEnd;
+                const text = messageInput.value;
 
-            } catch (e) {
-                console.error("Lỗi khởi tạo Emoji Picker:", e);
-                $(button).hide();
-            }
+                messageInput.value = text.substring(0, start) + emoji + text.substring(end);
+                messageInput.setSelectionRange(start + emoji.length, start + emoji.length);
+                messageInput.focus();
+            });
+
+            // Đóng picker khi click ngoài
+            $(document).on('click', function (e) {
+                if (!$(e.target).closest('#emoji-button, emoji-picker').length) {
+                    picker.style.display = 'none';
+                }
+            });
+
+            console.log('✅ Emoji Picker initialized');
         }
     });
     $('body').on('click', '#user-chat-header', function () {
@@ -1792,49 +1796,400 @@
         alert('Info về Meta AI: Powered by Llama 4!');
     });
 
-    // ========== LOAD FRIENDS ==========
-    function loadFriendsList(callback) {
+    // ========== GROUP CREATION ==========
+    $('body').on('click', '#create-group-btn', function () {
+        $('#createGroupModal').modal('show');
+    });
+    $('#createGroupModal').on('show.bs.modal', function () {
+        const $list = $('#groupMembersList');
+        $list.html(`
+        <div style="text-align: center; padding: 60px 20px;">
+            <div style="width: 60px; height: 60px; margin: 0 auto 20px; border: 4px solid #43a047; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <p style="color: #999; margin: 0; font-size: 14px;">Đang tải danh sách bạn bè...</p>
+        </div>
+    `);
+
+        $.getJSON(urls.getFriends, function (response) {
+            if (response.success && response.friends) {
+                $list.empty();
+
+                if (response.friends.length === 0) {
+                    $list.html(`
+                    <div style="text-align: center; padding: 60px 20px;">
+                        <i class="fas fa-user-friends" style="font-size: 48px; color: #e0e0e0; margin-bottom: 15px;"></i>
+                        <p style="color: #999; margin: 0; font-weight: 500;">Bạn chưa có bạn bè nào</p>
+                        <p style="color: #bbb; margin: 8px 0 0; font-size: 13px;">Hãy kết bạn để tạo nhóm chat</p>
+                    </div>
+                `);
+                    return;
+                }
+
+                response.friends.forEach((friend, index) => {
+                    const friendHtml = `
+                    <div class="list-group-item" style="animation-delay: ${index * 0.05}s;">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" 
+                                   class="custom-control-input" 
+                                   id="friend-${friend.Id}" 
+                                   value="${friend.Id}">
+                            <label class="custom-control-label" for="friend-${friend.Id}">
+                                <img src="${friend.AvatarUrl || '/Content/default-avatar.png'}" 
+                                     class="avatar-sm" 
+                                     alt="${friend.DisplayName}"
+                                     onerror="this.src='/Content/default-avatar.png';" />
+                                <div>
+                                    <div style="font-weight: 600; color: #333; font-size: 14px;">${friend.DisplayName}</div>
+                                    <div style="font-size: 12px; color: #999;">@${friend.Username}</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>`;
+                    $list.append(friendHtml);
+                });
+            } else {
+                $list.html(`
+                <div style="text-align: center; padding: 60px 20px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #f44336; margin-bottom: 15px;"></i>
+                    <p style="color: #f44336; margin: 0; font-weight: 500;">Lỗi khi tải danh sách</p>
+                    <p style="color: #999; margin: 8px 0 0; font-size: 13px;">Vui lòng thử lại sau</p>
+                </div>
+            `);
+            }
+        }).fail(function () {
+            $list.html(`
+            <div style="text-align: center; padding: 60px 20px;">
+                <i class="fas fa-wifi-slash" style="font-size: 48px; color: #ff9800; margin-bottom: 15px;"></i>
+                <p style="color: #ff9800; margin: 0; font-weight: 500;">Không thể kết nối</p>
+                <p style="color: #999; margin: 8px 0 0; font-size: 13px;">Kiểm tra kết nối mạng của bạn</p>
+            </div>
+        `);
+        });
+    });
+
+    let searchTimeout;
+    $('body').on('keyup', '#groupMemberSearchInput', function () {
+        clearTimeout(searchTimeout);
+        const $input = $(this);
+
+        searchTimeout = setTimeout(function () {
+            const searchTerm = $input.val().toLowerCase().trim();
+            let visibleCount = 0;
+
+            $('#groupMembersList .list-group-item').each(function () {
+                const friendName = $(this).find('.custom-control-label > div > div:first-child').text().toLowerCase();
+                const username = $(this).find('.custom-control-label > div > div:last-child').text().toLowerCase();
+
+                if (friendName.includes(searchTerm) || username.includes(searchTerm)) {
+                    $(this).slideDown(200);
+                    visibleCount++;
+                } else {
+                    $(this).slideUp(200);
+                }
+            });
+
+            // Show "no results" message if nothing found
+            if (visibleCount === 0 && searchTerm !== '') {
+                if ($('#no-search-results').length === 0) {
+                    $('#groupMembersList').append(`
+                    <div id="no-search-results" style="text-align: center; padding: 40px 20px; animation: fadeIn 0.3s;">
+                        <i class="fas fa-search" style="font-size: 36px; color: #e0e0e0; margin-bottom: 10px;"></i>
+                        <p style="color: #999; margin: 0; font-size: 14px;">Không tìm thấy "${searchTerm}"</p>
+                    </div>
+                `);
+                }
+            } else {
+                $('#no-search-results').remove();
+            }
+        }, 300);
+    });
+    $('body').on('click', '#confirmCreateGroupBtn', function () {
+        const groupName = $('#groupNameInput').val().trim();
+        const memberIds = $('#groupMembersList input:checked').map(function () {
+            return $(this).val();
+        }).get();
+
+        if (!groupName) {
+            showToast('error', 'Vui lòng nhập tên nhóm');
+            $('#groupNameInput').focus();
+            return;
+        }
+
+        if (memberIds.length < 2) {
+            showToast('warning', 'Vui lòng chọn ít nhất 2 thành viên');
+            return;
+        }
+
+        const $btn = $(this);
+        const originalHtml = $btn.html();
+        $btn.prop('disabled', true).html(`
+        <span class="spinner-border spinner-border-sm" role="status" style="margin-right: 8px;"></span>
+        Đang tạo nhóm...
+    `);
+
+        $.ajax({
+            url: urls.createGroup,
+            type: 'POST',
+            data: {
+                name: groupName,
+                memberIds: memberIds,
+                __RequestVerificationToken: antiForgeryToken
+            },
+            success: function (response) {
+                if (response.success) {
+                    $('#createGroupModal').modal('hide');
+
+                    // Show success toast
+                    showToast('success', `Đã tạo nhóm "${response.groupName}" thành công!`);
+
+                    // Reload conversations
+                    loadConversations('groups');
+
+                    // Reset form
+                    $('#groupNameInput').val('');
+                    $('#groupMembersList input:checked').prop('checked', false);
+                    $('#selectedMemberCount').text('0 người');
+                } else {
+                    showToast('error', response.message || 'Không thể tạo nhóm');
+                }
+            },
+            error: function () {
+                showToast('error', 'Lỗi kết nối khi tạo nhóm');
+            },
+            complete: function () {
+                $btn.prop('disabled', false).html(originalHtml);
+            }
+        });
+    });
+
+    // Toast notification function
+    function showToast(type, message) {
+        const icons = {
+            success: 'fa-check-circle',
+            error: 'fa-times-circle',
+            warning: 'fa-exclamation-circle',
+            info: 'fa-info-circle'
+        };
+
+        const colors = {
+            success: 'linear-gradient(135deg, #667eea, #764ba2)',
+            error: 'linear-gradient(135deg, #f44336, #e91e63)',
+            warning: 'linear-gradient(135deg, #ff9800, #ff5722)',
+            info: 'linear-gradient(135deg, #2196f3, #00bcd4)'
+        };
+
+        const toast = $(`
+        <div class="custom-toast" style="
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            min-width: 300px;
+            background: ${colors[type]};
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 10000;
+            animation: slideInRight 0.3s ease;
+        ">
+            <i class="fas ${icons[type]}" style="font-size: 24px;"></i>
+            <span style="flex: 1; font-weight: 500;">${message}</span>
+            <button onclick="$(this).parent().remove()" style="
+                background: rgba(255,255,255,0.2);
+                border: none;
+                color: white;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            ">×</button>
+        </div>
+    `);
+
+        $('body').append(toast);
+        setTimeout(() => toast.fadeOut(300, () => toast.remove()), 5000);
+    }
+
+    // Add CSS animations
+    if (!$('#toast-animations').length) {
+        $('head').append(`
+        <style id="toast-animations">
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+        </style>
+    `);
+    }
+
+    $('body').on('keyup', '#groupMemberSearchInput', function () {
+        const searchTerm = $(this).val().toLowerCase();
+        $('#groupMembersList .list-group-item').each(function () {
+            const friendName = $(this).find('label').text().trim().toLowerCase();
+            if (friendName.includes(searchTerm)) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    });
+
+    $('body').on('click', '#confirmCreateGroupBtn', function () {
+        const groupName = $('#groupNameInput').val().trim();
+        const memberIds = $('#groupMembersList input:checked').map(function () {
+            return $(this).val();
+        }).get();
+
+        if (!groupName) {
+            alert('Vui lòng nhập tên nhóm.');
+            return;
+        }
+
+        if (memberIds.length < 2) {
+            alert('Vui lòng chọn ít nhất 2 thành viên để tạo nhóm.');
+            return;
+        }
+
+        const $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Đang tạo...');
+
+        $.ajax({
+            url: urls.createGroup,
+            type: 'POST',
+            data: {
+                name: groupName,
+                memberIds: memberIds,
+                __RequestVerificationToken: antiForgeryToken
+            },
+            success: function (response) {
+                if (response.success) {
+                    $('#createGroupModal').modal('hide');
+                    // Reload conversations to show the new group
+                    loadConversations('all'); 
+                } else {
+                    alert('Lỗi: ' + response.message);
+                }
+            },
+            error: function () {
+                alert('Lỗi kết nối khi tạo nhóm.');
+            },
+            complete: function () {
+                $btn.prop('disabled', false).text('Tạo nhóm');
+                $('#groupNameInput').val('');
+                $('#groupMembersList input:checked').prop('checked', false);
+            }
+        });
+    });
+
+    // ========== LOAD CONVERSATIONS ==========
+    function loadConversations(filter = 'all') {
         const container = $('#conversation-list-ul');
-        container.find('.friend-item').remove();
+        container.find('.friend-item, .group-item').remove();
         const hiddenChats = JSON.parse(localStorage.getItem('hiddenChats') || '[]');
 
-        $.getJSON(urls.getFriendsList, function (friends) {
-            if (friends && friends.length > 0) {
-                friends.forEach(function (friend) {
-                    if (friend.Username === currentUsername) return;
-                    if (hiddenChats.includes(friend.Username)) return;
+        // Hiển thị loading
+        container.append('<li class="list-group-item text-center text-muted loading-item"><i class="fas fa-spinner fa-spin"></i> Đang tải...</li>');
 
-                    const isOnline = onlineUsers.has(friend.Username);
-                    const statusIndicator = `<span class="status-indicator ${isOnline ? 'online' : 'offline'}" data-username="${friend.Username}"></span>`;
+        const url = filter === 'groups' ? '/Group/GetUserGroups' : '/Chat/GetConversations';
 
-                    const friendHtml = `
-                        <a href="#" class="list-group-item list-group-item-action friend-item no-silhouette-icon"
+        $.getJSON(url, { filter: filter }, function (conversations) {
+            container.find('.loading-item').remove();
+
+            if (conversations && conversations.length > 0) {
+                conversations.forEach(function (convo) {
+                    if (convo.Type === 'Private') {
+                        if (convo.Username === currentUsername) return;
+                        if (hiddenChats.includes(convo.Username)) return;
+
+                        const isOnline = onlineUsers.has(convo.Username);
+                        const statusIndicator = `<span class="status-indicator ${isOnline ? 'online' : 'offline'}" data-username="${convo.Username}"></span>`;
+                        const unreadBadge = convo.UnreadCount > 0 ? `<span class="notification-badge">${convo.UnreadCount}</span>` : '';
+
+                        const friendHtml = `
+                        <a href="#" class="list-group-item list-group-item-action friend-item"
                             data-chat-mode="private"
-                            data-username="${friend.Username}"
-                            data-userid="${friend.Id}"
-                            data-avatar-url="${friend.AvatarUrl || ''}">
-                            <strong>
+                            data-username="${convo.Username}"
+                            data-userid="${convo.Id}"
+                            data-avatar-url="${convo.AvatarUrl || '/Content/default-avatar.png'}">
+                            <div class="d-flex align-items-center position-relative">
                                 <div class="chat-header-avatar-wrapper">
-                                    <img src="${friend.AvatarUrl || '/Content/default-avatar.png'}"
-                                         class="chat-header-avatar no-default-icon" 
+                                    <img src="${convo.AvatarUrl || '/Content/default-avatar.png'}"
+                                         class="chat-header-avatar" 
                                          style="width: 40px; height: 40px;" 
-                                         alt="${friend.DisplayName}" />
+                                         alt="${convo.DisplayName}" />
                                     ${statusIndicator}
                                 </div>
-                                ${friend.DisplayName}
-                            </strong>
+                                <div class="flex-grow-1">
+                                    <strong>${convo.DisplayName}</strong>
+                                    ${convo.LastMessage ? `<div class="text-muted small text-truncate" style="max-width: 180px;">${convo.LastMessage}</div>` : ''}
+                                </div>
+                                ${unreadBadge}
+                            </div>
                         </a>`;
-                    container.append(friendHtml);
-                });
-            }
+                        container.append(friendHtml);
 
-            // Execute the callback after the list is populated
-            if (callback && typeof callback === 'function') {
-                callback();
+                    } else if (convo.Type === 'Group') {
+                        const unreadBadge = convo.UnreadCount > 0 ? `<span class="notification-badge">${convo.UnreadCount}</span>` : '';
+
+                        const groupHtml = `
+                        <a href="#" class="list-group-item list-group-item-action group-item"
+                           data-chat-mode="group"
+                           data-group-id="${convo.Id}"
+                           data-group-name="${convo.Name}">
+                            <div class="d-flex align-items-center position-relative">
+                                <img src="${convo.AvatarUrl || '/Content/default-group-avatar.png'}" 
+                                     style="width: 40px; height: 40px; border-radius: 50%; margin-right: 10px;" />
+                                <div class="flex-grow-1">
+                                    <strong><i class="fas fa-users mr-1"></i>${convo.Name}</strong>
+                                    ${convo.LastMessage ? `<div class="text-muted small text-truncate" style="max-width: 180px;">${convo.LastMessage}</div>` : ''}
+                                </div>
+                                ${unreadBadge}
+                            </div>
+                        </a>`;
+                        container.append(groupHtml);
+                    }
+                });
+            } else {
+                let emptyMessage = 'Chưa có cuộc trò chuyện nào';
+                if (filter === 'unread') emptyMessage = 'Không có tin nhắn chưa đọc';
+                if (filter === 'groups') emptyMessage = 'Bạn chưa tham gia nhóm nào';
+
+                container.append(`<li class="list-group-item text-center text-muted">${emptyMessage}</li>`);
             }
+        }).fail(function (xhr, status, error) {
+            container.find('.loading-item').remove();
+            container.append('<li class="list-group-item text-center text-danger"><i class="fas fa-exclamation-triangle"></i> Lỗi tải dữ liệu</li>');
+            console.error('Load conversations error:', error);
         });
     }
 
+    $('body').on('click', '.filter-tab', function() {
+        const filter = $(this).data('filter');
+        $('.filter-tab').removeClass('active');
+        $(this).addClass('active');
+        loadConversations(filter);
+    });
+    $('body').on('click', '#create-group-btn', function () {
+        $('#createGroupModal').modal('show');
+    });
     loadNicknames();
     loadBackgrounds();
 
@@ -1844,29 +2199,29 @@
         .done(function () {
             console.log("✅ SignalR connected");
             
-            // Load friends and then select the one from the URL if it exists
-            loadFriendsList(function() {
-                const selectedFriendUsername = config.selectedFriendUsername || '';
-                let target;
+            // Load conversations with 'all' filter initially
+            loadConversations('all');
 
-                if (selectedFriendUsername) {
-                    target = $(`.friend-item[data-username='${selectedFriendUsername}']`);
-                }
+            // The rest of the logic to select a chat remains the same
+            const selectedFriendUsername = config.selectedFriendUsername || '';
+            let target;
 
-                // Fallback logic if no friend is selected or found
-                if (!target || target.length === 0) {
-                    const lastPartner = localStorage.getItem('lastChatPartner');
-                    if (lastPartner) {
-                        target = $(`.friend-item[data-username='${lastPartner}']`);
-                    }
-                }
-                
-                if (!target || target.length === 0) {
-                    target = $('#ai-chat-btn');
-                }
+            if (selectedFriendUsername) {
+                target = $(`.friend-item[data-username='${selectedFriendUsername}']`);
+            }
 
-                switchChat(target);
-            });
+            if (!target || target.length === 0) {
+                const lastPartner = localStorage.getItem('lastChatPartner');
+                if (lastPartner) {
+                    target = $(`.friend-item[data-username='${lastPartner}']`);
+                }
+            }
+            
+            if (!target || target.length === 0) {
+                target = $('#ai-chat-btn');
+            }
+
+            switchChat(target);
         })
         .fail(function (err) {
             console.error("❌ SignalR failed:", err);
