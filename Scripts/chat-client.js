@@ -345,19 +345,20 @@
     }
 
     function renderMessageStatus(status) {
-        let iconClass = 'fa-clock'; // Pending
+        let statusText = 'Đang gửi...';
         let statusKey = 'Pending';
+
         if (status === 'Sent' || status === 0) {
-            iconClass = 'fa-check';
+            statusText = 'Đã gửi';
             statusKey = 'Sent';
         } else if (status === 'Delivered' || status === 1) {
-            iconClass = 'fa-check-double';
+            statusText = 'Đã nhận';
             statusKey = 'Delivered';
         } else if (status === 'Read' || status === 2) {
-            iconClass = 'fa-check-double status-read';
+            statusText = 'Đã xem';
             statusKey = 'Read';
         }
-        return `<span class="message-status status-${statusKey.toLowerCase()}" data-status="${statusKey}"><i class="fas ${iconClass}"></i></span>`;
+        return `<span class="message-status status-${statusKey.toLowerCase()}" data-status="${statusKey}">${statusText}</span>`;
     }
 
     // ========== SIGNALR HANDLERS ==========

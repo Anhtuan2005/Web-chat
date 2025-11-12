@@ -28,14 +28,38 @@ namespace Online_chat.Hubs
             var username = Context.User.Identity.Name;
             var connectionId = Context.ConnectionId;
 
-            // Lưu mapping
             UserHandler.ConnectedIds[connectionId] = username;
             UserHandler.UsernameToConnectionId[username] = connectionId;
 
-            Groups.Add(connectionId, username);
             Clients.All.userConnected(username);
-
             Console.WriteLine($"✅ {username} connected with ConnectionId: {connectionId}");
+
+            // Logic to mark messages as Delivered when user comes online
+            using (var db = new ApplicationDbContext())
+            {
+                var currentUser = db.Users.FirstOrDefault(u => u.Username == username);
+                if (currentUser != null)
+                {
+                    var messagesToDeliver = db.PrivateMessages
+                        .Where(m => m.ReceiverId == currentUser.Id && m.Status == MessageStatus.Sent)
+                        .ToList();
+
+                    foreach (var message in messagesToDeliver)
+                    {
+                        message.Status = MessageStatus.Delivered;
+                        message.DeliveredAt = DateTime.Now;
+
+                        // Notify the sender that the message has been delivered
+                        var sender = db.Users.Find(message.SenderId);
+                        if (sender != null && UserHandler.UsernameToConnectionId.TryGetValue(sender.Username, out string senderConnectionId))
+                        {
+                            Clients.Client(senderConnectionId).messageDelivered(message.Id, username);
+                        }
+                    }
+                    db.SaveChanges();
+                }
+            }
+
             return base.OnConnected();
         }
 
