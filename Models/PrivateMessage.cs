@@ -10,7 +10,6 @@ namespace Online_chat.Models
         public int Id { get; set; }
 
         public int SenderId { get; set; }
-
         public int ReceiverId { get; set; }
 
         [Required]
@@ -18,12 +17,15 @@ namespace Online_chat.Models
 
         public DateTime Timestamp { get; set; }
 
-        public bool IsRead { get; set; }
+        public bool IsRead { get; set; } = false; 
+
+        public DateTime? ReadAt { get; set; }
+        public DateTime? DeliveredAt { get; set; }
 
         [StringLength(20)]
         public string MessageType { get; set; } = "text";
 
-        public MessageStatus Status { get; set; }
+        public MessageStatus Status { get; set; } = MessageStatus.Sent; 
 
         // Navigation properties
         [ForeignKey("SenderId")]
@@ -35,8 +37,8 @@ namespace Online_chat.Models
 
     public enum MessageStatus
     {
-        Sent,
-        Delivered,
-        Read
+        Sent = 0,       // Đã gửi ✓
+        Delivered = 1,  // Đã nhận ✓✓
+        Read = 2        // Đã xem ✓✓ (xanh)
     }
 }

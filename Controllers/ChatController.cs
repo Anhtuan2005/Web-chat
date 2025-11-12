@@ -9,7 +9,7 @@ using System.Data.Entity;
 namespace Online_chat.Controllers
 {
     [Authorize]
-    public class ChatController : Controller
+    public class ChatController : BaseController
     {
         private ApplicationDbContext db = new ApplicationDbContext();
 
@@ -129,6 +129,56 @@ namespace Online_chat.Controllers
         }
 
         [HttpGet]
+        public JsonResult GetUnreadMessageCounts()
+        {
+            var currentUsername = User.Identity.Name;
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+
+            if (currentUser == null)
+            {
+                return Json(new { }, JsonRequestBehavior.AllowGet);
+            }
+
+            // Đếm số tin nhắn chưa đọc từ mỗi người
+            var unreadCounts = _context.PrivateMessages
+                .Where(m => m.ReceiverId == currentUser.Id && !m.IsRead)
+                .GroupBy(m => m.Sender.Username)
+                .Select(g => new { Username = g.Key, Count = g.Count() })
+                .ToDictionary(x => x.Username, x => x.Count);
+
+            return Json(unreadCounts, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpPost]
+        public JsonResult MarkAsRead(string partnerUsername)
+        {
+            var currentUsername = User.Identity.Name;
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+            var partner = _context.Users.FirstOrDefault(u => u.Username == partnerUsername);
+
+            if (currentUser == null || partner == null)
+            {
+                return Json(new { success = false });
+            }
+
+            var unreadMessages = _context.PrivateMessages
+                .Where(m => m.SenderId == partner.Id
+                         && m.ReceiverId == currentUser.Id
+                         && !m.IsRead)
+                .ToList();
+
+            foreach (var msg in unreadMessages)
+            {
+                msg.IsRead = true;
+                msg.ReadAt = DateTime.UtcNow;
+                msg.Status = MessageStatus.Read;
+            }
+
+            _context.SaveChanges();
+            return Json(new { success = true, count = unreadMessages.Count });
+        }
+
+        [HttpGet]
         public JsonResult GetChatHistory(string partnerUsername)
         {
             var currentUsername = User.Identity.Name;
@@ -146,10 +196,12 @@ namespace Online_chat.Controllers
                 .OrderBy(m => m.Timestamp)
                 .Select(m => new
                 {
+                    Id = m.Id,
                     SenderUsername = m.Sender.Username,
                     SenderAvatar = m.Sender.AvatarUrl,
                     Content = m.Content,
-                    Timestamp = m.Timestamp
+                    Timestamp = m.Timestamp,
+                    Status = m.Status
                 })
                 .ToList();
 

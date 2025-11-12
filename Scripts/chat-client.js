@@ -256,22 +256,14 @@
 
         let msgDate;
         try {
-            if (msgData.timestamp) {
-                msgDate = parseTimestamp(msgData.timestamp);
-                if (!msgDate) {
-                    console.warn('Invalid timestamp, using current time:', msgData.timestamp);
-                    msgDate = new Date();
-                }
-            } else {
-                msgDate = new Date();
-            }
+            msgDate = parseTimestamp(msgData.timestamp) || new Date();
         } catch (e) {
             console.error('Error parsing timestamp:', e);
             msgDate = new Date();
         }
 
         const vietTime = formatTimestamp(msgDate);
-        const uniqueId = `msg-${msgDate.getTime()}-${Math.random().toString(36).substr(2, 9)}`;
+        const messageId = msgData.messageId || `temp_${Date.now()}`;
 
         let contentObj;
         try {
@@ -293,13 +285,13 @@
                 break;
             case 'file':
                 bubbleContentHtml = `
-                    <a href="${contentObj.content}" target="_blank" style="display:flex; align-items:center; padding:8px 12px; background:#f0f0f0; border-radius:8px; text-decoration:none; color:#333;">
-                        <i class="fas fa-file-alt" style="font-size:1.5rem; margin-right:10px; color:#007bff;"></i>
-                        <div>
-                            <div style="font-weight:600; font-size:0.9rem;">${contentObj.fileName || 'File'}</div>
-                            <div style="font-size:0.75rem; color:#666;">${contentObj.fileSize || ''}</div>
-                        </div>
-                    </a>`;
+                <a href="${contentObj.content}" target="_blank" style="display:flex; align-items:center; padding:8px 12px; background:#f0f0f0; border-radius:8px; text-decoration:none; color:#333;">
+                    <i class="fas fa-file-alt" style="font-size:1.5rem; margin-right:10px; color:#007bff;"></i>
+                    <div>
+                        <div style="font-weight:600; font-size:0.9rem;">${contentObj.fileName || 'File'}</div>
+                        <div style="font-size:0.75rem; color:#666;">${contentObj.fileSize || ''}</div>
+                    </div>
+                </a>`;
                 break;
             case 'call_log':
                 bubbleContentHtml = createCallLogHtml(contentObj);
@@ -311,16 +303,12 @@
 
         let avatarHtml = '';
         if (!isSelf) {
-            if (msgData.senderAvatar && msgData.senderAvatar !== '/Content/default-avatar.png') {
-                avatarHtml = `<img src="${msgData.senderAvatar}" class="avatar" alt="${displayName}" />`;
+            const avatarUrl = msgData.senderAvatar || $(`.friend-item[data-username="${msgData.senderUsername}"]`).data('avatar-url') || '/Content/default-avatar.png';
+            if (avatarUrl !== '/Content/default-avatar.png') {
+                avatarHtml = `<img src="${avatarUrl}" class="avatar" alt="${displayName}" />`;
             } else {
-                const friendAvatar = $(`.friend-item[data-username="${msgData.senderUsername}"]`).data('avatar-url');
-                if (friendAvatar && friendAvatar !== '/Content/default-avatar.png') {
-                    avatarHtml = `<img src="${friendAvatar}" class="avatar" alt="${displayName}" />`;
-                } else { 
-                    const firstLetter = msgData.senderUsername.charAt(0).toUpperCase();
-                    avatarHtml = `<div class="avatar" title="${msgData.senderUsername}">${firstLetter}</div>`;
-                }
+                const firstLetter = msgData.senderUsername.charAt(0).toUpperCase();
+                avatarHtml = `<div class="avatar" title="${msgData.senderUsername}">${firstLetter}</div>`;
             }
         }
 
@@ -329,58 +317,95 @@
             nicknameHtml = `<div class="message-nickname">${displayName}</div>`;
         }
 
+        let statusHtml = '';
+        if (isSelf && currentChat.mode === 'private') {
+            statusHtml = renderMessageStatus(msgData.status || 'Pending');
+        }
+
         const messageHtml = `
-            <div class="chat-message ${isSelf ? 'self' : msgData.senderUsername === 'AI Assistant' ? 'ai-message' : 'other'}" 
-                 data-timestamp="${msgDate.toISOString()}"  
-                 data-message-id="${uniqueId}">
-                ${avatarHtml}
-                <div class="message-container">
-                    ${nicknameHtml}
-                    <div class="chat-bubble ${msgData.senderUsername === 'AI Assistant' ? 'ai-bubble' : ''}">
-                        ${bubbleContentHtml}
+        <div class="chat-message ${isSelf ? 'self' : 'other'}" 
+             data-timestamp="${msgDate.toISOString()}"  
+             data-message-id="${messageId}">
+            ${avatarHtml}
+            <div class="message-container">
+                ${nicknameHtml}
+                <div class="chat-bubble">
+                    ${bubbleContentHtml}
+                    <div class="message-meta">
                         <span class="bubble-time">${vietTime}</span>
+                        ${statusHtml}
                     </div>
                 </div>
-            </div>`;
+            </div>
+        </div>`;
 
         $('#messagesList').append(messageHtml);
         $('#messagesList').scrollTop($('#messagesList')[0].scrollHeight);
+        return messageId;
+    }
+
+    function renderMessageStatus(status) {
+        let iconClass = 'fa-clock'; // Pending
+        let statusKey = 'Pending';
+        if (status === 'Sent' || status === 0) {
+            iconClass = 'fa-check';
+            statusKey = 'Sent';
+        } else if (status === 'Delivered' || status === 1) {
+            iconClass = 'fa-check-double';
+            statusKey = 'Delivered';
+        } else if (status === 'Read' || status === 2) {
+            iconClass = 'fa-check-double status-read';
+            statusKey = 'Read';
+        }
+        return `<span class="message-status status-${statusKey.toLowerCase()}" data-status="${statusKey}"><i class="fas ${iconClass}"></i></span>`;
     }
 
     // ========== SIGNALR HANDLERS ==========
-    chatHub.client.receiveMessage = function (senderUsername, senderAvatar, messageJson, timestamp) {
-        if (senderUsername === currentUsername) return;
+    chatHub.client.receiveMessage = function (senderUsername, senderAvatar, messageJson, timestamp, messageId) {
+        // Existing receiveMessage logic...
+        // Ensure you pass the messageId to renderMessage
+        renderMessage({
+            senderUsername: senderUsername,
+            senderAvatar: senderAvatar,
+            content: messageJson,
+            timestamp: timestamp,
+            messageId: messageId, // Use the real ID from server
+            isSelf: false
+        });
+        // ... rest of the logic
+    };
 
-        if (senderUsername === 'AI Assistant') {
-            // Ẩn typing indicator của AI
-            hideTypingIndicator();
-
-            if (currentChat.mode === 'ai') {
-                renderMessage({
-                    senderUsername: 'AI Assistant',
-                    content: messageJson,
-                    timestamp: timestamp, // Dùng timestamp từ server
-                    isSelf: false
-                });
-            }
-            playNotificationSound();
-            return;
-        }
-
-        if (currentChat.mode === 'private' && currentChat.partnerUsername === senderUsername) {
-            // Ẩn typing indicator khi nhận tin nhắn
-            hideTypingIndicator();
-
-            renderMessage({
-                senderUsername: senderUsername,
-                senderAvatar: senderAvatar,
-                content: messageJson,
-                timestamp: timestamp,
-                isSelf: false
-            });
-            playNotificationSound();
+    // ========== MESSAGE STATUS HANDLERS ==========
+    chatHub.client.messageSent = function (tempId, finalId, timestamp) {
+        const $tempMessage = $(`.chat-message[data-message-id="${tempId}"]`);
+        if ($tempMessage.length) {
+            $tempMessage.attr('data-message-id', finalId);
+            $tempMessage.attr('data-timestamp', timestamp);
+            $tempMessage.find('.message-status').replaceWith(renderMessageStatus('Sent'));
         }
     };
+
+    chatHub.client.messageDelivered = function (messageId, targetUsername) {
+        if (currentChat.partnerUsername === targetUsername) {
+            const $message = $(`.chat-message[data-message-id="${messageId}"]`);
+            if ($message.length && $message.find('.message-status').data('status') === 'Sent') {
+                $message.find('.message-status').replaceWith(renderMessageStatus('Delivered'));
+            }
+        }
+    };
+
+    chatHub.client.messagesMarkedAsRead = function (readerUsername) {
+        if (currentChat.partnerUsername === readerUsername) {
+            $('.chat-message.self').each(function () {
+                const $status = $(this).find('.message-status');
+                if ($status.data('status') !== 'Read') {
+                    $status.replaceWith(renderMessageStatus('Read'));
+                }
+            });
+        }
+        console.log(`📖 ${readerUsername} has read your messages.`);
+    };
+
 
     chatHub.client.userConnected = function (username) {
         onlineUsers.add(username);
@@ -979,7 +1004,68 @@
             }
         });
     }
+    function markMessagesAsRead(partnerUsername) {
+        if (chatHub && chatHub.connection.state === $.signalR.connectionState.connected) {
+            chatHub.server.markMessagesAsRead(partnerUsername)
+                .done(function () {
+                    console.log('✅ Marked messages as read for:', partnerUsername);
+                    updateUnreadBadge(partnerUsername, 0);
+                })
+                .fail(function (error) {
+                    console.error('❌ Error marking messages as read:', error);
+                });
+        }
+    }
 
+    function openPrivateChat(username) {
+        currentPartner = username;
+        loadChatHistory(username);
+
+        // Đánh dấu tất cả tin nhắn từ người này là đã đọc
+        markMessagesAsRead(username);
+    }
+
+    chatHub.client.messagesMarkedAsRead = function (readerUsername) {
+        console.log(`📖 ${readerUsername} đã đọc tin nhắn của bạn`);
+
+        $(`.chat-message.mine[data-receiver="${readerUsername}"]`).each(function () {
+            $(this).find('.message-status').replaceWith(renderMessageStatus('Read'));
+        });
+    };
+    function updateUnreadBadge(username, count) {
+        var $conversationItem = $(`.conversation-item[data-username="${username}"]`);
+        var $badge = $conversationItem.find('.unread-badge');
+
+        if (count > 0) {
+            if ($badge.length === 0) {
+                $conversationItem.append(`<span class="unread-badge">${count}</span>`);
+            } else {
+                $badge.text(count);
+            }
+            $conversationItem.addClass('has-unread');
+        } else {
+            $badge.remove();
+            $conversationItem.removeClass('has-unread');
+        }
+    }
+    function loadUnreadCounts() {
+        $.ajax({
+            url: '/Chat/GetUnreadMessageCounts',
+            method: 'GET',
+            success: function (data) {
+                Object.keys(data).forEach(function (username) {
+                    updateUnreadBadge(username, data[username]);
+                });
+            },
+            error: function (error) {
+                console.error('Error loading unread counts:', error);
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        loadUnreadCounts();
+    });
     function loadNicknameInputs() {
         if (currentChat.mode !== 'private') {
             $('#nickname-section').hide();
@@ -1254,21 +1340,26 @@
         const messageContent = $('#messageInput').val().trim();
         if (messageContent === '') return;
 
-        const now = new Date().toISOString(); // Dùng ISO string để timestamp nhất quán
+        const now = new Date();
+        const tempId = `temp_${now.getTime()}`;
+
+        // Render message immediately with Pending status
         renderMessage({
             senderUsername: currentUsername,
             content: JSON.stringify({ type: 'text', content: messageContent }),
-            timestamp: now,
-            isSelf: true
+            timestamp: now.toISOString(),
+            isSelf: true,
+            status: 'Pending',
+            messageId: tempId
         });
 
         if (currentChat.mode === 'ai') {
             chatHub.server.sendMessageToAI(messageContent);
-            // Hiển thị typing indicator cho AI (dùng default avatar nếu không có ai-avatar.png)
             showTypingIndicator('AI Assistant', '/Content/default-avatar.png');
         } else if (currentChat.mode === 'private') {
             const msgJson = JSON.stringify({ type: 'text', content: messageContent });
-            chatHub.server.sendPrivateMessage(currentChat.partnerUsername, msgJson);
+            // Pass the tempId to the server
+            chatHub.server.sendPrivateMessage(currentChat.partnerUsername, msgJson, tempId);
         } else if (currentChat.mode === 'group') {
             const msgJson = JSON.stringify({ type: 'text', content: messageContent });
             chatHub.server.sendGroupMessage(currentChat.groupId, msgJson);
@@ -1346,6 +1437,9 @@
             $('#ai-welcome-screen').hide();
             $('.message-area').show();
 
+            markMessagesAsRead(currentChat.partnerUsername);
+
+            loadChatHistory(currentChat.partnerUsername);
             currentChat.partnerUsername = $(target).data('username');
 
             // Cập nhật trạng thái cho toggle "Ẩn trò chuyện"
@@ -1379,82 +1473,20 @@
     }
 
     function loadChatHistory(partnerUsername) {
-        $.getJSON(urls.getChatHistory, { partnerUsername: currentChat.partnerUsername }, function (response) {
+        if (!partnerUsername) return;
+        $.getJSON(urls.getChatHistory, { partnerUsername: partnerUsername }, function (response) {
             if (response.success) {
                 $('#messagesList').empty();
                 response.messages.forEach(msg => {
-                    const isSelf = msg.SenderUsername === currentUsername;
-
-                    let vietTime;
-                    try {
-                        console.log('Original Timestamp:', msg.Timestamp); // DEBUG
-                        const msgDate = parseTimestamp(msg.Timestamp);
-                        console.log('Parsed Date:', msgDate, 'isValid:', msgDate !== null); // DEBUG
-
-                        if (!msgDate) {
-                            console.error('Failed to parse timestamp:', msg.Timestamp);
-                            vietTime = 'Lỗi thời gian';
-                        } else {
-                            vietTime = msgDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-                        }
-                    } catch (e) {
-                        console.error('Timestamp parsing error:', e, msg.Timestamp);
-                        vietTime = 'Lỗi thời gian';
-                    }
-
-                    let messageContent = "";
-                    let bubbleContentHtml = "";
-
-                    try {
-                        const contentObj = JSON.parse(msg.Content);
-                        messageContent = contentObj.content;
-
-                        if (contentObj.type === "image") {
-                            bubbleContentHtml = `<img src="${messageContent}" class="img-fluid rounded" style="max-width: 250px; cursor: pointer;" onclick="window.open(this.src, '_blank');" />`;
-                        } else if (contentObj.type === "video") {
-                            bubbleContentHtml = `<video controls src="${messageContent}" style="max-width: 300px; border-radius: 10px;"></video>`;
-                        } else if (contentObj.type === "file") {
-                            bubbleContentHtml = `
-                        <a href="${contentObj.content}" target="_blank" style="display:flex; align-items:center; padding:8px 12px; background:#f0f0f0; border-radius:8px; text-decoration:none; color:#333;">
-                            <i class="fas fa-file-alt" style="font-size:1.5rem; margin-right:10px; color:#007bff;"></i>
-                            <div>
-                                <div style="font-weight:600; font-size:0.9rem;">${contentObj.fileName || 'File'}</div>
-                                <div style="font-size:0.75rem; color:#666;">${contentObj.fileSize || ''}</div>
-                            </div>
-                        </a>`;
-                        } else if (contentObj.type === "call_log") {
-                            bubbleContentHtml = createCallLogHtml(contentObj);
-                        } else {
-                            const escapedContent = $('<div/>').text(messageContent).html();
-                            bubbleContentHtml = `<span>${escapedContent}</span>`;
-                        }
-                    } catch (e) {
-                        const escapedContent = $('<div/>').text(msg.Content).html();
-                        bubbleContentHtml = `<span>${escapedContent}</span>`;
-                    }
-
-                    let avatarHtml = '';
-                    if (!isSelf) {
-                        if (msg.SenderAvatar && msg.SenderAvatar !== '/Content/default-avatar.png') {
-                            avatarHtml = `<img src="${msg.SenderAvatar}" class="avatar" alt="${msg.SenderUsername}" />`;
-                        } else {
-                            const firstLetter = msg.SenderUsername.charAt(0).toUpperCase();
-                            avatarHtml = `<div class="avatar" title="${msg.SenderUsername}">${firstLetter}</div>`;
-                        }
-                    }
-
-                    const messageHtml = `
-                <div class="chat-message ${isSelf ? 'self' : 'other'}" data-timestamp="${msg.Timestamp}">
-                    ${avatarHtml}
-                    <div class="message-container">
-                        <div class="chat-bubble">
-                            ${bubbleContentHtml}
-                            <span class="bubble-time">${vietTime}</span>
-                        </div>
-                    </div>
-                </div>`;
-
-                    $('#messagesList').append(messageHtml);
+                    renderMessage({
+                        senderUsername: msg.SenderUsername,
+                        senderAvatar: msg.SenderAvatar,
+                        content: msg.Content,
+                        timestamp: msg.Timestamp,
+                        isSelf: msg.SenderUsername === currentUsername,
+                        status: msg.Status, // Pass the status from history
+                        messageId: msg.Id      // Pass the ID from history
+                    });
                 });
                 $('#messagesList').scrollTop($('#messagesList')[0].scrollHeight);
             }
@@ -1961,7 +1993,22 @@
         });
     });
 
+    function renderMessageStatus(status) {
+        switch (status) {
+            case 'Sent':
+                return '<span class="message-status status-sent"><i class="fas fa-check"></i></span>';
+            case 'Delivered':
+                return '<span class="message-status status-delivered"><i class="fas fa-check-double"></i></span>';
+            case 'Read':
+                return '<span class="message-status status-read"><i class="fas fa-check-double"></i> Đã xem</span>';
+            default:
+                return '<span class="message-status status-sent"><i class="fas fa-clock"></i></span>';
+        }
+    }
+
+
     // Toast notification function
+
     function showToast(type, message) {
         const icons = {
             success: 'fa-check-circle',
@@ -2098,7 +2145,32 @@
             }
         });
     });
+    chatHub.client.messageDelivered = function (messageId, receiverUsername) {
+        console.log(`📬 Message ${messageId} delivered to ${receiverUsername}`);
 
+        const $lastMyMessage = $(`.chat-message.self[data-message-id="${messageId}"]`);
+        if ($lastMyMessage.length > 0) {
+            $lastMyMessage.find('.message-status')
+                .removeClass('status-sent')
+                .addClass('status-delivered')
+                .html('<i class="fas fa-check-double"></i>');
+        }
+    };
+
+    chatHub.client.messagesMarkedAsRead = function (readerUsername) {
+        console.log(`📖 ${readerUsername} đã đọc tin nhắn của bạn`);
+
+        // Cập nhật tất cả tin nhắn gửi cho người đó thành "Đã xem"
+        $(`.chat-message.self`).each(function () {
+            const $status = $(this).find('.message-status');
+            if ($status.length > 0) {
+                $status
+                    .removeClass('status-sent status-delivered')
+                    .addClass('status-read')
+                    .html('<i class="fas fa-check-double"></i>');
+            }
+        });
+    };
     // ========== LOAD CONVERSATIONS ==========
     function loadConversations(filter = 'all') {
         const container = $('#conversation-list-ul');

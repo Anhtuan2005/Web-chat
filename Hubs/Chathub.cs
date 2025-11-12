@@ -26,41 +26,48 @@ namespace Online_chat.Hubs
         public override Task OnConnected()
         {
             var username = Context.User.Identity.Name;
-            if (!string.IsNullOrEmpty(username))
-            {
-                ConnectedUsers[username] = Context.ConnectionId;
-                UserLastSeen.TryRemove(username, out _);
-                Clients.All.userConnected(username);
-                var onlineUsers = ConnectedUsers.Keys.ToList();
-                Clients.Caller.updateOnlineUsers(onlineUsers);
-                Console.WriteLine($"✅ {username} connected - ConnectionId: {Context.ConnectionId}");
-            }
+            var connectionId = Context.ConnectionId;
+
+            // Lưu mapping
+            UserHandler.ConnectedIds[connectionId] = username;
+            UserHandler.UsernameToConnectionId[username] = connectionId;
+
+            Groups.Add(connectionId, username);
+            Clients.All.userConnected(username);
+
+            Console.WriteLine($"✅ {username} connected with ConnectionId: {connectionId}");
             return base.OnConnected();
         }
 
         public override Task OnDisconnected(bool stopCalled)
         {
             var username = Context.User.Identity.Name;
-            if (!string.IsNullOrEmpty(username))
-            {
-                string connectionId;
-                ConnectedUsers.TryRemove(username, out connectionId);
-                UserLastSeen[username] = DateTime.UtcNow;
-                Clients.All.userDisconnected(username);
-                Console.WriteLine($"❌ {username} disconnected");
-            }
+            var connectionId = Context.ConnectionId;
+
+            // Xóa mapping
+            UserHandler.ConnectedIds.TryRemove(connectionId, out _);
+            UserHandler.UsernameToConnectionId.TryRemove(username, out _);
+
+            Clients.All.userDisconnected(username);
+
+            Console.WriteLine($"❌ {username} disconnected");
             return base.OnDisconnected(stopCalled);
         }
 
         public override Task OnReconnected()
         {
             var username = Context.User.Identity.Name;
+            var connectionId = Context.ConnectionId;
+
             if (!string.IsNullOrEmpty(username))
             {
-                ConnectedUsers[username] = Context.ConnectionId;
+                UserHandler.ConnectedIds[connectionId] = username;
+                UserHandler.UsernameToConnectionId[username] = connectionId;
+
                 UserLastSeen.TryRemove(username, out _);
                 Clients.All.userConnected(username);
-                Console.WriteLine($"🔄 {username} reconnected");
+
+                Console.WriteLine($"🔄 {username} reconnected with ConnectionId: {connectionId}");
             }
             return base.OnReconnected();
         }
@@ -109,51 +116,82 @@ namespace Online_chat.Hubs
             }
         }
 
+        public void MessageDelivered(int messageId, string senderUsername)
+        {
+            using (var db = new ApplicationDbContext())
+            {
+                var message = db.PrivateMessages.FirstOrDefault(m => m.Id == messageId);
+                if (message != null && message.Status == MessageStatus.Sent)
+                {
+                    message.Status = MessageStatus.Delivered;
+                    message.DeliveredAt = DateTime.Now;
+                    db.SaveChanges();
+
+                    if (UserHandler.UsernameToConnectionId.TryGetValue(senderUsername, out string senderConnectionId))
+                    {
+                        Clients.Client(senderConnectionId).messageDelivered(messageId, senderUsername);
+                        Console.WriteLine($"✅ Message {messageId} delivered to {senderUsername}");
+                    }
+                }
+            }
+        }
+
         // ========================================================
         // GỬI TIN NHẮN PRIVATE
         // ========================================================
-        public void SendPrivateMessage(string partnerUsername, string rawMessage)
+        public void SendPrivateMessage(string targetUsername, string messageJson, string tempId)
         {
-            var senderUsername = Context.User.Identity.Name;
+            var currentUsername = Context.User.Identity.Name;
 
             using (var db = new ApplicationDbContext())
             {
-                var senderUser = db.Users.FirstOrDefault(u => u.Username == senderUsername && !u.IsDeleted);
-                var partnerUser = db.Users.FirstOrDefault(u => u.Username == partnerUsername && !u.IsDeleted);
+                var sender = db.Users.FirstOrDefault(u => u.Username == currentUsername);
+                var receiver = db.Users.FirstOrDefault(u => u.Username == targetUsername);
 
-                if (senderUser == null || partnerUser == null) return;
-
-                string messageType = "text";
-                try
+                if (sender != null && receiver != null)
                 {
-                    dynamic contentObj = JsonConvert.DeserializeObject(rawMessage);
-                    if (contentObj.type != null)
+                    var newMessage = new PrivateMessage
                     {
-                        messageType = contentObj.type;
+                        SenderId = sender.Id,
+                        ReceiverId = receiver.Id,
+                        Content = messageJson,
+                        Timestamp = DateTime.Now,
+                        IsRead = false,
+                        Status = MessageStatus.Sent // Default status
+                    };
+
+                    db.PrivateMessages.Add(newMessage);
+                    db.SaveChanges(); // Save once to get the ID
+
+                    // Notify the sender that the message has been sent successfully
+                    Clients.Caller.messageSent(tempId, newMessage.Id, newMessage.Timestamp);
+
+                    if (UserHandler.UsernameToConnectionId.TryGetValue(targetUsername, out string receiverConnectionId))
+                    {
+                        // Receiver is online, so the message is delivered.
+                        newMessage.Status = MessageStatus.Delivered;
+                        newMessage.DeliveredAt = DateTime.Now;
+                        db.SaveChanges(); // Save status update
+
+                        // Notify receiver of the new message
+                        Clients.Client(receiverConnectionId).receiveMessage(
+                            currentUsername,
+                            sender.AvatarUrl,
+                            messageJson,
+                            newMessage.Timestamp,
+                            newMessage.Id
+                        );
+
+                        // Notify sender that the message was delivered
+                        Clients.Caller.messageDelivered(newMessage.Id, targetUsername);
+                        Console.WriteLine($"✅ Message delivered: {currentUsername} → {targetUsername}");
+                    }
+                    else
+                    {
+                        // Receiver is offline, status remains 'Sent'.
+                        Console.WriteLine($"⚠️ {targetUsername} is offline, message saved as Sent.");
                     }
                 }
-                catch { }
-
-                var timestamp = DateTime.UtcNow;
-                var msg = new PrivateMessage
-                {
-                    SenderId = senderUser.Id,
-                    ReceiverId = partnerUser.Id,
-                    Content = rawMessage,
-                    Timestamp = timestamp,
-                    MessageType = messageType,
-                    Status = MessageStatus.Sent
-                };
-                db.PrivateMessages.Add(msg);
-                db.SaveChanges();
-
-                var groupName = GetPrivateGroupName(senderUser.Id, partnerUser.Id);
-                Clients.Group(groupName).receiveMessage(
-                    senderUser.Username,
-                    senderUser.AvatarUrl,
-                    rawMessage,
-                    timestamp.ToString("o")
-                );
             }
         }
 
@@ -341,6 +379,53 @@ namespace Online_chat.Hubs
             }
         }
 
+        // ========================================================
+        // MARK MESSAGES AS READ
+        // ========================================================
+        public void MarkMessagesAsRead(string partnerUsername)
+        {
+            var currentUsername = Context.User.Identity.Name;
+
+            using (var db = new ApplicationDbContext())
+            {
+                var currentUser = db.Users.FirstOrDefault(u => u.Username == currentUsername);
+                var partner = db.Users.FirstOrDefault(u => u.Username == partnerUsername);
+
+                if (currentUser != null && partner != null)
+                {
+                    var unreadMessages = db.PrivateMessages
+                        .Where(m => m.SenderId == partner.Id
+                                 && m.ReceiverId == currentUser.Id
+                                 && !m.IsRead)
+                        .ToList();
+
+                    foreach (var msg in unreadMessages)
+                    {
+                        msg.IsRead = true;
+                        msg.ReadAt = DateTime.Now;
+                        msg.Status = MessageStatus.Read;
+                    }
+
+                    db.SaveChanges();
+
+                    if (UserHandler.UsernameToConnectionId.TryGetValue(partnerUsername, out string partnerConnectionId))
+                    {
+                        Clients.Client(partnerConnectionId).messagesMarkedAsRead(currentUsername);
+                        Console.WriteLine($"✅ Notified {partnerUsername} that messages were read");
+                    }
+                }
+            }
+        }
+
+        private string GetConnectionIdByUsername(string username)
+        {
+            string connectionId;
+            if (ConnectedUsers.TryGetValue(username, out connectionId))
+            {
+                return connectionId;
+            }
+            return null;
+        }
         // ========================================================
         // TYPING INDICATOR
         // ========================================================

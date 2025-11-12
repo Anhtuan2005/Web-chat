@@ -271,6 +271,7 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Hubs\Chathub.cs" />
+    <Compile Include="Hubs\UserHandler.cs" />
     <Compile Include="Migrations\202510310622520_InitClean.cs" />
     <Compile Include="Migrations\202510310622520_InitClean.Designer.cs">
       <DependentUpon>202510310622520_InitClean.cs</DependentUpon>
@@ -303,9 +304,9 @@
     <Compile Include="Migrations\202511110148142_AddMissingTables.Designer.cs">
       <DependentUpon>202511110148142_AddMissingTables.cs</DependentUpon>
     </Compile>
-    <Compile Include="Migrations\202511110410466_InitialCreate.cs" />
-    <Compile Include="Migrations\202511110410466_InitialCreate.Designer.cs">
-      <DependentUpon>202511110410466_InitialCreate.cs</DependentUpon>
+    <Compile Include="Migrations\202511120242189_AddMessageStatusAndDeliveredAt.cs" />
+    <Compile Include="Migrations\202511120242189_AddMessageStatusAndDeliveredAt.Designer.cs">
+      <DependentUpon>202511120242189_AddMessageStatusAndDeliveredAt.cs</DependentUpon>
     </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\ApplicationDbContext.cs" />
@@ -571,8 +572,8 @@
     <EmbeddedResource Include="Migrations\202511110148142_AddMissingTables.resx">
       <DependentUpon>202511110148142_AddMissingTables.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202511110410466_InitialCreate.resx">
-      <DependentUpon>202511110410466_InitialCreate.cs</DependentUpon>
+    <EmbeddedResource Include="Migrations\202511120242189_AddMessageStatusAndDeliveredAt.resx">
+      <DependentUpon>202511120242189_AddMessageStatusAndDeliveredAt.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>
