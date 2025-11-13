@@ -1314,9 +1314,10 @@ $(function () {
                 callType: currentCallType
             };
             const logMessageJson = JSON.stringify(logMessage);
+            const tempId = `temp_call_${Date.now()}`;
 
             // Gửi lên server
-            chatHub.server.sendPrivateMessage(currentCallPartner, logMessageJson);
+            chatHub.server.sendPrivateMessage(currentCallPartner, logMessageJson, tempId, null);
             chatHub.server.endCall(currentCallPartner);
 
             // Hiển thị ngay cho chính mình
@@ -1324,7 +1325,9 @@ $(function () {
                 senderUsername: currentUsername,
                 content: logMessageJson,
                 timestamp: new Date().toISOString(),
-                isSelf: true
+                isSelf: true,
+                messageId: tempId,
+                status: 'Pending'
             });
         } else if (currentCallPartner) {
             // Nếu không gửi log, vẫn thông báo cho người kia kết thúc
@@ -2003,6 +2006,165 @@ $(function () {
             sendTextMessage();
         }
     });
+
+    // ========== FILE & IMAGE UPLOAD ==========
+
+    // Trigger file input when quick image button is clicked
+    $('body').on('click', '#quick-image-btn', function () {
+        if (currentChat.mode === 'ai') {
+            alert('Bạn không thể gửi ảnh cho AI.');
+            return;
+        }
+        $('#imageUploadInput').click();
+    });
+
+    // Handle image selection and show preview
+    $('#imageUploadInput').on('change', function (e) {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        tempFilesToSend = files; // Store files temporarily
+        const previewContainer = $('#imagePreviewContainer');
+        previewContainer.empty();
+
+        for (let i = 0; i < files.length; i++) {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const imgHtml = `<img src="${event.target.result}" class="img-thumbnail" style="max-width: 100px; max-height: 100px;"/>`;
+                previewContainer.append(imgHtml);
+            };
+            reader.readAsDataURL(files[i]);
+        }
+
+        $('#imagePreviewModal').modal('show');
+    });
+
+    // Handle the actual image sending after user confirms in modal
+    $('body').on('click', '#sendImageButton', function () {
+        if (!tempFilesToSend || tempFilesToSend.length === 0) return;
+
+        const formData = new FormData();
+        for (let i = 0; i < tempFilesToSend.length; i++) {
+            formData.append('files', tempFilesToSend[i]);
+        }
+
+        // Show some loading indicator if you have one
+        $(this).prop('disabled', true).text('Đang gửi...');
+
+        $.ajax({
+            url: '/Upload/UploadFile', // Assuming this is the correct endpoint
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+                if (response.success && response.fileUrls) {
+                    response.fileUrls.forEach(fileInfo => {
+                        const messageType = fileInfo.isImage ? 'image' : (fileInfo.isVideo ? 'video' : 'file');
+                        const contentObj = {
+                            type: messageType,
+                            content: fileInfo.url,
+                            fileName: fileInfo.fileName,
+                            fileSize: fileInfo.fileSize
+                        };
+                        const messageJson = JSON.stringify(contentObj);
+                        const tempId = `temp_file_${Date.now()}_${Math.random()}`;
+
+                        // Render locally
+                        renderMessage({
+                            senderUsername: currentUsername,
+                            content: messageJson,
+                            timestamp: new Date().toISOString(),
+                            isSelf: true,
+                            status: 'Pending',
+                            messageId: tempId
+                        });
+
+                        // Send to server
+                        chatHub.server.sendPrivateMessage(currentChat.partnerUsername, messageJson, tempId, null);
+                    });
+                } else {
+                    alert('Lỗi khi tải tệp lên: ' + (response.message || 'Không có phản hồi từ server.'));
+                }
+            },
+            error: function () {
+                alert('Đã xảy ra lỗi mạng khi tải tệp lên.');
+            },
+            complete: function () {
+                $('#imagePreviewModal').modal('hide');
+                $('#sendImageButton').prop('disabled', false).text('Gửi');
+                tempFilesToSend = null;
+                $('#imageUploadInput').val(''); // Clear the input
+            }
+        });
+    });
+
+    // Generic file upload (for the paperclip button)
+    $('body').on('click', '#toggle-attach-menu', function () {
+        if (currentChat.mode === 'ai') {
+            alert('Bạn không thể gửi tệp cho AI.');
+            return;
+        }
+        $('#fileUploadInput').click();
+    });
+
+    $('#fileUploadInput').on('change', function (e) {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        if (!confirm(`Bạn có chắc muốn gửi ${files.length} tệp?`)) {
+            $(this).val(''); // Clear the input
+            return;
+        }
+
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            formData.append('files', files[i]);
+        }
+
+        $.ajax({
+            url: '/Upload/UploadFile',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+                if (response.success && response.fileUrls) {
+                    response.fileUrls.forEach(fileInfo => {
+                        const messageType = fileInfo.isImage ? 'image' : (fileInfo.isVideo ? 'video' : 'file');
+                        const contentObj = {
+                            type: messageType,
+                            content: fileInfo.url,
+                            fileName: fileInfo.fileName,
+                            fileSize: fileInfo.fileSize
+                        };
+                        const messageJson = JSON.stringify(contentObj);
+                        const tempId = `temp_file_${Date.now()}_${Math.random()}`;
+
+                        renderMessage({
+                            senderUsername: currentUsername,
+                            content: messageJson,
+                            timestamp: new Date().toISOString(),
+                            isSelf: true,
+                            status: 'Pending',
+                            messageId: tempId
+                        });
+
+                        chatHub.server.sendPrivateMessage(currentChat.partnerUsername, messageJson, tempId, null);
+                    });
+                } else {
+                    alert('Lỗi khi tải tệp lên: ' + (response.message || 'Không có phản hồi từ server.'));
+                }
+            },
+            error: function () {
+                alert('Đã xảy ra lỗi mạng khi tải tệp lên.');
+            },
+            complete: function () {
+                $('#fileUploadInput').val(''); // Clear the input
+            }
+        });
+    });
+
 
     $('body').on('input', '#messageInput', function () {
         sendTypingSignal();
