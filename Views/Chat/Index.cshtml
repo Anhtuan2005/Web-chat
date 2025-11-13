@@ -13,32 +13,21 @@
             <!-- Private Header -->
             <div id="private-chat-header" class="chat-header" style="display: none;">
                 <div id="user-chat-header" class="chat-header-info d-flex align-items-center">
-                    <div class="chat-header-avatar-wrapper">
+                    <div class="chat-header-avatar-wrapper" style="cursor: pointer;">
                         <img id="chat-header-avatar" src="" alt="Avatar" class="chat-header-avatar me-2" />
                         <span class="status-indicator" id="header-status-indicator"></span>
                     </div>
-                    <div>
+                    <div style="cursor: pointer;">
                         <div id="chat-header-displayname" class="fw-bold"></div>
                         <div id="chat-header-status" class="text-muted">Đang hoạt động</div>
                     </div>
                 </div>
                 <div class="d-flex align-items-center">
-                    <div id="user-chat-buttons" style="display: none;">
-                        <button id="start-voice-call-btn" class="btn btn-light" title="Gọi thoại">
-                            <i class="fas fa-phone-alt"></i>
-                        </button>
-                        <button id="start-video-call-btn" class="btn btn-light" title="Gọi video">
-                            <i class="fas fa-video"></i>
-                        </button>
-                        <button id="toggle-search-sidebar-btn" class="btn btn-light" title="Tìm kiếm">
-                            <i class="fas fa-search"></i>
-                        </button>
-                        <button id="toggle-info-sidebar-btn" class="btn btn-light" title="Thông tin hội thoại">
-                            <i class="fas fa-info-circle"></i>
-                        </button>
-                    </div>
                     <button id="toggle-conversations-btn" class="btn btn-light" title="Ẩn/Hiện danh sách bạn bè">
                         <i class="fas fa-list-ul"></i>
+                    </button>
+                    <button id="create-group-btn" class="btn btn-create-group" type="button" title="Tạo nhóm mới">
+                        <i class="fas fa-users"></i>
                     </button>
                 </div>
             </div>
@@ -82,6 +71,17 @@
                     <span class="dot"></span>
                     <span class="dot"></span>
                 </div>
+            </div>
+        </div>
+
+        <!-- Reply Banner -->
+        <div id="reply-banner" style="display: none; padding: 8px 15px; background-color: #f0f2f5; border-top: 1px solid #ddd;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div id="reply-banner-text" style="font-size: 0.85rem; font-weight: 600; color: #007bff;"></div>
+                    <div id="reply-banner-preview" style="font-size: 0.8rem; color: #6c757d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;"></div>
+                </div>
+                <button id="close-reply-banner" class="btn btn-sm btn-light" style="border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">&times;</button>
             </div>
         </div>
 
@@ -240,12 +240,33 @@
         </div>
     </div>
 
+    <!-- Search Sidebar -->
+    <div id="search-sidebar" style="display: none;">
+        <div class="info-sidebar-header">
+            <h5>Tìm kiếm tin nhắn</h5>
+            <button id="close-search-sidebar-btn" type="button" class="close" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="info-sidebar-body">
+            <div class="input-group mb-3 p-3">
+                <input type="text" id="search-message-input" class="form-control" placeholder="Nhập để tìm kiếm...">
+                <div class="input-group-append">
+                    <button id="execute-search-btn" class="btn btn-primary" type="button"><i class="fas fa-search"></i></button>
+                </div>
+            </div>
+            <div id="search-results-container" class="p-3">
+                <!-- Search results will be appended here -->
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="createGroupModal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content" style="border-radius: 24px; overflow: hidden; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
 
                 <!-- Header with gradient -->
-                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; padding: 30px; position: relative; overflow: hidden;">
+                <div class="modal-header" style="background: linear-gradient(135deg, #43a047 0%, #66bb6a 100%); border: none; padding: 30px; position: relative; overflow: hidden;">
                     <div style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
                     <div style="position: absolute; bottom: -30px; left: -30px; width: 150px; height: 150px; background: rgba(255,255,255,0.08); border-radius: 50%;"></div>
 
@@ -270,7 +291,7 @@
                     <!-- Group Name Input -->
                     <div style="margin-bottom: 30px;">
                         <label style="font-weight: 600; color: #333; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 14px;">
-                            <i class="fas fa-tag" style="color: #667eea;"></i>
+                            <i class="fas fa-tag" style="color: #43a047;"></i>
                             Tên nhóm
                         </label>
                         <div style="position: relative;">
@@ -290,10 +311,10 @@
                     <div>
                         <label style="font-weight: 600; color: #333; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; font-size: 14px;">
                             <span style="display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-user-friends" style="color: #764ba2;"></i>
+                                <i class="fas fa-user-friends" style="color: #43a047;"></i>
                                 Thêm thành viên
                             </span>
-                            <span id="selectedMemberCount" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">0 người</span>
+                            <span id="selectedMemberCount" style="background: linear-gradient(135deg, #43a047, #66bb6a); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">0 người</span>
                         </label>
 
                         <!-- Search Box -->
@@ -310,7 +331,7 @@
                         <div id="groupMembersList"
                              style="max-height: 320px; overflow-y: auto; border: 2px solid #f0f0f0; border-radius: 16px; background: #fafafa;">
                             <p class="text-center text-muted" style="padding: 40px 20px; margin: 0;">
-                                <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #667eea; margin-bottom: 10px;"></i>
+                                <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #43a047; margin-bottom: 10px;"></i>
                                 <br>Đang tải danh sách bạn bè...
                             </p>
                         </div>
@@ -324,7 +345,7 @@
                         <i class="fas fa-times"></i> Hủy
                     </button>
                     <button type="button" class="btn btn-primary" id="confirmCreateGroupBtn"
-                            style="border-radius: 12px; padding: 10px 32px; font-weight: 600; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s;">
+                            style="border-radius: 12px; padding: 10px 32px; font-weight: 600; border: none; background: linear-gradient(135deg, #43a047 0%, #66bb6a 100%); box-shadow: 0 4px 15px rgba(67, 160, 71, 0.4); transition: all 0.3s;">
                         <i class="fas fa-check-circle"></i> Tạo nhóm
                     </button>
                 </div>
@@ -519,32 +540,64 @@
                 </div>
             </div>
         </div>
+        <div style="margin-top: 20px; padding: 12px; background: #f8f9fa; border-radius: 8px; text-align: left;">
+            <p style="margin: 0; font-size: 0.9rem; color: #555;" id="partner-modal-bio">Không có tiểu sử.</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <p style="font-size: 0.8rem; color: #999; margin-bottom: 5px;">Mã kết bạn</p>
+            <img id="partner-modal-qrcode" src="" style="width: 150px; height: 150px; border: 1px solid #eee; padding: 5px;" />
+        </div>
+    </div>
+
+    <!-- Forward Message Modal -->
+    <div class="modal fade" id="forwardMessageModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Chuyển tiếp tin nhắn</h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="forward-search-input" class="form-control mb-3" placeholder="Tìm kiếm bạn bè...">
+                    <div id="forward-friends-list" style="max-height: 300px; overflow-y: auto;">
+                        <!-- Friend list will be populated here by JS -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="confirm-forward-btn">Gửi</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 @section scripts {
+    @Html.AntiForgeryToken()
+    <script src="~/Scripts/jquery.signalR-2.4.3.min.js"></script>
+    <script src="~/signalr/hubs"></script>
+
     <script>
         window.chatConfig = {
             currentUsername: @Html.Raw(Json.Encode(User.Identity.Name)),
             selectedFriendUsername: @Html.Raw(Json.Encode(ViewBag.SelectedFriendUsername)),
-            antiForgeryToken: $('#logoutForm input[name="__RequestVerificationToken"]').val(),
+            antiForgeryToken: $('input[name="__RequestVerificationToken"]').first().val(),
             urls: {
                 getChatHistory: '@Url.Action("GetChatHistory", "Chat")',
                 getConversations: '@Url.Action("GetConversations", "Chat")',
                 getConversationInfo: '@Url.Action("GetConversationInfo", "Chat")',
                 getFriends: '@Url.Action("GetFriends", "Friend")',
-                createGroup: '@Url.Action("Create", "Group")',
-                getUserGroups: '@Url.Action("GetUserGroups", "Group")',
-                getGroupInfo: '@Url.Action("GetGroupInfo", "Group")',
-                addGroupMember: '@Url.Action("AddMember", "Group")',
-                removeGroupMember: '@Url.Action("RemoveMember", "Group")',
-                leaveGroup: '@Url.Action("LeaveGroup", "Group")',
                 clearHistory: '@Url.Action("ClearHistory", "Chat")',
-                uploadFiles: '@Url.Action("UploadFiles", "Chat")',
-                getUserPublicProfile: '/Profile/GetUserPublicProfile'
+                deleteConversation: '@Url.Action("DeleteConversation", "Chat")',
+                pinConversation: '@Url.Action("PinConversation", "Chat")',
+                reportConversation: '@Url.Action("ReportConversation", "Chat")',
+                searchMessages: '@Url.Action("SearchMessages", "Chat")'
             }
         };
+
+        console.log('✅ Config loaded:', window.chatConfig);
     </script>
 
-    <script src="~/Scripts/chat-client.js"></script>
+    <script src="~/Scripts/chat-client.js?v=@DateTime.Now.Ticks"></script>
 }
