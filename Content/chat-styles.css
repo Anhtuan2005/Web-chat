@@ -1948,6 +1948,24 @@ groupMembersList .custom-control-input:checked ~ .custom-control-label::before {
     background: white !important;
     margin: 0 !important;
 }
+
+#createGroupModal .btn-cancel-group {
+    border-radius: 12px;
+    padding: 10px 24px;
+    font-weight: 600;
+    background: white;
+    color: #43a047; /* Green text */
+    border: 1px solid #43a047; /* Green border */
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(67, 160, 71, 0.1); /* Subtle green shadow */
+}
+
+#createGroupModal .btn-cancel-group:hover {
+    background: #43a047; /* Green background on hover */
+    color: white; /* White text on hover */
+    box-shadow: 0 4px 12px rgba(67, 160, 71, 0.3); /* More prominent green shadow on hover */
+    transform: translateY(-1px);
+}
 /* TRẠNG THÁI TIN NHẮN */
 .message-status {
     display: inline-flex;
