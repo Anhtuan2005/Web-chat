@@ -2048,29 +2048,26 @@ $(function () {
             formData.append('files', tempFilesToSend[i]);
         }
 
-        // Show some loading indicator if you have one
         $(this).prop('disabled', true).text('Đang gửi...');
 
         $.ajax({
-            url: '/Upload/UploadFile', // Assuming this is the correct endpoint
+            url: '/Upload/Multiple', // CORRECTED ENDPOINT
             type: 'POST',
             data: formData,
             processData: false,
             contentType: false,
             success: function (response) {
-                if (response.success && response.fileUrls) {
-                    response.fileUrls.forEach(fileInfo => {
-                        const messageType = fileInfo.isImage ? 'image' : (fileInfo.isVideo ? 'video' : 'file');
+                if (response.success && response.files) {
+                    response.files.forEach(fileInfo => {
                         const contentObj = {
-                            type: messageType,
-                            content: fileInfo.url,
+                            type: fileInfo.type, // Use 'type' from response
+                            content: fileInfo.filePath, // Use 'filePath' from response
                             fileName: fileInfo.fileName,
                             fileSize: fileInfo.fileSize
                         };
                         const messageJson = JSON.stringify(contentObj);
                         const tempId = `temp_file_${Date.now()}_${Math.random()}`;
 
-                        // Render locally
                         renderMessage({
                             senderUsername: currentUsername,
                             content: messageJson,
@@ -2080,7 +2077,6 @@ $(function () {
                             messageId: tempId
                         });
 
-                        // Send to server
                         chatHub.server.sendPrivateMessage(currentChat.partnerUsername, messageJson, tempId, null);
                     });
                 } else {
@@ -2094,7 +2090,7 @@ $(function () {
                 $('#imagePreviewModal').modal('hide');
                 $('#sendImageButton').prop('disabled', false).text('Gửi');
                 tempFilesToSend = null;
-                $('#imageUploadInput').val(''); // Clear the input
+                $('#imageUploadInput').val('');
             }
         });
     });
@@ -2113,7 +2109,7 @@ $(function () {
         if (!files || files.length === 0) return;
 
         if (!confirm(`Bạn có chắc muốn gửi ${files.length} tệp?`)) {
-            $(this).val(''); // Clear the input
+            $(this).val('');
             return;
         }
 
@@ -2123,18 +2119,17 @@ $(function () {
         }
 
         $.ajax({
-            url: '/Upload/UploadFile',
+            url: '/Upload/Multiple', // CORRECTED ENDPOINT
             type: 'POST',
             data: formData,
             processData: false,
             contentType: false,
             success: function (response) {
-                if (response.success && response.fileUrls) {
-                    response.fileUrls.forEach(fileInfo => {
-                        const messageType = fileInfo.isImage ? 'image' : (fileInfo.isVideo ? 'video' : 'file');
+                if (response.success && response.files) {
+                    response.files.forEach(fileInfo => {
                         const contentObj = {
-                            type: messageType,
-                            content: fileInfo.url,
+                            type: fileInfo.type, // Use 'type' from response
+                            content: fileInfo.filePath, // Use 'filePath' from response
                             fileName: fileInfo.fileName,
                             fileSize: fileInfo.fileSize
                         };
@@ -2160,7 +2155,7 @@ $(function () {
                 alert('Đã xảy ra lỗi mạng khi tải tệp lên.');
             },
             complete: function () {
-                $('#fileUploadInput').val(''); // Clear the input
+                $('#fileUploadInput').val('');
             }
         });
     });
