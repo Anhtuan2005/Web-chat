@@ -33,6 +33,55 @@ $(function () {
         }
     };
 
+    chatHub.client.showError = function (message) {
+        alert(message);
+    };
+
+    chatHub.client.leftGroupSuccess = function (groupId) {
+        console.log('Client received leftGroupSuccess for groupId:', groupId);
+        const $groupItem = $(`.group-item[data-id="${groupId}"]`);
+        if ($groupItem.length > 0) {
+            $groupItem.css('border', '2px solid red'); // Visual debug
+            $groupItem.fadeOut(400, function () {
+                $(this).remove();
+                // Ensure conversation list is reloaded from server to reflect the change
+                loadConversations('all'); 
+            });
+        } else {
+            console.error('leftGroupSuccess: Could not find .group-item with data-id=' + groupId + '. Forcing conversation list reload.');
+            // If the item wasn't found, still reload the conversations to be safe
+            loadConversations('all'); 
+        }
+        alert('Bạn đã rời khỏi nhóm.');
+        if (currentChat.mode === 'group' && currentChat.groupId === groupId) {
+            $('#ai-chat-btn').click();
+        }
+    };
+
+    chatHub.client.groupDisbanded = function (groupId) {
+        console.log('Client received groupDisbanded for groupId:', groupId);
+        const $groupItem = $(`.group-item[data-id="${groupId}"]`);
+        if ($groupItem.length > 0) {
+            $groupItem.css('border', '2px solid red'); // Visual debug
+            $groupItem.fadeOut(400, function () {
+                $(this).remove();
+            });
+        } else {
+            console.error('groupDisbanded: Could not find .group-item with data-id=' + groupId);
+        }
+        alert('Một nhóm bạn tham gia đã được giải tán.');
+        if (currentChat.mode === 'group' && currentChat.groupId === groupId) {
+            $('#ai-chat-btn').click();
+        }
+    };
+
+    chatHub.client.userLeftGroup = function (groupId, username, message) {
+        if (currentChat.mode === 'group' && currentChat.groupId === groupId) {
+            // Placeholder for showing a system message in the chat window
+        }
+        console.log(message); // Log for now, can be a toast notification
+    };
+
     window.currentChat = {
         mode: 'ai',
         partnerUsername: null,
@@ -52,6 +101,13 @@ $(function () {
     let typingTimer = null;
     let isTyping = false;
     const TYPING_TIMEOUT = 3000; // 3 giây không gõ sẽ tắt typing indicator
+
+    // Voice Recording variables
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+    let recordingInterval;
+    let recordingStartTime;
 
 
     chatHub.client.onMessageReacted = function (messageId, userId, username, emoji, isRemoving) {
@@ -155,10 +211,10 @@ $(function () {
                        data-avatar-url="${avatarUrl}">
                         <div class="d-flex align-items-center justify-content-between w-100">
                             <div class="d-flex align-items-center">
-                                <div style="position: relative; margin-right: 12px;">
+                                <div class="conv-avatar-wrapper">
                                     <img src="${avatarUrl}" 
                                          alt="${displayName}" 
-                                         style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;"
+                                         class="conv-avatar-img"
                                          onerror="this.src='/Content/default-avatar.png';" />
                                     <span class="status-indicator ${statusClass}" 
                                           data-username="${friend.Username}"></span>
@@ -182,6 +238,142 @@ $(function () {
             },
             error: function (xhr, status, error) {
                 console.error('❌ Error loading friend list:', error);
+            }
+        });
+    }
+
+    function loadConversations(filter = 'all') {
+        console.log(`🔄 Loading conversations with filter: ${filter}...`);
+
+        function formatLastMessage(message) {
+            try {
+                const parsed = JSON.parse(message);
+                if (parsed && typeof parsed === 'object' && parsed.type) {
+                    switch (parsed.type) {
+                        case 'text': return parsed.content;
+                        case 'image': return '<i class="fas fa-image"></i> Hình ảnh';
+                        case 'video': return '<i class="fas fa-video"></i> Video';
+                        case 'file': return `<i class="fas fa-file-alt"></i> ${parsed.fileName || 'Tệp'}`;
+                        case 'voice': return '<i class="fas fa-microphone"></i> Tin nhắn thoại';
+                        case 'call_log':
+                            if (parsed.status === 'missed') return '<i class="fas fa-phone-slash text-danger"></i> Cuộc gọi nhỡ';
+                            if (parsed.status === 'completed') return `<i class="fas fa-phone-alt text-success"></i> Cuộc gọi ${parsed.callType === 'video' ? 'video' : 'thoại'}`;
+                            return '<i class="fas fa-phone-alt"></i> Cuộc gọi';
+                        default: return message;
+                    }
+                }
+            } catch (e) {
+                // Not a JSON string, or invalid JSON
+            }
+            return message;
+        }
+
+        $.ajax({
+            url: urls.getConversations,
+            type: 'GET',
+            data: { filter: filter },
+            dataType: 'json',
+            cache: false, // Prevent browser from caching this GET request
+            success: function (response) {
+                console.log('✅ Conversations loaded:', response);
+
+                if (response && response.length > 0) {
+                    const $conversationList = $('#conversation-list-ul');
+                    $conversationList.find('.list-group-item:not(#ai-chat-btn)').remove();
+
+                    response.forEach(conv => {
+                        const displayName = conv.DisplayName || conv.Name || conv.Username;
+                        const isOnline = conv.Type === 'Private' ? isUserOnline(conv.Username) : false;
+                        const statusClass = isOnline ? 'online' : 'offline';
+                        const lastMessageText = formatLastMessage(conv.LastMessage || (conv.Type === 'Group' ? 'Chưa có tin nhắn nhóm' : 'Chưa có tin nhắn'));
+
+                        const unreadBadge = conv.UnreadCount > 0
+                            ? `<span class="unread-badge">${conv.UnreadCount}</span>`
+                            : '';
+
+                        const pinIcon = conv.IsPinned ? 'fa-thumbtack' : 'fa-thumbtack';
+                        const pinText = conv.IsPinned ? 'Bỏ ghim' : 'Ghim';
+                        
+                        const isGroup = conv.Type === 'Group';
+
+                        let avatarHtml;
+                        // Check for composite avatar feature
+                        if (isGroup && conv.MemberAvatarUrls && conv.MemberAvatarUrls.length > 0) {
+                            const count = conv.MemberAvatarUrls.length;
+                            const memberAvatarsHtml = conv.MemberAvatarUrls.map((url, index) =>
+                                `<img src="${url}" class="member-avatar member-avatar-${index + 1}" onerror="this.src='/Content/default-avatar.png';" />`
+                            ).join('');
+                            avatarHtml = `<div class="composite-avatar count-${count}">${memberAvatarsHtml}</div>`;
+                        } else {
+                            const avatarUrl = conv.AvatarUrl || '/Content/default-avatar.png';
+                            avatarHtml = `<img src="${avatarUrl}" alt="${displayName}" class="conv-avatar-img" onerror="this.src='/Content/default-avatar.png';" />`;
+                        }
+
+                        const deleteOrLeaveButton = isGroup
+                            ? `<a href="#" class="conv-menu-item conv-leave-group-btn" data-id="${conv.Id}" data-name="${displayName}">
+                                   <i class="fas fa-sign-out-alt"></i> Rời nhóm
+                               </a>`
+                            : `<a href="#" class="conv-menu-item conv-delete-btn" data-username="${conv.Username || ''}" data-type="${conv.Type}">
+                                   <i class="fas fa-trash-alt"></i> Xóa hội thoại
+                               </a>`;
+
+                        const conversationHtml = `
+                            <div class="list-group-item list-group-item-action ${isGroup ? 'group-item' : 'friend-item'}"
+                               data-chat-mode="${conv.Type.toLowerCase()}"
+                               data-id="${conv.Id}"
+                               data-username="${conv.Username || ''}"
+                               data-avatar-url="${conv.AvatarUrl}"
+                               style="position: relative;">
+                                <div class="conversation-content-wrapper">
+                                    <div class="d-flex align-items-center">
+                                        <div class="conv-avatar-wrapper">
+                                            ${avatarHtml}
+                                            ${!isGroup ? `<span class="status-indicator ${statusClass}" data-username="${conv.Username}"></span>` : ''}
+                                        </div>
+                                        <div>
+                                            <strong style="display: block; margin-bottom: 2px;">${displayName}</strong>
+                                            <small style="color: #6c757d; font-size: 0.85rem;">
+                                                ${lastMessageText}
+                                            </small>
+                                        </div>
+                                    </div>
+                                    ${unreadBadge}
+                                </div>
+                                <button class="conversation-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+                                <div class="conversation-menu">
+                                    <a href="#" class="conv-menu-item conv-pin-btn" data-id="${conv.Id}" data-type="${conv.Type}">
+                                        <i class="fas fa-thumbtack"></i> ${pinText}
+                                    </a>
+                                    <a href="#" class="conv-menu-item conv-mark-unread-btn" data-id="${conv.Id}">
+                                        <i class="fas fa-envelope-open"></i> Đánh dấu chưa đọc
+                                    </a>
+                                    <a href="#" class="conv-menu-item conv-hide-btn" data-id="${conv.Id}">
+                                        <i class="fas fa-eye-slash"></i> Ẩn trò chuyện
+                                    </a>
+                                     <div class="conv-menu-divider"></div>
+                                    <a href="#" class="conv-menu-item conv-mute-btn" data-id="${conv.Id}">
+                                        <i class="fas fa-bell-slash"></i> Tắt thông báo
+                                    </a>
+                                    ${!isGroup ? `
+                                    <a href="#" class="conv-menu-item conv-report-btn" data-username="${conv.Username || ''}">
+                                        <i class="fas fa-flag"></i> Báo xấu
+                                    </a>` : ''}
+                                    <div class="conv-menu-divider"></div>
+                                    ${deleteOrLeaveButton}
+                                </div>
+                            </div>`;
+                        $conversationList.append(conversationHtml);
+                    });
+                    console.log(`✅ Loaded ${response.length} conversations`);
+                } else {
+                    const $conversationList = $('#conversation-list-ul');
+                    $conversationList.find('.list-group-item:not(#ai-chat-btn)').remove();
+                    $conversationList.append('<li class="list-group-item text-center text-muted">Chưa có cuộc trò chuyện nào.</li>');
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('❌ Error loading conversations:', error);
+                $('#conversation-list-ul').html('<li class="list-group-item text-center text-danger">Lỗi khi tải cuộc trò chuyện.</li>');
             }
         });
     }
@@ -449,12 +641,29 @@ $(function () {
         // Handle deleted messages first
         if (msgData.isDeleted) {
             const $existingMsg = $(`#messagesList .chat-message[data-message-id="${msgData.messageId}"]`);
-            const deletedHtml = `<div class="deleted-message" style="font-style: italic; color: #999;"><i class="fas fa-ban"></i> Tin nhắn đã được thu hồi</div>`;
+            const deletedHtml = `<div class="deleted-message" style="font-style: italic; color: white;"><i class="fas fa-ban"></i> Tin nhắn đã được thu hồi</div>`;
+
             if ($existingMsg.length) {
-                $existingMsg.find('.chat-bubble').html(deletedHtml).css({ 'background-color': 'transparent', 'border': '1px solid #f0f0f0' });
+                // This is for real-time recall. Modify the existing bubble in-place.
+                const $bubble = $existingMsg.find('.chat-bubble');
+                $bubble.html(deletedHtml);
+                $bubble.css({ 'background-color': 'transparent', 'border': '1px solid #f0f0f0' });
                 $existingMsg.find('.message-options').remove();
+                $existingMsg.find('.reactions-container').remove();
             } else {
-                $('#messagesList').append(`<div class="chat-message" data-message-id="${msgData.messageId}"><div class="message-container" style="width:100%; text-align:center;">${deletedHtml}</div></div>`);
+                // This is for loading from history (F5 refresh). Create a new bubble
+                // that looks the same as the in-place modified one.
+                const isSelf = msgData.isSelf || (msgData.senderUsername && msgData.senderUsername === currentUsername);
+                const recalledMessageHtml = `
+                    <div class="chat-message ${isSelf ? 'self' : 'other'}" data-message-id="${msgData.messageId}">
+                        <div class="message-container">
+                            <div class="chat-bubble" style="background-color: transparent; border: 1px solid #f0f0f0;">
+                                ${deletedHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                $('#messagesList').append(recalledMessageHtml);
             }
             return;
         }
@@ -494,6 +703,9 @@ $(function () {
                 break;
             case 'call_log':
                 bubbleContentHtml = createCallLogHtml(contentObj);
+                break;
+            case 'voice':
+                bubbleContentHtml = `<audio controls src="${contentObj.content}" style="width: 250px;"></audio>`;
                 break;
             default:
                 const escaped = $('<div/>').text(contentObj.content).html();
@@ -537,12 +749,33 @@ $(function () {
 
         let reactionsHtml = '';
         if (msgData.reactions && msgData.reactions.length > 0) {
-            const reactions = msgData.reactions.map(r => `
-                <div class="reaction-item" id="reaction-${messageId}-${r.UserId}" data-user-id="${r.UserId}" title="${r.Username}">
-                    <span class="reaction-emoji">${r.Emoji}</span>
-                </div>
-            `).join('');
-            reactionsHtml = `<div class="reactions-container">${reactions}</div>`;
+            const reactionsGrouped = msgData.reactions.reduce((acc, r) => {
+                if (!acc[r.Emoji]) {
+                    acc[r.Emoji] = { users: [], userIds: [] };
+                }
+                acc[r.Emoji].users.push(r.Username);
+                acc[r.Emoji].userIds.push(r.UserId);
+                return acc;
+            }, {});
+
+            let reactionsItemsHtml = '';
+            for (const emoji in reactionsGrouped) {
+                const group = reactionsGrouped[emoji];
+                const userList = group.users.join(', ');
+                const hasReacted = group.users.includes(currentUsername);
+                const reactionId = `reaction-${messageId}-${emoji.replace(/[^a-zA-Z0-9]/g, '')}`;
+
+                reactionsItemsHtml += `
+                    <div class="reaction-item ${hasReacted ? 'user-reacted' : ''}" 
+                         data-reaction-id="${reactionId}"
+                         data-users="${userList}"
+                         title="${userList}">
+                        <span class="reaction-emoji">${emoji}</span>
+                        <span class="reaction-count">${group.users.length}</span>
+                    </div>
+                `;
+            }
+            reactionsHtml = `<div class="reactions-container">${reactionsItemsHtml}</div>`;
         }
 
         const messageHtml = `
@@ -634,8 +867,9 @@ $(function () {
 
     // Close menus when clicking anywhere else
     $(document).on('click', function (e) {
-        if (!$(e.target).closest('.message-options').length) {
-            $('.message-options-menu').hide();
+        if (!$(e.target).closest('.message-options, .emoji-picker-popup').length) {
+            $('.message-options-menu').removeClass('show');
+            $('.emoji-picker-popup').removeClass('show');
         }
     });
 
@@ -760,16 +994,18 @@ $(function () {
 
     $('body').on('click', '.react-message-btn', function (e) {
         e.preventDefault();
+        e.stopPropagation(); // Stop propagation to prevent immediate closing by the document click handler
+
         const $button = $(this);
         const $message = $button.closest('.chat-message');
         const messageId = $message.data('message-id');
 
-        // Close options menu
-        $button.closest('.message-options-menu').removeClass('show');
+        // Close other popups
+        $('.message-options-menu').removeClass('show');
+        $('.emoji-picker-popup').not($message.find('.emoji-picker-popup')).removeClass('show');
 
-        // Create or toggle emoji picker
+        // Create or toggle the associated emoji picker
         let $picker = $message.find('.emoji-picker-popup');
-
         if ($picker.length === 0) {
             const pickerHtml = `
             <div class="emoji-picker-popup">
@@ -782,11 +1018,42 @@ $(function () {
             $picker = $message.find('.emoji-picker-popup');
         }
 
-        $('.emoji-picker-popup').not($picker).removeClass('show');
-
         $picker.toggleClass('show');
-
         $picker.data('message-id', messageId);
+
+        // NEW: Adjust picker position if it's being shown
+        if ($picker.hasClass('show')) {
+            const $anchor = $message.find('.message-options-btn'); // Position relative to the main options button
+            const pickerWidth = $picker.outerWidth();
+            const pickerHeight = $picker.outerHeight();
+            const anchorRect = $anchor[0].getBoundingClientRect();
+            const windowHeight = $(window).height();
+
+            // Default position is above the button, centered
+            let top = anchorRect.top - pickerHeight - 8; // 8px spacing
+            let left = anchorRect.left + (anchorRect.width / 2) - (pickerWidth / 2);
+
+            // If it goes off the top of the screen, show it below
+            if (top < 10) {
+                top = anchorRect.bottom + 8;
+            }
+
+            // Basic horizontal boundary checks
+            if (left < 10) left = 10;
+            if (left + pickerWidth > $(window).width() - 10) {
+                left = $(window).width() - pickerWidth - 10;
+            }
+
+            $picker.css({
+                position: 'fixed',
+                top: top + 'px',
+                left: left + 'px',
+                right: 'auto',
+                bottom: 'auto',
+                margin: 0,
+                'z-index': 10000 
+            });
+        }
     });
 
     $('body').on('click', '.emoji-option', function (e) {
@@ -888,33 +1155,47 @@ $(function () {
         const $message = $(this).closest('.chat-message');
         messageToForwardId = $message.data('message-id');
 
-        const $list = $('#forward-friends-list');
+        const $list = $('#forward-conversations-list');
         $list.html('<p class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Đang tải danh sách...</p>');
         $('#forwardMessageModal').modal('show');
 
-        $.getJSON(urls.getFriends, function (response) {
-            if (response.success && response.friends) {
-                $list.empty();
-                response.friends.forEach(friend => {
-                    const friendHtml = `
+        // Fetch ALL conversations (private and group)
+        $.getJSON(urls.getConversations, { filter: 'all' }, function (conversations) {
+            $list.empty();
+            if (conversations && conversations.length > 0) {
+                const currentConversationId = getConversationId();
+
+                conversations.forEach(conv => {
+                    // Exclude the current conversation from the list
+                    const conversationIdentifier = conv.Type === 'Group' ? `group_${conv.Id}` : `private_${currentUsername}_${conv.Username}`.split('_').sort().join('_');
+                    if (conversationIdentifier === currentConversationId) {
+                        return; // Skip current conversation
+                    }
+
+                    const displayName = conv.DisplayName || conv.Name;
+                    const avatarUrl = conv.AvatarUrl || '/Content/default-avatar.png';
+                    const isGroup = conv.Type === 'Group';
+
+                    const conversationHtml = `
                     <div class="custom-control custom-checkbox p-2 border-bottom">
                         <input type="checkbox" 
                                class="custom-control-input" 
-                               id="forward-friend-${friend.Id}" 
-                               value="${friend.Username}">
+                               id="forward-conv-${conv.Id}" 
+                               data-id="${isGroup ? conv.Id : conv.Username}"
+                               data-type="${conv.Type}">
                         <label class="custom-control-label d-flex align-items-center" 
-                               for="forward-friend-${friend.Id}">
-                            <img src="${friend.AvatarUrl || '/Content/default-avatar.png'}" 
+                               for="forward-conv-${conv.Id}">
+                            <img src="${avatarUrl}" 
                                  style="width: 32px; height: 32px; border-radius: 50%; margin-right: 10px;"
                                  onerror="this.src='/Content/default-avatar.png';"
                                  />
-                            <span>${friend.DisplayName}</span>
+                            <span>${displayName} ${isGroup ? '(Nhóm)' : ''}</span>
                         </label>
                     </div>`;
-                    $list.append(friendHtml);
+                    $list.append(conversationHtml);
                 });
             } else {
-                $list.html('<p class="text-center text-danger">Không thể tải danh sách bạn bè.</p>');
+                $list.html('<p class="text-center text-danger">Không có cuộc trò chuyện nào để chuyển tiếp.</p>');
             }
         }).fail(function () {
             $list.html('<p class="text-center text-danger">Lỗi kết nối.</p>');
@@ -924,26 +1205,27 @@ $(function () {
     });
 
     $('#confirm-forward-btn').on('click', function () {
-        const selectedUsernames = $('#forward-friends-list input:checked').map(function () {
-            return $(this).val();
+        const selectedTargets = $('#forward-conversations-list input:checked').map(function () {
+            return {
+                Id: $(this).data('id'),
+                Type: $(this).data('type')
+            };
         }).get();
 
-        if (selectedUsernames.length === 0) {
-            alert('Vui lòng chọn ít nhất một người để chuyển tiếp.');
+        if (selectedTargets.length === 0) {
+            alert('Vui lòng chọn ít nhất một cuộc trò chuyện để chuyển tiếp.');
             return;
         }
 
         if (messageToForwardId) {
-            chatHub.server.forwardMessage(messageToForwardId, selectedUsernames)
+            // Serialize the targets array to a JSON string
+            const targetsJson = JSON.stringify(selectedTargets);
+
+            // Call the new hub method with the JSON string
+            chatHub.server.forwardMessageToTargets(messageToForwardId, targetsJson)
                 .done(function () {
                     $('#forwardMessageModal').modal('hide');
-
-                    // Show toast notification
-                    if (typeof showToast === 'function') {
-                        showToast('success', `Đã chuyển tiếp đến ${selectedUsernames.length} người`);
-                    } else {
-                        alert('Đã chuyển tiếp tin nhắn!');
-                    }
+                    alert(`Đã chuyển tiếp đến ${selectedTargets.length} cuộc trò chuyện.`);
                 })
                 .fail(function (err) {
                     console.error('Error forwarding message:', err);
@@ -974,6 +1256,19 @@ $(function () {
             loadConversations('all');
         }
     };
+
+    chatHub.client.receiveAIMessage = function (senderUsername, senderAvatar, messageJson, timestamp, messageId) {
+        renderMessage({
+            senderUsername: senderUsername,
+            senderAvatar: senderAvatar,
+            content: messageJson,
+            timestamp: timestamp,
+            messageId: messageId,
+            isSelf: false
+        });
+        hideTypingIndicator();
+    };
+
     console.log('✅ Friend list loader initialized');
 
     // ========== MESSAGE STATUS HANDLERS ========== 
@@ -1139,22 +1434,17 @@ $(function () {
 
     // ========== MESSAGE ACTIONS HANDLERS ========== 
     chatHub.client.onMessageDeleted = function (messageId, deletedForEveryone) {
-        const $message = $(`.chat-message[data-message-id="${messageId}"]`);
-
-        if ($message.length) {
-            if (deletedForEveryone) {
-                // Show "Message recalled" for both sides
-                const $bubble = $message.find('.chat-bubble');
-                $bubble.html(`
-                <div class="deleted-message">
-                    <i class="fas fa-ban"></i>
-                    <span>Tin nhắn đã được thu hồi</span>
-                </div>
-            `);
-                $bubble.css('background-color', 'transparent')
-                    .css('border', '1px solid #e0e0e0');
-                $message.find('.message-options').remove();
-            } else {
+        if (deletedForEveryone) {
+            // Re-render the message with the 'isDeleted' flag to ensure a consistent look
+            // with how recalled messages are displayed when loading chat history.
+            renderMessage({
+                messageId: messageId,
+                isDeleted: true
+            });
+        } else {
+            // This is for "delete for me" functionality, which just removes the message locally.
+            const $message = $(`.chat-message[data-message-id="${messageId}"]`);
+            if ($message.length) {
                 $message.fadeOut(300, function () {
                     $(this).remove();
                 });
@@ -1374,7 +1664,6 @@ $(function () {
             $sidebar.slideDown(300);
             $(this).addClass('active');
             loadConversationInfo();
-            loadNicknameInputs();
         }
     });
 
@@ -1402,6 +1691,156 @@ $(function () {
     $('#close-search-sidebar-btn').on('click', function () {
         $('#search-sidebar').slideUp(300);
         $('#toggle-search-sidebar-btn').removeClass('active');
+    });
+
+    // Conversation Context Menu Handlers
+    let menuHideTimeout;
+
+    // Show menu on hover
+    $('body').on('mouseenter', '.list-group-item', function () {
+        // Close any other open menus immediately
+        $('.conversation-menu').hide();
+        const $menu = $(this).find('.conversation-menu');
+        $menu.show();
+    });
+
+    // Hide menu on leave, with a delay
+    $('body').on('mouseleave', '.list-group-item', function () {
+        const $menu = $(this).find('.conversation-menu');
+        menuHideTimeout = setTimeout(function () {
+            $menu.hide();
+        }, 300);
+    });
+
+    // Keep menu open if mouse enters it
+    $('body').on('mouseenter', '.conversation-menu', function () {
+        clearTimeout(menuHideTimeout);
+    });
+
+    // Hide menu immediately if mouse leaves it
+    $('body').on('mouseleave', '.conversation-menu', function () {
+        $(this).hide();
+    });
+
+    // Handle clicking on the conversation item itself (not the menu)
+    $('body').on('click', '.list-group-item', function(e) {
+        // Only open chat if the click was not on a menu item
+        if (!$(e.target).closest('.conversation-menu').length) {
+            // This is where the original logic to open a chat window would go.
+            // For now, we assume it's handled by other parts of the code that listen to a click on this item.
+        }
+    });
+
+    // Pin Conversation
+    $('body').on('click', '.conv-pin-btn', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const $btn = $(this);
+        const conversationId = $btn.data('id');
+        const conversationType = $btn.data('type');
+
+        $.ajax({
+            url: urls.pinConversation,
+            type: 'POST',
+            data: {
+                __RequestVerificationToken: antiForgeryToken,
+                conversationId: conversationId,
+                conversationType: conversationType
+            },
+            success: function (response) {
+                if (response.success) {
+                    loadConversations('all'); // Reload to reflect pinned status
+                } else {
+                    alert('Lỗi: ' + response.message);
+                }
+            },
+            error: function () {
+                alert('Lỗi kết nối khi ghim hội thoại.');
+            }
+        });
+    });
+
+    // MODIFIED: This handler now ONLY handles private chat deletion.
+    $('body').on('click', '.conv-delete-btn', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const $btn = $(this);
+        const partnerUsername = $btn.data('username');
+        const $item = $btn.closest('.list-group-item');
+
+        if (confirm(`Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện với ${partnerUsername} không? Hành động này không thể hoàn tác.`)) {
+            $.ajax({
+                url: urls.clearHistory,
+                type: 'POST',
+                data: {
+                    __RequestVerificationToken: antiForgeryToken,
+                    partnerUsername: partnerUsername
+                },
+                success: function (response) {
+                    if (response.success) {
+                        $item.fadeOut(400, function() {
+                            $(this).remove();
+                        });
+                        alert('Đã xóa lịch sử trò chuyện.');
+                        if (currentChat.partnerUsername === partnerUsername) {
+                            $('#messagesList').empty();
+                            $('#private-chat-header').hide();
+                            $('#ai-chat-btn').click(); // Switch to default view
+                        }
+                    } else {
+                        alert('Lỗi khi xóa hội thoại: ' + response.message);
+                    }
+                },
+                error: function () {
+                    alert('Lỗi kết nối khi xóa hội thoại.');
+                }
+            });
+        }
+    });
+
+    // NEW: Handler for leaving a group.
+    $('body').on('click', '.conv-leave-group-btn', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const $btn = $(this);
+        const groupId = $btn.data('id');
+        const groupName = $btn.data('name');
+
+        if (confirm(`Bạn có chắc chắn muốn rời khỏi nhóm "${groupName}" không?`)) {
+            chatHub.server.leaveGroup(groupId).fail(function(err) {
+                alert('Không thể rời nhóm: ' + err);
+            });
+        }
+    });
+
+    // Report Conversation
+    $('body').on('click', '.conv-report-btn', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const username = $(this).data('username');
+        const reason = prompt(`Vui lòng nhập lý do báo cáo ${username}:`);
+
+        if (reason && reason.trim()) {
+            $.ajax({
+                url: urls.reportConversation,
+                type: 'POST',
+                data: {
+                    __RequestVerificationToken: antiForgeryToken,
+                    reportedUsername: username,
+                    reason: reason.trim()
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert('Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét trường hợp này.');
+                    } else {
+                        alert('Không thể gửi báo cáo: ' + (response.message || 'Lỗi không xác định.'));
+                    }
+                },
+                error: function () {
+                    alert('Lỗi kết nối khi gửi báo cáo.');
+                }
+            });
+        }
     });
 
     // ========== MESSAGE SEARCH ==========
@@ -1432,15 +1871,34 @@ $(function () {
                 resultsContainer.empty();
                 if (response.success && response.results.length > 0) {
                     response.results.forEach(msg => {
+                        // FIX: Parse content to get actual text
+                        let contentText = 'Tin nhắn không thể hiển thị';
+                        try {
+                            const contentObj = JSON.parse(msg.Content);
+                            if (contentObj.type === 'text') {
+                                contentText = contentObj.content;
+                            } else {
+                                // Provide a placeholder for non-text content
+                                contentText = `[${contentObj.type}]`;
+                            }
+                        } catch (e) {
+                            // Fallback for old messages that might not be JSON
+                            contentText = msg.Content;
+                        }
+
+                        // FIX: Use the parseTimestamp helper for correct date formatting
+                        const msgDate = parseTimestamp(msg.Timestamp);
+                        const timeString = msgDate ? msgDate.toLocaleString('vi-VN') : 'Thời gian không hợp lệ';
+
                         const resultHtml = `
                             <div class="search-result-item" data-message-id="${msg.Id}">
                                 <img src="${msg.SenderAvatar}" class="search-result-avatar" />
                                 <div class="search-result-content">
                                     <div>
                                         <span class="search-result-sender">${msg.SenderUsername}</span>
-                                        <span class="search-result-time">${new Date(msg.Timestamp).toLocaleString()}</span>
+                                        <span class="search-result-time">${timeString}</span>
                                     </div>
-                                    <div class="search-result-text">${msg.Content}</div>
+                                    <div class="search-result-text">${$('<div/>').text(contentText).html()}</div>
                                 </div>
                             </div>`;
                         resultsContainer.append(resultHtml);
@@ -1473,6 +1931,100 @@ $(function () {
 
     $('body').on('click', '#create-group-btn', function() {
         $('#createGroupModal').modal('show');
+    });
+
+    // Load friends when Create Group modal is shown
+    $('#createGroupModal').on('show.bs.modal', function () {
+        const $list = $('#groupMembersList');
+        $list.html('<p class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Đang tải danh sách bạn bè...</p>');
+
+        $.getJSON(urls.getFriends, function (response) {
+            if (response.success && response.friends) {
+                $list.empty();
+                if (response.friends.length === 0) {
+                    $list.html('<p class="text-center text-muted">Bạn chưa có bạn bè nào để tạo nhóm.</p>');
+                    return;
+                }
+                response.friends.forEach(friend => {
+                    const friendHtml = `
+                        <div class="list-group-item">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="group-member-${friend.Id}" value="${friend.Username}">
+                                <label class="custom-control-label" for="group-member-${friend.Id}">
+                                    <img src="${friend.AvatarUrl || '/Content/default-avatar.png'}" class="avatar-sm me-2" />
+                                    <span>${friend.DisplayName}</span>
+                                </label>
+                            </div>
+                        </div>`;
+                    $list.append(friendHtml);
+                });
+            } else {
+                $list.html('<p class="text-center text-danger">Không thể tải danh sách bạn bè.</p>');
+            }
+        }).fail(function () {
+            $list.html('<p class="text-center text-danger">Lỗi kết nối khi tải danh sách bạn bè.</p>');
+        });
+    });
+
+    // Handle confirm create group button click
+    $('#confirmCreateGroupBtn').off('click').on('click', function () {
+        const groupName = $('#groupNameInput').val().trim();
+        const memberUsernames = $('#groupMembersList input:checked').map(function () {
+            return $(this).val();
+        }).get();
+
+        if (!groupName) {
+            alert('Vui lòng nhập tên nhóm.');
+            return;
+        }
+
+        if (memberUsernames.length === 0) {
+            alert('Vui lòng chọn ít nhất một thành viên.');
+            return;
+        }
+
+        const $btn = $(this);
+        $btn.prop('disabled', true).text('Đang tạo...');
+
+        $.ajax({
+            url: '/Chat/CreateGroup',
+            type: 'POST',
+            data: {
+                __RequestVerificationToken: antiForgeryToken,
+                groupName: groupName,
+                memberUsernames: memberUsernames
+            },
+            success: function (response) {
+                if (response.success) {
+                    $('#createGroupModal').modal('hide');
+                    // Reset form
+                    $('#groupNameInput').val('');
+                    $('#groupMembersList input:checked').prop('checked', false);
+                    alert(`Đã tạo nhóm "${response.groupName}" thành công!`);
+
+                    // Workaround for server-side race condition:
+                    // Programmatically switch to the 'group' tab and then back to the 'all' tab.
+                    // This mimics the user's manual fix and forces a reliable refresh.
+                    $('.filter-tab[data-filter="group"]').click();
+                    setTimeout(function() {
+                        $('.filter-tab[data-filter="all"]').click();
+                    }, 150); // Delay to allow the 'group' filter to load before switching back.
+                } else {
+                    alert('Lỗi khi tạo nhóm: ' + response.message);
+                }
+            },
+            error: function (xhr, status, error) {
+                alert('Đã xảy ra lỗi khi tạo nhóm. Vui lòng kiểm tra console (F12) để biết chi tiết.');
+                console.error("Create Group Error:", {
+                    status: status,
+                    error: error,
+                    responseText: xhr.responseText
+                });
+            },
+            complete: function () {
+                $btn.prop('disabled', false).text('Tạo nhóm');
+            }
+        });
     });
 
     $('body').on('click', '#hang-up-btn', function () {
@@ -1529,107 +2081,147 @@ $(function () {
 
 
 
-    function loadConversationInfo() {
-        if (currentChat.mode !== 'private' || !currentChat.partnerUsername) {
-            return;
+    chatHub.client.onGroupAvatarChanged = function (groupId, newAvatarUrl) {
+        // Update avatar in conversation list
+        const $groupItem = $(`.group-item[data-id="${groupId}"]`);
+        if ($groupItem.length) {
+            // Replace with a simple img, assuming composite avatars are not used after a custom one is set.
+            const $avatarWrapper = $groupItem.find('.conv-avatar-wrapper');
+            $avatarWrapper.html(`<img src="${newAvatarUrl}" alt="Group Avatar" class="conv-avatar-img" onerror="this.src='/Content/default-avatar.png';" />`);
         }
 
-        $('#info-sidebar-avatar').attr('src', $('#chat-header-avatar').attr('src'));
-        $('#info-sidebar-displayname').text($('#chat-header-displayname').text());
+        // Update avatar in chat header if it's the current chat
+        if (currentChat.mode === 'group' && currentChat.groupId === groupId) {
+            $('#chat-header-avatar-wrapper').html(`<img id="chat-header-avatar" src="${newAvatarUrl}" alt="Avatar" class="chat-header-avatar me-2" />`);
+        }
 
-        $.getJSON(urls.getConversationInfo, { partnerUsername: currentChat.partnerUsername }, function (response) {
-            if (response.success) {
-                const $imagesList = $('#info-sidebar-images-list');
-                $imagesList.empty();
+        // Update avatar in info sidebar if it's open
+        if ($('#conversation-info-sidebar').is(':visible') && currentChat.mode === 'group' && currentChat.groupId === groupId) {
+            $('#info-sidebar-avatar').attr('src', newAvatarUrl);
+        }
 
-                if (response.images && response.images.length > 0) {
-                    response.images.forEach(img => {
-                        const $item = $(`
-                        <a href="${img.Url}" target="_blank" class="info-image-item">
-                            <img src="${img.Url}" alt="Ảnh" />
-                        </a>`);
-                        $imagesList.append($item);
-                    });
-                } else {
-                    $imagesList.html('<p class="text-muted text-center small p-3">Chưa có ảnh/video nào.</p>');
-                }
-
-                const $filesList = $('#info-sidebar-files-list');
-                $filesList.empty();
-
-                if (response.files && response.files.length > 0) {
-                    response.files.forEach(file => {
-                        const $item = $(`
-                        <a href="${file.Url}" target="_blank" class="info-file-item">
-                            <i class="fas fa-file-alt" style="font-size:1.5rem; margin-right:10px; color:#007bff;"></i>
-                            <div>
-                                <div style="font-weight:600; font-size:0.9rem;">${file.FileName}</div>
-                                <div style="font-size:0.75rem; color:#666;">${file.FileSize}</div>
-                            </div>
-                        </a>`);
-                        $filesList.append($item);
-                    });
-                } else {
-                    $filesList.html('<p class="text-muted text-center small p-3">Chưa có file nào.</p>');
-                }
-            }
-        });
-    }
-    function openPrivateChat(username) {
-        currentPartner = username;
-        loadChatHistory(username);
-
-        // Đánh dấu tất cả tin nhắn từ người này là đã đọc
-        markMessagesAsRead(username);
-    }
-
-    chatHub.client.messagesMarkedAsRead = function (readerUsername) {
-        console.log(`📖 ${readerUsername} đã đọc tin nhắn của bạn`);
-
-        $('#messagesList .chat-message.self').each(function () {
-            const $status = $(this).find('.message-status');
-            if ($status.data('status') !== 'Read') {
-                $status.replaceWith(renderMessageStatus('Read'));
-            }
-        });
+        alert('Một nhóm đã cập nhật ảnh đại diện.');
     };
 
-    function loadUnreadCounts() {
-        $.ajax({
-            url: '/Chat/GetUnreadMessageCounts',
-            method: 'GET',
-            success: function (data) {
-                Object.keys(data).forEach(function (username) {
-                    updateUnreadBadge(username, data[username]);
-                });
-            },
-            error: function (error) {
-                console.error('Error loading unread counts:', error);
-            }
-        });
-    }
+    function loadConversationInfo() {
+        // This function now handles ALL info sidebar content, including nicknames and avatar sections.
 
-    $(document).ready(function () {
-        loadUnreadCounts();
-    });
-    function loadNicknameInputs() {
-        if (currentChat.mode !== 'private') {
+        if (currentChat.mode === 'private') {
+            $('#nickname-section').show();
+            $('#change-group-avatar-btn').hide();
+
+            // Populate nicknames
+            const conversationId = getConversationId();
+            const nicks = chatNicknames[conversationId] || {};
+            $('#my-nickname-input').val(nicks[currentUsername] || '');
+            $('#partner-nickname-input').val(nicks[currentChat.partnerUsername] || '');
+            const partnerDisplayName = $('#chat-header-displayname').text() || currentChat.partnerUsername;
+            $('#partner-nickname-label').text(`Biệt danh của ${partnerDisplayName}`);
+            updateNicknamePreview();
+
+            // Populate avatar
+            const avatarSrc = $('#chat-header-avatar').attr('src');
+            // Ensure wrapper contains a simple img tag for private chat
+            $('#info-sidebar-avatar-wrapper').html(`<img id="info-sidebar-avatar" src="${avatarSrc}" />`);
+            $('#info-sidebar-displayname').text($('#chat-header-displayname').text());
+
+            // Fetch media
+            $.getJSON(urls.getConversationInfo, { partnerUsername: currentChat.partnerUsername }, function (response) {
+                if (response.success) {
+                    const $imagesList = $('#info-sidebar-images-list');
+                    $imagesList.empty();
+
+                    if (response.images && response.images.length > 0) {
+                        response.images.forEach(img => {
+                            $imagesList.append(`<a href="${img.Url}" target="_blank" class="info-image-item"><img src="${img.Url}" alt="Ảnh" /></a>`);
+                        });
+                    } else {
+                        $imagesList.html('<p class="text-muted text-center small p-3">Chưa có ảnh/video nào.</p>');
+                    }
+
+                    const $filesList = $('#info-sidebar-files-list');
+                    $filesList.empty();
+
+                    if (response.files && response.files.length > 0) {
+                        response.files.forEach(file => {
+                            $filesList.append(`<a href="${file.Url}" target="_blank" class="info-file-item"><i class="fas fa-file-alt" style="font-size:1.5rem; margin-right:10px; color:#007bff;"></i><div><div style="font-weight:600; font-size:0.9rem;">${file.FileName}</div><div style="font-size:0.75rem; color:#666;">${file.FileSize}</div></div></a>`);
+                        });
+                    } else {
+                        $filesList.html('<p class="text-muted text-center small p-3">Chưa có file nào.</p>');
+                    }
+                }
+            });
+
+        } else if (currentChat.mode === 'group') {
             $('#nickname-section').hide();
+            $('#change-group-avatar-btn').show();
+
+            const groupName = $('#chat-header-displayname').text();
+            const groupAvatarHtml = $('#chat-header-avatar-wrapper').html();
+
+            // Use the new wrapper for the sidebar avatar
+            $('#info-sidebar-avatar-wrapper').html(groupAvatarHtml);
+            // The actual image inside might not have the ID, so let's fix that
+            $('#info-sidebar-avatar-wrapper').find('img').attr('id', 'info-sidebar-avatar');
+
+            $('#info-sidebar-displayname').text(groupName);
+
+        } else {
+            // AI chat or other modes
+            $('#nickname-section').hide();
+            $('#change-group-avatar-btn').hide();
+        }
+    }
+    
+    // Handler for triggering file input
+    $('body').on('click', '#change-group-avatar-btn', function() {
+        if (currentChat.mode === 'group' && currentChat.groupId) {
+            $('#groupAvatarInput').click();
+        }
+    });
+
+    // Handler for file selection and upload
+    $('body').on('change', '#groupAvatarInput', function() {
+        const file = this.files[0];
+        if (!file) return;
+
+        const groupId = currentChat.groupId;
+        if (!groupId) {
+            alert('Lỗi: Không tìm thấy ID của nhóm.');
             return;
         }
 
-        $('#nickname-section').show();
-        const conversationId = getConversationId();
-        const nicks = chatNicknames[conversationId] || {};
+        const formData = new FormData();
+        formData.append('groupId', groupId);
+        formData.append('file', file);
 
-        $('#my-nickname-input').val(nicks[currentUsername] || '');
-        $('#partner-nickname-input').val(nicks[currentChat.partnerUsername] || '');
-
-        const partnerDisplayName = $('#chat-header-displayname').text() || currentChat.partnerUsername;
-        $('#partner-nickname-label').text(`Biệt danh của ${partnerDisplayName}`);
-
-        updateNicknamePreview();
-    }
+        $.ajax({
+            url: urls.changeGroupAvatar,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                '__RequestVerificationToken': antiForgeryToken
+            },
+            success: function(response) {
+                if (response.success) {
+                    alert('Đổi ảnh đại diện nhóm thành công!');
+                    // The UI update will be handled by the SignalR broadcast (onGroupAvatarChanged)
+                } else {
+                    alert('Lỗi: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Đã có lỗi xảy ra khi upload ảnh.');
+            },
+            complete: function() {
+                // Clear the file input
+                $('#groupAvatarInput').val('');
+            }
+        });
+    });
+    
 
     $('#my-nickname-input, #partner-nickname-input').on('input', function () {
         updateNicknamePreview();
@@ -1840,7 +2432,46 @@ $(function () {
         }
     });
 
-    // ========== BLOCK USER ========== 
+    // ========== BLOCK USER (NEW) ========== 
+    $('body').on('click', '#info-action-block-user', function (e) {
+        e.preventDefault();
+
+        if (currentChat.mode !== 'private' || !currentChat.partnerId) {
+            alert("Chức năng này chỉ khả dụng trong cuộc trò chuyện riêng tư.");
+            return;
+        }
+
+        const partnerName = $('#chat-header-displayname').text();
+        if (!confirm(`Bạn có chắc chắn muốn chặn ${partnerName} không?`)) {
+            return;
+        }
+
+        $.ajax({
+            url: urls.blockUser,
+            type: 'POST',
+            data: {
+                __RequestVerificationToken: antiForgeryToken,
+                friendId: currentChat.partnerId
+            },
+            success: function (response) {
+                if (response.success) {
+                    alert(response.message || `Đã chặn ${partnerName}.`);
+                    
+                    // Close the chat window for the blocked user
+                    $('#ai-chat-btn').click(); 
+
+                    // Refresh the conversation list to remove the blocked user
+                    loadConversations('all');
+                } else {
+                    alert('Lỗi: ' + (response.message || 'Không thể chặn người dùng này.'));
+                }
+            },
+            error: function () {
+                alert('Đã có lỗi kết nối xảy ra. Vui lòng thử lại.');
+            }
+        });
+    });
+
     $('#info-action-block').on('click', function (e) {
         e.preventDefault();
         const $blockBtn = $(this);
@@ -1897,28 +2528,36 @@ $(function () {
         $('.conversation-options-menu').removeClass('show');
     });
 
-    // Helper function to adjust menu position
     function adjustMenuPosition($menu, $button) {
+        const menuWidth = $menu.outerWidth();
         const menuHeight = $menu.outerHeight();
-        const buttonOffset = $button.offset();
-        const buttonHeight = $button.outerHeight();
+        const buttonRect = $button[0].getBoundingClientRect(); // Lấy vị trí chính xác so với màn hình
+        const windowWidth = $(window).width();
         const windowHeight = $(window).height();
 
-        // Check if menu fits below the button
-        if (buttonOffset.top + buttonHeight + menuHeight < windowHeight) {
-            $menu.removeClass('below').css({
-                position: 'fixed',
-                top: buttonOffset.top + buttonHeight + 5 + 'px',
-                bottom: ''
-            });
-        } else {
-            // Position above the button
-            $menu.addClass('below').css({
-                position: 'fixed',
-                top: '',
-                bottom: (windowHeight - (buttonOffset.top)) + 'px'
-            });
+        let top = buttonRect.bottom + 5; // Mặc định hiện bên dưới nút
+        let left = buttonRect.right - menuWidth; // Mặc định căn lề phải với nút (để menu mở sang trái)
+
+        if (top + menuHeight > windowHeight - 10) {
+            top = buttonRect.top - menuHeight - 5;
         }
+
+        if (left < 10) {
+            left = 10; 
+        }
+
+        if (left + menuWidth > windowWidth) {
+            left = windowWidth - menuWidth - 10;
+        }
+
+        $menu.addClass('fixed').css({
+            position: 'fixed',
+            top: top + 'px',
+            left: left + 'px',
+            right: 'auto',
+            bottom: 'auto',
+            margin: 0
+        });
     }
 
     // ========== IMAGE LIGHTBOX ========== 
@@ -2007,7 +2646,142 @@ $(function () {
         }
     });
 
+    // ========== VOICE RECORDING ==========
+    async function startRecording() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            isRecording = true;
+            audioChunks = [];
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                uploadVoiceMessage(audioBlob);
+                stream.getTracks().forEach(track => track.stop()); // Stop microphone access
+            };
+
+            mediaRecorder.start();
+            updateRecordingUI(true);
+
+        } catch (err) {
+            console.error("Error accessing microphone:", err);
+            alert("Không thể truy cập microphone. Vui lòng cấp quyền truy cập.");
+        }
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && isRecording) {
+            mediaRecorder.stop();
+            isRecording = false;
+            updateRecordingUI(false);
+        }
+    }
+
+    function updateRecordingUI(isRecordingActive) {
+        const $recordBtn = $('#record-voice-btn');
+        const $timer = $('#recording-timer');
+        const $messageInput = $('#messageInput');
+        const $otherButtons = $('#emoji-button, #quick-image-btn, #toggle-attach-menu, #sendButton');
+
+        if (isRecordingActive) {
+            $recordBtn.find('i').removeClass('fa-microphone').addClass('fa-stop-circle').css('color', '#d9534f');
+            $timer.show();
+            $messageInput.hide();
+            $otherButtons.hide();
+
+            recordingStartTime = Date.now();
+            recordingInterval = setInterval(() => {
+                const elapsedSeconds = Math.floor((Date.now() - recordingStartTime) / 1000);
+                const minutes = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
+                const seconds = (elapsedSeconds % 60).toString().padStart(2, '0');
+                $timer.find('span').text(`${minutes}:${seconds}`);
+            }, 1000);
+        } else {
+            $recordBtn.find('i').removeClass('fa-stop-circle').addClass('fa-microphone').css('color', '');
+            $timer.hide();
+            $messageInput.show();
+            $otherButtons.show();
+            clearInterval(recordingInterval);
+            $timer.find('span').text('00:00');
+        }
+    }
+
+    function uploadVoiceMessage(audioBlob) {
+        const formData = new FormData();
+        formData.append('voice', audioBlob, `voice-message-${Date.now()}.wav`);
+
+        // Show a temporary "uploading" message
+        const tempId = `temp_voice_${Date.now()}`;
+        renderMessage({
+            senderUsername: currentUsername,
+            content: JSON.stringify({ type: 'text', content: 'Đang gửi tin nhắn thoại...' }),
+            timestamp: new Date().toISOString(),
+            isSelf: true,
+            status: 'Pending',
+            messageId: tempId
+        });
+
+        $.ajax({
+            url: '/Upload/Voice', // New endpoint
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+                // Remove temporary message
+                $(`.chat-message[data-message-id="${tempId}"]`).remove();
+
+                if (response.success) {
+                    const contentObj = {
+                        type: 'voice',
+                        content: response.filePath,
+                        fileName: 'voice_message.wav',
+                        fileSize: response.fileSize
+                    };
+                    const messageJson = JSON.stringify(contentObj);
+                    const finalTempId = `temp_final_voice_${Date.now()}`;
+
+                    renderMessage({
+                        senderUsername: currentUsername,
+                        content: messageJson,
+                        timestamp: new Date().toISOString(),
+                        isSelf: true,
+                        status: 'Pending',
+                        messageId: finalTempId
+                    });
+
+                    chatHub.server.sendPrivateMessage(currentChat.partnerUsername, messageJson, finalTempId, null);
+                } else {
+                    alert('Lỗi khi tải tệp thoại lên: ' + (response.message || 'Không có phản hồi từ server.'));
+                }
+            },
+            error: function (xhr, status, error) {
+                $(`.chat-message[data-message-id="${tempId}"]`).remove();
+                alert('Đã xảy ra lỗi mạng khi tải tệp thoại lên. Kiểm tra console (F12) để biết thêm chi tiết.');
+                console.error("Voice upload error:", {
+                    status: status,
+                    error: error,
+                    responseText: xhr.responseText
+                });
+            }
+        });
+    }
+
+    $('#record-voice-btn').on('click', function () {
+        if (isRecording) {
+            stopRecording();
+        } else {
+            startRecording();
+        }
+    });
+
     // ========== FILE & IMAGE UPLOAD ==========
+
+    // ========== FILE UPLOAD - FIXED VERSION ========== 
 
     // Trigger file input when quick image button is clicked
     $('body').on('click', '#quick-image-btn', function () {
@@ -2018,56 +2792,79 @@ $(function () {
         $('#imageUploadInput').click();
     });
 
-    // Handle image selection and show preview
+
     $('#imageUploadInput').on('change', function (e) {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
-        tempFilesToSend = files; // Store files temporarily
+        tempFilesToSend = Array.from(files);
         const previewContainer = $('#imagePreviewContainer');
         previewContainer.empty();
 
-        for (let i = 0; i < files.length; i++) {
+        tempFilesToSend.forEach(file => {
             const reader = new FileReader();
             reader.onload = function (event) {
-                const imgHtml = `<img src="${event.target.result}" class="img-thumbnail" style="max-width: 100px; max-height: 100px;"/>`;
-                previewContainer.append(imgHtml);
+                const isVideo = file.type.startsWith('video/');
+
+                if (isVideo) {
+                    previewContainer.append(`
+                    <video controls style="width:120px;height:120px;object-fit:cover;margin:5px;border-radius:8px;">
+                        <source src="${event.target.result}" type="${file.type}">
+                    </video>
+                `);
+                } else {
+                    previewContainer.append(`
+                    <img src="${event.target.result}" 
+                         class="img-fluid rounded"
+                         style="width:120px;height:120px;object-fit:cover;margin:5px;" />
+                `);
+                }
             };
-            reader.readAsDataURL(files[i]);
-        }
+            reader.readAsDataURL(file);
+        });
 
         $('#imagePreviewModal').modal('show');
     });
 
-    // Handle the actual image sending after user confirms in modal
-    $('body').on('click', '#sendImageButton', function () {
-        if (!tempFilesToSend || tempFilesToSend.length === 0) return;
 
-        const formData = new FormData();
-        for (let i = 0; i < tempFilesToSend.length; i++) {
-            formData.append('files', tempFilesToSend[i]);
+    // ✅ Handle the actual image sending - FIXED VERSION
+    $('#sendImageButton').off('click').on('click', function () {
+        // ✅ Kiểm tra tempFilesToSend thay vì input
+        if (!tempFilesToSend || tempFilesToSend.length === 0) {
+            alert('Vui lòng chọn file để gửi.');
+            return;
         }
 
-        $(this).prop('disabled', true).text('Đang gửi...');
+        // ✅ Dùng trực tiếp tempFilesToSend
+        const formData = new FormData();
+        tempFilesToSend.forEach(file => {
+            formData.append('files', file);
+        });
+
+        const $btn = $(this);
+        $btn.prop('disabled', true).text('Đang gửi...');
 
         $.ajax({
-            url: '/Upload/Multiple', // CORRECTED ENDPOINT
+            url: '/Upload/Multiple',
             type: 'POST',
             data: formData,
             processData: false,
             contentType: false,
             success: function (response) {
+                console.log('✅ Upload response:', response);
+
                 if (response.success && response.files) {
-                    response.files.forEach(fileInfo => {
+                    response.files.forEach(fileData => {
                         const contentObj = {
-                            type: fileInfo.type, // Use 'type' from response
-                            content: fileInfo.filePath, // Use 'filePath' from response
-                            fileName: fileInfo.fileName,
-                            fileSize: fileInfo.fileSize
+                            type: fileData.type,
+                            content: fileData.filePath,
+                            fileName: fileData.fileName,
+                            fileSize: fileData.fileSize
                         };
                         const messageJson = JSON.stringify(contentObj);
                         const tempId = `temp_file_${Date.now()}_${Math.random()}`;
 
+                        // Render message locally
                         renderMessage({
                             senderUsername: currentUsername,
                             content: messageJson,
@@ -2077,22 +2874,56 @@ $(function () {
                             messageId: tempId
                         });
 
-                        chatHub.server.sendPrivateMessage(currentChat.partnerUsername, messageJson, tempId, null);
+                        // Send via SignalR
+                        if (currentChat.mode === 'private') {
+                            chatHub.server.sendPrivateMessage(
+                                currentChat.partnerUsername,
+                                messageJson,
+                                tempId,
+                                null
+                            );
+                        } else if (currentChat.mode === 'group') {
+                            chatHub.server.sendGroupMessage(currentChat.groupId, messageJson);
+                        }
                     });
+
+                    // Hide AI welcome screen if in AI mode
+                    if (currentChat.mode === 'ai') {
+                        $('#ai-welcome-screen').hide();
+                        $('.message-area').show();
+                    }
+
+                    // --- FIX: Refresh conversation info if sidebar is open ---
+                    if ($('#conversation-info-sidebar').is(':visible')) {
+                        loadConversationInfo();
+                    }
+                    // --- END FIX ---
+
                 } else {
-                    alert('Lỗi khi tải tệp lên: ' + (response.message || 'Không có phản hồi từ server.'));
+                    alert('Lỗi upload: ' + (response.message || 'Không rõ nguyên nhân'));
                 }
             },
-            error: function () {
-                alert('Đã xảy ra lỗi mạng khi tải tệp lên.');
+            error: function (xhr, status, error) {
+                console.error('❌ Upload error:', xhr.responseText);
+                alert('Lỗi kết nối: ' + error);
             },
             complete: function () {
+                // ✅ Reset everything
+                $btn.prop('disabled', false).text('Gửi');
                 $('#imagePreviewModal').modal('hide');
-                $('#sendImageButton').prop('disabled', false).text('Gửi');
+                $('#imagePreviewContainer').empty();
                 tempFilesToSend = null;
                 $('#imageUploadInput').val('');
             }
         });
+    });
+
+    // ✅ Clear temp files when modal is closed without sending
+    $('#imagePreviewModal').on('hidden.bs.modal', function () {
+        if (tempFilesToSend !== null) {
+            tempFilesToSend = null;
+            $('#imagePreviewContainer').empty();
+        }
     });
 
     // Generic file upload (for the paperclip button)
@@ -2104,60 +2935,67 @@ $(function () {
         $('#fileUploadInput').click();
     });
 
+    // Handle generic file upload - MODIFIED TO USE PREVIEW MODAL
     $('#fileUploadInput').on('change', function (e) {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
-        if (!confirm(`Bạn có chắc muốn gửi ${files.length} tệp?`)) {
-            $(this).val('');
-            return;
+        tempFilesToSend = Array.from(files);
+        const previewContainer = $('#imagePreviewContainer');
+        previewContainer.empty();
+
+        // Helper function to format file size
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
         }
 
-        const formData = new FormData();
-        for (let i = 0; i < files.length; i++) {
-            formData.append('files', files[i]);
-        }
+        tempFilesToSend.forEach(file => {
+            const isImage = file.type.startsWith('image/');
+            const isVideo = file.type.startsWith('video/');
 
-        $.ajax({
-            url: '/Upload/Multiple', // CORRECTED ENDPOINT
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (response) {
-                if (response.success && response.files) {
-                    response.files.forEach(fileInfo => {
-                        const contentObj = {
-                            type: fileInfo.type, // Use 'type' from response
-                            content: fileInfo.filePath, // Use 'filePath' from response
-                            fileName: fileInfo.fileName,
-                            fileSize: fileInfo.fileSize
-                        };
-                        const messageJson = JSON.stringify(contentObj);
-                        const tempId = `temp_file_${Date.now()}_${Math.random()}`;
-
-                        renderMessage({
-                            senderUsername: currentUsername,
-                            content: messageJson,
-                            timestamp: new Date().toISOString(),
-                            isSelf: true,
-                            status: 'Pending',
-                            messageId: tempId
-                        });
-
-                        chatHub.server.sendPrivateMessage(currentChat.partnerUsername, messageJson, tempId, null);
-                    });
-                } else {
-                    alert('Lỗi khi tải tệp lên: ' + (response.message || 'Không có phản hồi từ server.'));
-                }
-            },
-            error: function () {
-                alert('Đã xảy ra lỗi mạng khi tải tệp lên.');
-            },
-            complete: function () {
-                $('#fileUploadInput').val('');
+            if (isImage || isVideo) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    if (isVideo) {
+                        previewContainer.append(`
+                        <div class="file-preview-item" style="width: 120px; height: 120px;">
+                            <video controls style="width:100%; height:100%; object-fit:cover; border-radius:8px;">
+                                <source src="${event.target.result}" type="${file.type}">
+                            </video>
+                        </div>
+                        `);
+                    } else {
+                         previewContainer.append(`
+                        <div class="file-preview-item" style="width: 120px; height: 120px;">
+                             <img src="${event.target.result}" 
+                                 class="img-fluid rounded"
+                                 style="width:100%; height:100%; object-fit:cover;" />
+                        </div>
+                        `);
+                    }
+                };
+                reader.readAsDataURL(file);
+            } else {
+                // Generic file preview
+                const fileSize = formatBytes(file.size);
+                previewContainer.append(`
+                    <div class="file-preview-item text-center p-2" style="background:#f0f0f0; border-radius:8px; width: 120px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <i class="fas fa-file-alt" style="font-size:2.5rem; color:#007bff; margin-bottom: 8px;"></i>
+                        <div style="font-weight:600; font-size:0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%;" title="${file.name}">${file.name}</div>
+                        <div style="font-size:0.7rem; color:#666;">${fileSize}</div>
+                    </div>
+                `);
             }
         });
+
+        $('#imagePreviewModal').modal('show');
+        // Clear the input value so the user can select the same file again if they cancel
+        $(this).val('');
     });
 
 
@@ -2167,9 +3005,9 @@ $(function () {
 
     function loadChatHistory(partnerUsername) {
         if (!partnerUsername) return;
-
+    
         console.log('🔄 Loading chat history for:', partnerUsername);
-
+    
         $.getJSON(urls.getChatHistory, { partnerUsername: partnerUsername }, function (response) {
             if (response.success) {
                 $('#messagesList').empty();
@@ -2198,7 +3036,43 @@ $(function () {
             console.error('❌ AJAX error loading chat history:', error);
         });
     }
-
+    
+    function loadGroupChatHistory(groupId) {
+        if (!groupId) return;
+    
+        console.log('🔄 Loading group chat history for:', groupId);
+    
+        // Assuming an endpoint `/Chat/GetGroupChatHistory` exists.
+        $.getJSON(urls.getGroupChatHistory, { groupId: groupId }, function (response) {
+            if (response.success) {
+                $('#messagesList').empty();
+                response.messages.forEach(msg => {
+                    renderMessage({
+                        senderUsername: msg.SenderUsername,
+                        senderAvatar: msg.SenderAvatar,
+                        content: msg.Content,
+                        timestamp: msg.Timestamp,
+                        isSelf: msg.SenderUsername === currentUsername,
+                        status: msg.Status,
+                        messageId: msg.Id,
+                        parentMessage: msg.ParentMessage,
+                        reactions: msg.Reactions,
+                        forwardedFrom: msg.ForwardedFrom,
+                        editedAt: msg.EditedAt,
+                        isDeleted: msg.IsDeleted
+                    });
+                });
+                $('#messagesList').scrollTop($('#messagesList')[0].scrollHeight);
+                console.log('✅ Group chat history loaded:', response.messages.length, 'messages');
+            } else {
+                $('#messagesList').html('<div class="text-center text-muted p-3">Không thể tải lịch sử nhóm.</div>');
+                console.error('❌ Failed to load group chat history:', response.message);
+            }
+        }).fail(function (xhr, status, error) {
+            $('#messagesList').html('<div class="text-center text-danger p-3">Lỗi máy chủ khi tải lịch sử nhóm.</div>');
+            console.error('❌ AJAX error loading group chat history:', error);
+        });
+    }
 
     function updateUnreadBadge(username, count) {
         var $conversationItem = $(`.conversation-item[data-username="${username}"]`);
@@ -2230,82 +3104,126 @@ $(function () {
         }
     }
 
-    function switchChat(target) {
-        hideTypingIndicator();
+function switchChat(target) {
+    hideTypingIndicator();
 
-        // ✅ Stop typing
-        if (isTyping && currentChat.mode === 'private' && currentChat.partnerUsername) {
-            clearTimeout(typingTimer);
-            isTyping = false;
-            if (chatHub.server.userStoppedTyping) {
-                chatHub.server.userStoppedTyping(currentChat.partnerUsername);
-            }
-        }
-
-        $('#messagesList').empty();
-        $('.conversation-list .list-group-item-action').removeClass('active');
-        $(target).addClass('active');
-
-        currentChat.mode = $(target).data('chat-mode');
-
-        // ✅ Apply background
-        const conversationId = getConversationId();
-        const savedBg = chatBackgrounds[conversationId];
-        applyBackground(savedBg);
-
-        if (currentChat.mode === 'ai') {
-            // AI mode
-            $('#ai-chat-header').show();
-            $('#private-chat-header').hide();
-            $('#messageInput').attr('placeholder', 'Hỏi tôi bất cứ điều gì...?');
-            $('#ai-welcome-screen').show();
-            $('.message-area').hide();
-            currentChat.partnerUsername = null;
-            currentChat.groupId = null;
-
-        } else if (currentChat.mode === 'private') {
-            // ✅ ĐẶT GIÁ TRỊ TRƯỚC KHI DÙNG
-            currentChat.partnerUsername = $(target).data('username');
-
-            // UI updates
-            $('#private-chat-header').show();
-            $('#ai-chat-header').hide();
-            $('#messageInput').attr('placeholder', 'Nhập tin nhắn...');
-            $('#user-chat-header').show();
-            $('#user-chat-buttons').show();
-            $('#ai-welcome-screen').hide();
-            $('.message-area').show();
-
-            // ✅ Join private group
-            if (chatHub.server.joinPrivateGroup) {
-                chatHub.server.joinPrivateGroup(currentChat.partnerUsername)
-                    .done(() => console.log(`✅ Joined private group with ${currentChat.partnerUsername}`))
-                    .fail(err => console.error('❌ Failed to join private group:', err));
-            }
-
-            // ✅ Update header
-            const displayName = $(target).find('strong').text().trim();
-            const avatarSrc = $(target).data('avatar-url') || '/Content/default-avatar.png';
-
-            const partnerNickname = getNickname(currentChat.partnerUsername, conversationId);
-            $('#chat-header-displayname').text(partnerNickname || displayName);
-            $('#chat-header-avatar').attr('src', avatarSrc);
-
-            const isOnline = isUserOnline(currentChat.partnerUsername);
-            $('#chat-header-status').text(getLastSeenText(currentChat.partnerUsername))
-                .toggleClass('online', isOnline);
-
-            // ✅ Update hidden chat toggle
-            const hiddenChats = JSON.parse(localStorage.getItem('hiddenChats') || '[]');
-            $('#info-action-hide-chat').prop('checked', hiddenChats.includes(currentChat.partnerUsername));
-
-            // ✅ Load chat history (sau khi đã set currentChat.partnerUsername)
-            loadChatHistory(currentChat.partnerUsername);
-
-            // ✅ Mark as read (sau khi đã set currentChat.partnerUsername)
-            markMessagesAsRead(currentChat.partnerUsername);
+    // Stop typing if the user was typing
+    if (isTyping && currentChat.mode === 'private' && currentChat.partnerUsername) {
+        clearTimeout(typingTimer);
+        isTyping = false;
+        if (chatHub.server.userStoppedTyping) {
+            chatHub.server.userStoppedTyping(currentChat.partnerUsername);
         }
     }
+
+    // Hide sidebars to ensure full width view on chat switch
+    $('#conversation-info-sidebar').hide();
+    $('#search-sidebar').hide();
+    $('#toggle-info-sidebar-btn').removeClass('active');
+    $('#toggle-search-sidebar-btn').removeClass('active');
+
+    $('#messagesList').empty();
+    $('.conversation-list .list-group-item-action').removeClass('active');
+    $(target).addClass('active');
+
+    currentChat.mode = $(target).data('chat-mode');
+
+    // Apply the correct background for the conversation
+    const conversationId = getConversationId();
+    const savedBg = chatBackgrounds[conversationId];
+    applyBackground(savedBg);
+
+    if (currentChat.mode === 'ai') {
+        // AI mode UI setup
+        $('.conversation-list').show(); // Hide conversation list for more space
+        $('#ai-chat-header').show();
+        $('#private-chat-header').hide();
+        $('#messageInput').attr('placeholder', 'Hỏi tôi bất cứ điều gì...?');
+        $('#ai-welcome-screen').show();
+        $('.message-area').hide();
+        currentChat.partnerUsername = null;
+        currentChat.groupId = null;
+
+    } else if (currentChat.mode === 'private') {
+        // Set partner username before using it
+        currentChat.partnerUsername = $(target).data('username');
+        currentChat.partnerId = $(target).data('id'); 
+
+        // Private chat UI setup
+        $('.conversation-list').show(); // Ensure conversation list is visible
+        $('#private-chat-header').show();
+        $('#ai-chat-header').hide();
+        $('#messageInput').attr('placeholder', 'Nhập tin nhắn...');
+        $('#user-chat-header').show();
+        $('#user-chat-buttons').show();
+        $('#ai-welcome-screen').hide();
+        $('.message-area').show();
+
+        // Restore header buttons for private chat
+        $('#start-voice-call-btn, #start-video-call-btn').show();
+        $('#create-group-btn').show();
+
+        // Restore the avatar structure to a single image
+        $('#chat-header-avatar-wrapper').html('<img id="chat-header-avatar" src="" alt="Avatar" class="chat-header-avatar me-2" />');
+
+        // Join SignalR group for private chat
+        if (chatHub.server.joinPrivateGroup) {
+            chatHub.server.joinPrivateGroup(currentChat.partnerUsername)
+                .done(() => console.log(`✅ Joined private group with ${currentChat.partnerUsername}`))
+                .fail(err => console.error('❌ Failed to join private group:', err));
+        }
+
+        // Update chat header with partner info
+        const displayName = $(target).find('strong').text().trim();
+        const avatarSrc = $(target).data('avatar-url') || '/Content/default-avatar.png';
+
+        const partnerNickname = getNickname(currentChat.partnerUsername, conversationId);
+        $('#chat-header-displayname').text(partnerNickname || displayName);
+        $('#chat-header-avatar').attr('src', avatarSrc);
+
+        const isOnline = isUserOnline(currentChat.partnerUsername);
+        $('#chat-header-status').text(getLastSeenText(currentChat.partnerUsername))
+            .toggleClass('online', isOnline);
+
+        // Update hidden chat toggle based on local storage
+        const hiddenChats = JSON.parse(localStorage.getItem('hiddenChats') || '[]');
+        $('#info-action-hide-chat').prop('checked', hiddenChats.includes(currentChat.partnerUsername));
+
+        // Load chat history for the selected partner
+        loadChatHistory(currentChat.partnerUsername);
+
+        // Mark messages as read for the selected partner
+        markMessagesAsRead(currentChat.partnerUsername);
+    } else if (currentChat.mode === 'group') {
+        // Set current chat context
+        currentChat.groupId = $(target).data('id');
+        currentChat.partnerUsername = null;
+
+        // Configure UI for group chat
+        $('#private-chat-header').show();
+        $('#ai-chat-header').hide();
+        $('#messageInput').attr('placeholder', 'Nhập tin nhắn trong nhóm...');
+        $('#user-chat-header').show();
+        $('#user-chat-buttons').show();
+        $('#ai-welcome-screen').hide();
+        $('.message-area').show();
+
+        // Update chat header with group info from the conversation list item
+        const groupName = $(target).find('strong').text().trim();
+        const avatarHtml = $(target).find('.conv-avatar-wrapper').html(); // Get the inner HTML of the avatar container
+
+        $('#chat-header-displayname').text(groupName);
+        $('#chat-header-avatar-wrapper').html(avatarHtml); // Replace the header avatar with the group's avatar
+        $('#chat-header-status').text('Nhóm chat');
+
+        // Configure header buttons for a group chat (hide irrelevant buttons)
+        $('#start-voice-call-btn, #start-video-call-btn, #create-group-btn').hide();
+        $('#toggle-search-sidebar-btn, #toggle-info-sidebar-btn, #toggle-conversations-btn').show();
+
+        // Load the group's message history
+        loadGroupChatHistory(currentChat.groupId);
+    }
+}
 
     $('.conversation-list').on('click', '.list-group-item-action', function (e) {
         e.preventDefault();
@@ -2314,153 +3232,6 @@ $(function () {
 
     $('#toggle-conversations-btn').on('click', function () {
         $('.conversation-list').toggle();
-    });
-
-
-    // ========== FILE UPLOAD - FIXED ========== 
-    $('#imageUploadInput, #fileUploadInput').on('change', function () {
-        const files = this.files;
-        const container = $('#imagePreviewContainer');
-        container.empty();
-
-        if (files.length > 0) {
-            // Lưu files vào biến tạm TRƯỚC KHI clear input
-            tempFilesToSend = Array.from(files);
-
-            tempFilesToSend.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    let preview;
-                    if (file.type.startsWith('image/')) {
-                        preview = `<img src="${e.target.result}" class="img-fluid rounded" style="width:120px;height:120px;object-fit:cover;" />`;
-                    } else if (file.type.startsWith('video/')) {
-                        preview = `<video src="${e.target.result}" controls style="width:120px;height:120px;"></video>`;
-                    } else {
-                        const ext = file.name.split('.').pop().toLowerCase();
-                        let icon = '📄';
-                        if (['pdf'].includes(ext)) icon = '📕';
-                        else if (['doc', 'docx'].includes(ext)) icon = '📘';
-                        else if (['xls', 'xlsx'].includes(ext)) icon = '📗';
-                        else if (['zip', 'rar', '7z'].includes(ext)) icon = '📦';
-
-                        preview = `<div style="width:120px;height:120px;border:1px solid #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;">${icon}<div style="font-size:0.7rem;text-align:center;margin-top:5px;">${file.name}</div></div>`;
-                    }
-                    container.append(preview);
-                };
-                reader.readAsDataURL(file);
-            });
-            $('#imagePreviewModal').modal('show');
-        }
-        $(this).val(null);
-    });
-
-    $('#sendImageButton').off('click').on('click', function () {
-        // Dùng biến tạm thay vì lấy từ input (vì input đã bị clear)
-        if (!tempFilesToSend || tempFilesToSend.length === 0) {
-            alert('Vui lòng chọn file để gửi.');
-            return;
-        }
-
-        let filesToUpload = tempFilesToSend;
-        const formData = new FormData();
-        for (let i = 0; i < filesToUpload.length; i++) {
-            formData.append('files', filesToUpload[i]);
-        }
-
-        $('#sendImageButton').prop('disabled', true).text('Đang gửi...');
-
-        $.ajax({
-            url: '/Upload/Multiple',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (response) {
-                console.log('✅ Upload response:', response); 
-
-                if (response.success && response.files) {
-                    response.files.forEach(fileData => {
-                        const now = new Date();
-                        const vietTime = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-
-                        let bubbleContentHtml = "";
-
-                        if (fileData.type === "image") {
-                            bubbleContentHtml = `<img src="${fileData.filePath}" class="img-fluid rounded" style="max-width: 250px; cursor: pointer;" onclick="window.open(this.src, '_blank');" />`;
-                        } else if (fileData.type === "video") {
-                            bubbleContentHtml = `<video controls src="${fileData.filePath}" style="max-width: 300px; border-radius: 10px;"></video>`;
-                        } else if (fileData.type === "file") {
-                            bubbleContentHtml = `
-                        <a href="${fileData.filePath}" target="_blank" style="display:flex; align-items:center; padding:8px 12px; background:#f0f0f0; border-radius:8px; text-decoration:none; color:#333;">
-                            <i class="fas fa-file-alt" style="font-size:1.5rem; margin-right:10px; color:#007bff;"></i>
-                            <div>
-                                <div style="font-weight:600; font-size:0.9rem;">${fileData.fileName}</div>
-                                <div style="font-size:0.75rem; color:#666;">${fileData.fileSize}</div>
-                            </div>
-                        </a>`;
-                        }
-
-                        const selfMessageHtml = `
-                    <div class="chat-message self" data-timestamp="${now.toISOString()}">
-                        <div class="message-container">
-                            <div class="chat-bubble">
-                                ${bubbleContentHtml}
-                                <span class="bubble-time">${vietTime}</span>
-                            </div>
-                        </div>
-                    </div>`;
-
-                        const messagesList = $('#messagesList');
-                        messagesList.append(selfMessageHtml);
-                        messagesList.scrollTop(messagesList[0].scrollHeight);
-
-                        const msgJson = JSON.stringify({
-                            type: fileData.type,
-                            content: fileData.filePath,
-                            fileName: fileData.fileName || '',
-                            fileSize: fileData.fileSize || ''
-                        });
-
-                        if (window.currentChat.mode === 'private') {
-                            window.chatHub.server.sendPrivateMessage(window.currentChat.partnerUsername, msgJson);
-                        } else if (window.currentChat.mode === 'ai') {
-                            window.chatHub.server.sendMessageToAI(`[${fileData.type}] ${fileData.filePath}`);
-                        }
-                    });
-
-                    $('#imagePreviewModal').modal('hide');
-                    $('#imageUploadInput').val('');
-                    $('#fileUploadInput').val('');
-
-                    if (window.currentChat.mode === 'ai') {
-                        $('#ai-welcome-screen').hide();
-                        $('.message-area').show();
-                    }
-                } else {
-                    alert('Lỗi upload: ' + (response.message || 'Không rõ nguyên nhân'));
-                }
-            },
-            error: function (xhr, status, error) {
-                console.error('❌ Upload error:', xhr.responseText);
-                alert('Lỗi kết nối: ' + error + '\n\nChi tiết: ' + xhr.responseText);
-            },
-            complete: function () {
-                $('#sendImageButton').prop('disabled', false).text('Gửi');
-                tempFilesToSend = null; // Clear files tạm sau khi gửi xong
-            }
-        });
-    });
-
-    // Clear files tạm khi đóng modal mà không gửi
-    $('#imagePreviewModal').on('hidden.bs.modal', function () {
-        if (tempFilesToSend !== null) {
-            tempFilesToSend = null;
-            $('#imagePreviewContainer').empty();
-        }
-    });
-
-    $('#quick-image-btn').on('click', function () {
-        $('#imageUploadInput').click();
     });
 
     $('#toggle-attach-menu').on('click', function (e) {
@@ -2558,6 +3329,57 @@ $(function () {
             console.log('✅ Emoji Picker initialized');
         }
     });
+    $('body').on('click', '.ai-suggest-btn', function () {
+        const text = $(this).text().trim();
+
+        if (!text) return;
+
+        $('#ai-welcome-screen').hide();
+        $('.message-area').show();
+
+        renderMessage({
+            senderUsername: currentUsername,
+            content: JSON.stringify({ type: 'text', content: text }),
+            timestamp: new Date().toISOString(),
+            isSelf: true,
+            status: 'Pending',
+            messageId: `temp_${Date.now()}`
+        });
+
+        if (chatHub.server.sendMessageToAI) {
+            chatHub.server.sendMessageToAI(text);
+        }
+
+        showTypingIndicator('AI Assistant', '/Content/default-avatar.png');
+    });
+
+    $('body').on('click', '.ai-prompt-btn', function () {
+        const promptText = $(this).data('prompt');
+        if (!promptText) return;
+
+        // Hide welcome screen and show message area
+        $('#ai-welcome-screen').hide();
+        $('.message-area').show();
+
+        // Render the user's message immediately
+        renderMessage({
+            senderUsername: currentUsername,
+            content: JSON.stringify({ type: 'text', content: promptText }),
+            timestamp: new Date().toISOString(),
+            isSelf: true,
+            status: 'Pending',
+            messageId: `temp_${Date.now()}`
+        });
+
+        // Send the prompt to the AI via SignalR
+        if (chatHub.server.sendMessageToAI) {
+            chatHub.server.sendMessageToAI(promptText);
+        }
+
+        // Show typing indicator for the AI
+        showTypingIndicator('AI Assistant', '/Content/default-avatar.png');
+    });
+
     // ========== PARTNER PROFILE MODAL - CODE THAY THẾ ========== 
     // Paste code này vào chat-client.js, thay thế hàm cũ
 
@@ -2674,11 +3496,12 @@ $(function () {
             }
         });
     }
+
     $.connection.hub.start().done(function () {
         console.log('✅ SignalR Connected. Connection ID:', $.connection.hub.id);
 
-        // Load friend list SAU KHI SignalR đã kết nối
-        loadFriendList();
+        // Load ALL conversations (friends and groups) after SignalR is connected
+        loadConversations('all');
 
         // Nếu có selectedFriendUsername từ server, mở chat đó
         if (config.selectedFriendUsername) {
@@ -2689,11 +3512,56 @@ $(function () {
                 }, 500);
             }
         }
-    }).fail(function (error) {
+    })
+    .fail(function (error) {
         console.error('❌ SignalR connection failed:', error);
         alert('Không thể kết nối đến server. Vui lòng tải lại trang.');
+    });
+    $(document).ready(function () {
+        $('.conversation-list').show().css('display', 'flex');
+        console.log('✅ Conversation list forced to display');
     });
     window.openPartnerProfileModal = openPartnerProfileModal;
 
     console.log('✅ Partner Profile Modal initialized');
+
+    // ========== JUMP TO SEARCHED MESSAGE ==========
+    // Add CSS for highlight effect
+    $('<style>')
+        .prop('type', 'text/css')
+        .html(`
+            .chat-message.highlight {
+                animation: highlight-outline-anim 1.5s ease-out;
+                border-radius: 8px;
+            }
+            @keyframes highlight-outline-anim {
+                0%, 60% { outline: 2px solid #0d6efd; }
+                100% { outline: 2px solid transparent; }
+            }
+        `)
+        .appendTo('head');
+
+    // Add click handler for search results
+    $('body').on('click', '.search-result-item', function() {
+        const messageId = $(this).data('message-id');
+        if (!messageId) return;
+
+        const $message = $(`.chat-message[data-message-id="${messageId}"]`);
+        const $messagesList = $('#messagesList');
+
+        if ($message.length) {
+            // Scroll message into view (centered)
+            $messagesList.animate({
+                scrollTop: $messagesList.scrollTop() + $message.position().top - ($messagesList.height() / 2) + ($message.height() / 2)
+            }, 300);
+
+            // Add highlight class and remove after animation
+            $message.addClass('highlight');
+            setTimeout(() => {
+                $message.removeClass('highlight');
+            }, 1500); // Animation is 1.5s
+        } else {
+            alert('Không thể tìm thấy tin nhắn trong các tin đã tải. Vui lòng cuộn lên để tải thêm tin nhắn cũ và thử lại.');
+        }
+    });
 });

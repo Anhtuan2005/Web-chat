@@ -1,7 +1,6 @@
 ﻿@model Online_chat.Models.FriendshipPageViewModel
 @{
     ViewBag.Title = "Quản lý Bạn bè";
-    // Đổi sang layout chat chính
     Layout = "~/Views/Shared/_ChatLayout.cshtml";
 }
 
@@ -9,286 +8,523 @@
 
 <style>
     .friend-content-area {
-        padding: 30px;
+        padding: 24px;
         height: 100%;
         overflow-y: auto;
-        background-color: #fafffe; 
+        background: linear-gradient(135deg, #f0f9f4 0%, #ffffff 100%);
     }
 
-        /* Tùy chỉnh thanh cuộn */
-        .friend-content-area::-webkit-scrollbar {
-            width: 8px;
-        }
+    .friend-content-area::-webkit-scrollbar {
+        width: 6px;
+    }
 
-        .friend-content-area::-webkit-scrollbar-track {
-            background: #f1f8e9;
-        }
+    .friend-content-area::-webkit-scrollbar-track {
+        background: transparent;
+    }
 
-        .friend-content-area::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, #81c784, #66bb6a);
-            border-radius: 10px;
-        }
+    .friend-content-area::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #66bb6a, #43a047);
+        border-radius: 10px;
+    }
 
-    /* Tiêu đề trang */
+    /* Header Section */
+    .page-header {
+        background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%);
+        border-radius: 20px;
+        padding: 28px 32px;
+        margin-bottom: 24px;
+        box-shadow: 0 8px 24px rgba(46, 125, 50, 0.2);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
     .page-title {
         font-weight: 700;
-        color: #2e7d32; /* Màu xanh đậm */
-        margin-bottom: 0;
+        color: white;
+        margin: 0;
+        font-size: 1.8rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
 
-    /* Nút Lời mời kết bạn */
+    .page-title i {
+        font-size: 1.6rem;
+    }
+
     .btn-friend-requests {
-        background: linear-gradient(135deg, #43a047 0%, #388e3c 100%);
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
         color: white;
-        font-weight: 500;
-        border: none;
-        border-radius: 12px;
-        padding: 8px 15px;
-        box-shadow: 0 4px 15px rgba(46, 125, 50, 0.2);
-        transition: all 0.3s ease;
-        position: relative; /* Để badge định vị đúng */
-    }
-
-        .btn-friend-requests:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(46, 125, 50, 0.3);
-            color: white;
-        }
-        /* Badge số lời mời */
-        .btn-friend-requests .badge {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background-color: #f04747; /* Màu đỏ thông báo */
-            color: white;
-            border-radius: 50%;
-            padding: 4px 6px;
-            font-size: 0.7rem;
-            border: 2px solid white;
-        }
-
-    /* Khu vực tìm kiếm */
-    .search-section {
-        margin-top: 25px;
-        margin-bottom: 30px;
-        padding: 20px;
-        background-color: #f1f8e9; /* Nền xanh lá rất nhạt */
-        border-radius: 18px;
-        border: 1px solid #e0e0e0;
-    }
-
-        .search-section h4 {
-            color: #388e3c; /* Màu xanh lá */
-            margin-bottom: 15px;
-            font-weight: 600;
-        }
-        /* Input tìm kiếm */
-        .search-section input[name="searchTerm"] {
-            background-color: #fff;
-            border: 2px solid #c8e6c9;
-            border-radius: 12px;
-            padding: 10px 15px;
-            transition: all 0.3s ease;
-            width: 100%;
-        }
-
-            .search-section input[name="searchTerm"]:focus {
-                border-color: #43a047;
-                box-shadow: 0 0 0 3px rgba(67, 160, 71, 0.2);
-            }
-    /* Nút tìm kiếm */
-    .btn-search-friend {
-        background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
-        color: white;
-        font-weight: 500;
-        border: none;
+        font-weight: 600;
+        border: 2px solid rgba(255, 255, 255, 0.3);
         border-radius: 12px;
         padding: 10px 20px;
         transition: all 0.3s ease;
-    }
-
-        .btn-search-friend:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
-            color: white;
-        }
-
-    /* Tiêu đề danh sách bạn bè */
-    .friend-list-heading {
-        color: #2e7d32;
-        font-weight: 600;
-        margin-bottom: 15px;
-    }
-
-    /* Style cho danh sách bạn bè */
-    .friend-list .list-group-item {
-        background: linear-gradient(135deg, #f9fdf9 0%, #ffffff 100%);
-        border: 1px solid #e8f5e9;
-        border-radius: 18px;
-        margin-bottom: 10px;
-        padding: 15px 20px;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-
-        .friend-list .list-group-item:hover {
-            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-            transform: scale(1.02);
-            box-shadow: 0 6px 16px rgba(46, 125, 50, 0.15);
-        }
-
-    .friend-list strong {
-        font-weight: 600;
-        color: #1b5e20; /* Màu xanh đậm hơn */
-    }
-    /* Nút Hủy kết bạn */
-    .btn-remove-friend {
-        background-color: #f8d7da; /* Nền đỏ nhạt */
-        color: #721c24; /* Chữ đỏ đậm */
-        border: 1px solid #f5c6cb;
-        font-size: 0.8rem;
-        font-weight: 500;
-        padding: 4px 10px;
-        border-radius: 8px;
-        transition: all 0.2s ease;
-    }
-
-        .btn-remove-friend:hover {
-            background-color: #f5c6cb;
-            color: #721c24;
-        }
-
-    /* Style cho Modal */
-    .modal-content {
-        background-color: #f1f8e9;
-        border-radius: 20px;
-        border: none;
-    }
-
-    .modal-header {
-        background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
-        color: white;
-        border-bottom: none;
-        border-radius: 20px 20px 0 0;
-    }
-
-        .modal-header .modal-title {
-            font-weight: 600;
-        }
-
-        .modal-header .btn-close {
-            filter: brightness(0) invert(1);
-        }
-    /* Đổi màu nút close thành trắng */
-
-    .modal-body .list-group-item { /* Item trong modal */
-        background: white;
-        border: 1px solid #e0e0e0;
-        border-radius: 12px;
-        margin-bottom: 8px;
-    }
-
-    .modal-body strong {
-        color: #1b5e20;
-    }
-    /* Nút chấp nhận/từ chối */
-    .btn-action-friend {
-        font-size: 0.8rem;
-        padding: 4px 10px;
-        border-radius: 8px;
-        font-weight: 500;
-        cursor: pointer;
-    }
-
-    .btn-accept {
-        background-color: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
-    }
-
-        .btn-accept:hover {
-            background-color: #c3e6cb;
-        }
-
-    .btn-decline {
-        background-color: #e2e3e5;
-        color: #383d41;
-        border: 1px solid #d6d8db;
-    }
-
-        .btn-decline:hover {
-            background-color: #d6d8db;
-        }
-    .modal-body .list-group-item:hover {
-        background-color: #e8f5e9; 
-        transition: background-color 0.2s ease;
-    }
-
-
-    .friend-list-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        object-fit: cover;
-        margin-right: 15px;
-        border: 2px solid #e8f5e9;
-        transition: all 0.2s ease;
-    }
-
-        .friend-list-avatar:hover {
-            transform: scale(1.1);
-            border-color: #43a047; 
-        }
-
-    .friend-list-actions {
+        position: relative;
         display: flex;
         align-items: center;
-        gap: 8px; 
+        gap: 8px;
     }
 
-    .btn-chat-now {
-        background-color: #d1ecf1;
-        color: #0c5460;
-        border: 1px solid #bee5eb;
-        font-size: 0.8rem;
-        font-weight: 500;
-        padding: 4px 10px;
+    .btn-friend-requests:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        color: white;
+    }
+
+    .btn-friend-requests .badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: linear-gradient(135deg, #ff5252, #f44336);
+        color: white;
+        border-radius: 50%;
+        padding: 5px 8px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        border: 2px solid white;
+        box-shadow: 0 2px 8px rgba(255, 82, 82, 0.4);
+    }
+
+    /* Search Section */
+    .section-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        border: 1px solid rgba(67, 160, 71, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .section-card:hover {
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    .section-heading {
+        color: #2e7d32;
+        margin-bottom: 20px;
+        font-weight: 700;
+        font-size: 1.3rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-heading i {
+        color: #43a047;
+    }
+
+    .search-form {
+        display: flex;
+        gap: 12px;
+    }
+
+    .search-form input {
+        flex: 1;
+        background: #f8fdf9;
+        border: 2px solid #c8e6c9;
+        border-radius: 12px;
+        padding: 12px 18px;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+    }
+
+    .search-form input:focus {
+        border-color: #43a047;
+        box-shadow: 0 0 0 4px rgba(67, 160, 71, 0.1);
+        outline: none;
+        background: white;
+    }
+
+    .btn-action {
         border-radius: 8px;
-        transition: all 0.2s ease;
-        text-decoration: none; 
-        white-space: nowrap; 
+        padding: 8px 16px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+        font-size: 0.9rem;
     }
 
-        .btn-chat-now:hover {
-            background-color: #bee5eb;
-            color: #0c5460;
-        }
-
-    .btn-remove-friend {
-        margin: 0; 
-        white-space: nowrap;
+    .btn-primary {
+        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+        color: white;
     }
-    .list-group-item::before {
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(67, 160, 71, 0.3);
+    }
+
+    /* Friend Cards */
+    .friend-card {
+        background: white;
+        border: 1px solid #e8f5e9;
+        border-radius: 16px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+    }
+
+    .friend-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #66bb6a, #43a047, #2e7d32);
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+
+    .friend-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(46, 125, 50, 0.15);
+        border-color: #c8e6c9;
+    }
+
+    .friend-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .friend-card-body {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 0;
+    }
+
+    .friend-avatar-wrapper {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 3px solid #e8f5e9;
+        flex-shrink: 0;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+    }
+
+    .friend-avatar-wrapper::after {
         content: '';
         position: absolute;
         inset: 0;
-        border-radius: 18px;
-        padding: 2px;
-        background: linear-gradient(135deg, #81c784, #66bb6a);
-        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(67, 160, 71, 0.2), rgba(46, 125, 50, 0.2));
         opacity: 0;
-        transition: opacity 0.4s ease;
-        pointer-events: none; 
+        transition: opacity 0.3s ease;
+    }
+
+    .friend-avatar-wrapper:hover {
+        transform: scale(1.1);
+        border-color: #43a047;
+    }
+
+    .friend-avatar-wrapper:hover::after {
+        opacity: 1;
+    }
+
+    .friend-avatar {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .friend-card-name {
+        font-weight: 700;
+        color: #1b5e20;
+        font-size: 1.1rem;
+        margin-bottom: 4px;
+    }
+
+    .friend-card-username {
+        color: #66bb6a;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .friend-card-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .friend-card-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-shrink: 0;
+        min-width: fit-content;
+    }
+
+    .friend-card-actions .btn-action {
+        min-width: 110px;
+        white-space: nowrap;
+        padding: 7px 14px;
+        font-size: 0.85rem;
+    }
+
+    .btn-action.btn-light {
+        background: #ffebee;
+        color: #c62828;
+        border: 1px solid #ef9a9a;
+        font-weight: 500;
+    }
+
+    .btn-action.btn-light:hover {
+        background: #ffcdd2;
+        border-color: #e57373;
+        color: #b71c1c;
+    }
+
+    /* Modal Styles */
+    .modal-content {
+        background: white;
+        border-radius: 20px;
+        border: none;
+        overflow: hidden;
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+        color: white;
+        border: none;
+        padding: 20px 24px;
+    }
+
+    .modal-title {
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .modal-header .btn-close {
+        filter: brightness(0) invert(1);
+        opacity: 0.9;
+    }
+
+    .modal-header .btn-close:hover {
+        opacity: 1;
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .modal-body .list-group-item {
+        background: #f8fdf9;
+        border: 1px solid #e8f5e9;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        padding: 16px;
+        transition: all 0.2s ease;
+    }
+
+    .modal-body .list-group-item:hover {
+        background: #e8f5e9;
+        transform: translateX(4px);
+    }
+
+    .btn-action-friend {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 500;
+        border: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-accept {
+        background: linear-gradient(135deg, #81c784, #66bb6a);
+        color: white;
+    }
+
+    .btn-accept:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 187, 106, 0.3);
+    }
+
+    .btn-decline {
+        background: #f5f5f5;
+        color: #757575;
+    }
+
+    .btn-decline:hover {
+        background: #e0e0e0;
+    }
+
+    /* Alert Styles */
+    .alert {
+        border-radius: 12px;
+        border: none;
+        padding: 16px 20px;
+        font-weight: 500;
+    }
+
+    .alert-success {
+        background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+        color: #2e7d32;
+    }
+
+    .alert-warning {
+        background: linear-gradient(135deg, #fff9c4, #fff59d);
+        color: #f57f17;
+    }
+
+    /* User Profile Modal */
+    #profile-modal .modal-content {
+        border-radius: 24px;
+        overflow: hidden;
+    }
+
+    #profile-modal-cover {
+        height: 180px;
+        background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+        background-size: cover;
+        background-position: center;
+        position: relative;
+    }
+
+    #profile-modal-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 5px solid white;
+        object-fit: cover;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    #profile-modal .modal-body {
+        padding: 70px 32px 32px;
+    }
+
+    #profile-modal-name {
+        font-weight: 700;
+        color: #1b5e20;
+        margin: 12px 0 4px;
+        font-size: 1.5rem;
+    }
+
+    #profile-modal-username {
+        color: #66bb6a;
+        font-weight: 600;
+        margin-bottom: 16px;
+    }
+
+    #profile-modal-bio {
+        color: #555;
+        line-height: 1.6;
+        margin-bottom: 24px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 12px 16px;
+        background: #f8fdf9;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+    }
+
+    .info-grid i {
+        color: #43a047;
+        font-size: 1.1rem;
+    }
+
+    .info-grid span {
+        color: #333;
+        font-weight: 500;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+        color: #9e9e9e;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: #c8e6c9;
+        margin-bottom: 16px;
+    }
+
+    .empty-state p {
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .page-header {
+            flex-direction: column;
+            gap: 16px;
+            text-align: center;
+        }
+
+        .search-form {
+            flex-direction: column;
+        }
+
+        .friend-card {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .friend-card-body {
+            margin-bottom: 16px;
+        }
+
+        .friend-card-actions {
+            width: 100%;
+        }
+
+        .friend-card-actions .btn-action {
+            flex: 1;
+            min-width: auto;
+        }
     }
 </style>
 
+<!-- User Profile Modal -->
+<div class="modal fade" id="profile-modal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div id="profile-modal-cover"></div>
+            <div class="modal-body text-center">
+                <img id="profile-modal-avatar" src="/Content/default-avatar.png" />
+                <h4 id="profile-modal-name"></h4>
+                <p id="profile-modal-username"></p>
+                <p id="profile-modal-bio" class="px-3"></p>
+                <div class="info-grid">
+                    <i class="fas fa-venus-mars"></i> <span id="profile-modal-gender"></span>
+                    <i class="fas fa-birthday-cake"></i> <span id="profile-modal-dob"></span>
+                </div>
+                <button type="button" class="btn btn-action btn-light mt-3" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Friend Requests Modal -->
 <div class="modal fade" id="friendRequestsModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i> Lời mời kết bạn</h5>
+                <h5 class="modal-title"><i class="fas fa-user-plus"></i> Lời mời kết bạn</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -298,17 +534,24 @@
                         @foreach (var req in Model.PendingRequests)
                         {
                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span><strong>@req.SenderDisplayName</strong> (@req.SenderUsername)</span>
                                 <div>
-                                    @using (Html.BeginForm("AcceptRequest", "Friend", new { friendshipId = req.FriendshipId }, FormMethod.Post, new { @style = "display:inline-block; margin-right: 5px;" }))
+                                    <strong style="color: #1b5e20;">@req.SenderDisplayName</strong>
+                                    <div style="color: #66bb6a; font-size: 0.9rem;">@@@req.SenderUsername</div>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    @using (Html.BeginForm("AcceptRequest", "Friend", new { friendshipId = req.FriendshipId }, FormMethod.Post, new { @style = "display:inline-block;" }))
                                     {
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-sm btn-action-friend btn-accept">Chấp nhận</button>
+                                        <button type="submit" class="btn btn-action-friend btn-accept">
+                                            <i class="fas fa-check me-1"></i> Chấp nhận
+                                        </button>
                                     }
                                     @using (Html.BeginForm("DeclineOrRemoveFriend", "Friend", new { friendshipId = req.FriendshipId }, FormMethod.Post, new { @style = "display:inline-block;" }))
                                     {
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-sm btn-action-friend btn-decline">Từ chối</button>
+                                        <button type="submit" class="btn btn-action-friend btn-decline">
+                                            <i class="fas fa-times me-1"></i> Từ chối
+                                        </button>
                                     }
                                 </div>
                             </li>
@@ -317,7 +560,10 @@
                 }
                 else
                 {
-                    <p class="text-center text-muted mt-3">Bạn không có lời mời kết bạn nào.</p>
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>Bạn không có lời mời kết bạn nào.</p>
+                    </div>
                 }
             </div>
         </div>
@@ -325,73 +571,246 @@
 </div>
 
 <div class="friend-content-area">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="page-title"><i class="fas fa-users me-2"></i> @ViewBag.Title</h2>
+    <!-- Header -->
+    <div class="page-header">
+        <h2 class="page-title">
+            <i class="fas fa-users"></i>
+            @ViewBag.Title
+        </h2>
         <button type="button" class="btn btn-friend-requests" data-bs-toggle="modal" data-bs-target="#friendRequestsModal">
-            <i class="fas fa-bell me-1"></i> Lời mời kết bạn
+            <i class="fas fa-bell"></i>
+            <span>Lời mời kết bạn</span>
             @if (Model.PendingRequests.Count > 0)
             {
-                <span class="badge" id="pending-requests-badge">@Model.PendingRequests.Count</span>
+                <span class="badge">@Model.PendingRequests.Count</span>
             }
         </button>
     </div>
 
-    <div class="search-section">
-        <h4><i class="fas fa-search me-2"></i> Tìm kiếm bạn bè </h4>
-        @using (Html.BeginForm("Search", "Friend", FormMethod.Get, new { @class = "row g-2 align-items-center" }))
+    <!-- Search Section -->
+    <div class="section-card">
+        <h4 class="section-heading">
+            <i class="fas fa-search"></i>
+            Tìm kiếm bạn bè
+        </h4>
+        @using (Html.BeginForm("Search", "Friend", FormMethod.Get, new { @class = "search-form" }))
         {
-            <div class="col-auto flex-grow-1">
-                <input type="text" name="searchTerm" class="form-control" placeholder="Nhập số điện thoại hoặc ID người dùng..." />
-            </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-search-friend">Tìm kiếm</button>
-            </div>
+            <input type="text" name="searchTerm" class="form-control" placeholder="Nhập số điện thoại hoặc ID người dùng..." />
+            <button type="submit" class="btn btn-action btn-primary">
+                <i class="fas fa-search me-1"></i> Tìm kiếm
+            </button>
         }
     </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
             @TempData["SuccessMessage"]
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
-    <h3 class="friend-list-heading"><i class="fas fa-list-ul me-2"></i> Danh sách bạn bè (@Model.Friends.Count)</h3>
-    <ul class="list-group friend-list">
-        @if (!Model.Friends.Any())
-        {
-            <li class="list-group-item text-center text-muted">Bạn chưa có người bạn nào. Hãy tìm kiếm và kết nối!</li>
-        }
-        else
-        {
-            foreach (var friend in Model.Friends)
+    <!-- Friend List Section -->
+    <div class="section-card">
+        <h3 class="section-heading">
+            <i class="fas fa-user-friends"></i>
+            Danh sách bạn bè (@Model.Friends.Count)
+        </h3>
+        <div class="row">
+            @if (!Model.Friends.Any())
             {
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center flex-grow-1">
-                        <img src="@Url.Content(friend.FriendAvatarUrl ?? "/Content/default-avatar.png")" class="friend-list-avatar" />
-                        <span class="friend-list-name">
-                            <strong>@friend.FriendDisplayName</strong> (@friend.FriendUsername)
-                        </span>
+                <div class="col-12">
+                    <div class="empty-state">
+                        <i class="fas fa-user-friends"></i>
+                        <p>Bạn chưa có người bạn nào. Hãy tìm kiếm và kết nối!</p>
                     </div>
-
-                    <div class="friend-list-actions flex-shrink-0">
-
-                        <a href="@Url.Action("Index", "Chat", new { friendUsername = friend.FriendUsername })"
-                           class="btn btn-sm btn-chat-now">
-                            <i class="fas fa-comment-dots me-1"></i> Nhắn tin
-                        </a>
-
-                        @using (Html.BeginForm("DeclineOrRemoveFriend", "Friend", new { friendshipId = friend.FriendshipId }, FormMethod.Post, new { @style = "display:inline-block;" }))
-                        {
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-remove-friend" onclick="return confirm('Bạn có chắc muốn hủy kết bạn với @friend.FriendUsername?');">
-                                <i class="fas fa-user-minus me-1"></i> Hủy kết bạn
-                            </button>
-                        }
-                    </div>
-                </li>
+                </div>
             }
-        }
-    </ul>
+            else
+            {
+                foreach (var friend in Model.Friends)
+                {
+                    <div class="col-12 mb-3">
+                        <div class="friend-card">
+                            <div class="friend-card-body">
+                                <div class="friend-avatar-wrapper" data-userid="@friend.FriendId">
+                                    <img src="@Url.Content(friend.FriendAvatarUrl ?? "/Content/default-avatar.png")" class="friend-avatar" />
+                                </div>
+                                <div class="friend-card-info">
+                                    <div class="friend-card-name">@friend.FriendDisplayName</div>
+                                    <div class="friend-card-username">@@@friend.FriendUsername</div>
+                                </div>
+                            </div>
+                            <div class="friend-card-actions">
+                                <a href="@Url.Action("Index", "Chat", new { friendUsername = friend.FriendUsername })" class="btn btn-sm btn-action btn-primary">
+                                    <i class="fas fa-comment-dots me-1"></i> Nhắn tin
+                                </a>
+                                @using (Html.BeginForm("DeclineOrRemoveFriend", "Friend", new { friendshipId = friend.FriendshipId }, FormMethod.Post, new { @style = "margin: 0;" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-action btn-light" onclick="return confirm('Bạn có chắc muốn hủy kết bạn với @friend.FriendUsername?');">
+                                        <i class="fas fa-user-minus me-1"></i> Hủy kết bạn
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- People You May Know Section -->
+    <div class="section-card">
+        <h3 class="section-heading">
+            <i class="fas fa-user-plus"></i>
+            Gợi ý kết bạn
+        </h3>
+        <div id="friend-suggestions-list" class="row">
+            <div class="col-12">
+                <div class="empty-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Đang tải gợi ý...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+@section scripts {
+    <script>
+        $(document).ready(function () {
+            function loadFriendSuggestions() {
+                const suggestionsContainer = $('#friend-suggestions-list');
+                $.ajax({
+                    url: '@Url.Action("GetFriendSuggestions", "Friend")',
+                    type: 'GET',
+                    success: function (response) {
+                        suggestionsContainer.empty();
+                        if (response.success && response.suggestions.length > 0) {
+                            response.suggestions.forEach(function (user) {
+                                const suggestionHtml = `
+                                    <div class="col-12 mb-3 suggestion-card" id="suggestion-${user.Id}">
+                                        <div class="friend-card">
+                                            <div class="friend-card-body">
+                                                <div class="friend-avatar-wrapper" data-userid="${user.Id}">
+                                                    <img src="${user.AvatarUrl}" class="friend-avatar" />
+                                                </div>
+                                                <div class="friend-card-info">
+                                                    <div class="friend-card-name">${user.DisplayName}</div>
+                                                    <div class="friend-card-username">${user.Username}</div>
+                                                </div>
+                                            </div>
+                                            <div class="friend-card-actions">
+                                                <button class="btn btn-sm btn-action btn-primary btn-add-friend" data-userid="${user.Id}">
+                                                    <i class="fas fa-user-plus me-1"></i> Thêm bạn
+                                                </button>
+                                                <button class="btn btn-sm btn-action btn-light btn-remove-suggestion" data-userid="${user.Id}">
+                                                    <i class="fas fa-times me-1"></i> Xóa
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                                suggestionsContainer.append(suggestionHtml);
+                            });
+                        } else {
+                            suggestionsContainer.html(`
+                                <div class="col-12">
+                                    <div class="empty-state">
+                                        <i class="fas fa-user-friends"></i>
+                                        <p>Không có gợi ý nào.</p>
+                                    </div>
+                                </div>
+                            `);
+                        }
+                    },
+                    error: function () {
+                        suggestionsContainer.html(`
+                            <div class="col-12">
+                                <div class="empty-state">
+                                    <i class="fas fa-exclamation-triangle" style="color: #f44336;"></i>
+                                    <p style="color: #f44336;">Lỗi khi tải gợi ý.</p>
+                                </div>
+                            </div>
+                        `);
+                    }
+                });
+            }
+
+            loadFriendSuggestions();
+
+            $('#friend-suggestions-list').on('click', '.btn-add-friend', function () {
+                const $btn = $(this);
+                const userId = $btn.data('userid');
+                $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Đang gửi...');
+                $.ajax({
+                    url: '@Url.Action("SendRequest", "Friend")',
+                    type: 'POST',
+                    data: {
+                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val(),
+                        receiverId: userId
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            $btn.removeClass('btn-primary').addClass('btn-success').html('<i class="fas fa-check me-1"></i> Đã gửi');
+                            $btn.closest('.friend-card-actions').find('.btn-remove-suggestion').prop('disabled', true);
+                        } else {
+                            $btn.prop('disabled', false).removeClass('btn-primary').addClass('btn-danger').html('<i class="fas fa-exclamation me-1"></i> Lỗi');
+                        }
+                    },
+                    error: function () {
+                        $btn.prop('disabled', false).removeClass('btn-primary').addClass('btn-danger').html('<i class="fas fa-exclamation me-1"></i> Lỗi');
+                    }
+                });
+            });
+
+            $('#friend-suggestions-list').on('click', '.btn-remove-suggestion', function () {
+                $(this).closest('.suggestion-card').fadeOut(400, function() { $(this).remove(); });
+            });
+
+            $(document).on('click', '.friend-avatar-wrapper', function() {
+                const userId = $(this).data('userid');
+                if (!userId) return;
+
+                const $modal = $('#profile-modal');
+                $modal.find('#profile-modal-name').text('Đang tải...');
+                $modal.find('#profile-modal-username').text('');
+                $modal.find('#profile-modal-bio').text('');
+                $modal.find('#profile-modal-gender').text('');
+                $modal.find('#profile-modal-dob').text('');
+                $modal.find('#profile-modal-avatar').attr('src', '/Content/default-avatar.png');
+                $modal.find('#profile-modal-cover').css('background', 'linear-gradient(135deg, #66bb6a 0%, #43a047 100%)');
+
+                var myModal = new bootstrap.Modal($modal[0]);
+                myModal.show();
+
+                $.ajax({
+                    url: '@Url.Action("GetUserDetails", "Friend")',
+                    type: 'GET',
+                    data: { userId: userId },
+                    success: function(response) {
+                        if (response.success) {
+                            const user = response.user;
+                            $modal.find('#profile-modal-name').text(user.DisplayName);
+                            $modal.find('#profile-modal-username').text('' + user.Username);
+                            $modal.find('#profile-modal-bio').text(user.Bio || 'Chưa có tiểu sử.');
+                            $modal.find('#profile-modal-gender').text(user.Gender || 'Chưa cập nhật');
+                            $modal.find('#profile-modal-dob').text(user.DateOfBirth || 'Chưa cập nhật');
+                            $modal.find('#profile-modal-avatar').attr('src', user.AvatarUrl);
+                            if(user.CoverPhotoUrl) {
+                                $modal.find('#profile-modal-cover').css('background-image', `url(${user.CoverPhotoUrl})`);
+                            }
+                        } else {
+                            $modal.find('#profile-modal-name').text('Không thể tải thông tin.');
+                        }
+                    },
+                    error: function() {
+                        $modal.find('#profile-modal-name').text('Lỗi khi tải thông tin.');
+                    }
+                });
+            });
+        });
+    </script>
+}

@@ -46,5 +46,17 @@ namespace Online_chat.Controllers
             ViewBag.Message = "Your contact page.";
             return View();
         }
+
+        [AllowAnonymous]
+        public ActionResult Terms()
+        {
+            return View();
+        }
+
+        [AllowAnonymous]
+        public ActionResult Privacy()
+        {
+            return View();
+        }
     }
 }

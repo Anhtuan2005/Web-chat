@@ -7,6 +7,7 @@
     @Styles.Render("~/Content/css")
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    @RenderSection("styles", required: false)
     <style>
                 * {
                     margin: 0;
@@ -418,17 +419,22 @@
                         text-align: center;
                     }
 
-                .chat-area {
-                    flex-grow: 1;
-                    display: flex;
-                    flex-direction: column;
-                    background: linear-gradient(135deg, #fafffe 0%, #f1f8f4 100%);
-                    border-radius: 28px;
-                    overflow: hidden;
-                    box-shadow: 0 8px 32px rgba(46, 125, 50, 0.15);
-                    border: 2px solid rgba(255, 255, 255, 0.8);
-                }
-
+                                    .chat-area {
+                                        flex-grow: 1;
+                                        display: flex;
+                                        flex-direction: column;
+                                        background: linear-gradient(135deg, #fafffe 0%, #f1f8f4 100%);
+                                        border-radius: 28px;
+                                        overflow-y: auto; 
+                                        overflow-x: hidden; 
+                                        box-shadow: 0 8px 32px rgba(46, 125, 50, 0.15);
+                                        border: 2px solid rgba(255, 255, 255, 0.8);
+                                    }
+                                    .chat-area.feed-mode {
+                                        align-items: center;
+                                    }                        .chat-area::-webkit-scrollbar {
+                            width: 8px;
+                        }
                 /* Hiệu ứng lá cây nền */
                 body::before {
                     content: '🌿';
@@ -639,6 +645,62 @@
                     html.dark-mode .chat-bubble.other .bubble-time {
                         color: rgba(255,255,255,.45);
                     }
+                .conv-avatar-wrapper {
+                    position: relative;
+                    width: 50px;
+                    height: 50px;
+                    flex-shrink: 0;
+                    margin-right: 15px;
+                }
+                .composite-avatar {
+                    position: relative;
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 50%;
+                }
+                .composite-avatar .member-avatar {
+                    position: absolute;
+                    width: 68%;
+                    height: 68%;
+                    border-radius: 50%;
+                    border: 2px solid white;
+                    object-fit: cover;
+                    background-color: #ccc;
+                }
+                /* For 1 member */
+                .composite-avatar.count-1 .member-avatar-1 {
+                    width: 100%;
+                    height: 100%;
+                    top: 0;
+                    left: 0;
+                    border: none;
+                }
+                /* For 2 members */
+                .composite-avatar.count-2 .member-avatar-1 {
+                    top: 5%;
+                    left: 5%;
+                }
+                .composite-avatar.count-2 .member-avatar-2 {
+                    bottom: 5%;
+                    right: 5%;
+                }
+                /* For 3 members - Zalo style */
+                .composite-avatar.count-3 .member-avatar-1 {
+                    top: 0;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    z-index: 3;
+                }
+                .composite-avatar.count-3 .member-avatar-2 {
+                    bottom: 0;
+                    left: 0;
+                    z-index: 2;
+                }
+                .composite-avatar.count-3 .member-avatar-3 {
+                    bottom: 0;
+                    right: 0;
+                    z-index: 1;
+                }
     </style>
 </head>
 <body>
@@ -660,6 +722,10 @@
             <div class="nav-group">
                 <a href="@Url.Action("Index", "Chat")" id="chat-nav-icon" class="nav-icon @(ViewBag.Title == "Chat" ? "active" : "")" title="Tin nhắn">
                     <i class="fas fa-comments"></i>
+                </a>
+
+                <a href="@Url.Action("Index", "Feed")" id="feed-nav-icon" class="nav-icon @(ViewBag.Title == "Bảng tin" ? "active" : "")" title="Bảng tin">
+                    <i class="fas fa-newspaper"></i>
                 </a>
 
                 <a href="@Url.Action("Index", "Friend")" id="friend-nav-icon" class="nav-icon @(ViewBag.Title == "Friends" ? "active" : "")" title="Danh bạ">
@@ -761,12 +827,11 @@
     @Scripts.Render("~/bundles/jquery")
     @Scripts.Render("~/bundles/popper")
     @Scripts.Render("~/bundles/bootstrap")
-    <script src="~/Scripts/jquery-3.6.0.min.js"></script>
-    <script src="~/Scripts/jquery.signalR-2.4.3.min.js"></script>
-    <script src="~/signalr/hubs"></script>
+
+    <audio id="notification-sound" src="~/Sounds/notification.mp3" preload="auto"></audio>
 
     <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js" type="module"></script>
-                        @RenderSection("scripts", required: false)
+    @RenderSection("scripts", required: false)
 
     <script>
         (function () {
@@ -777,6 +842,43 @@
                 document.documentElement.classList.remove('dark-mode');
             }
         })();
+    </script>
+    <script>
+        $(function() {
+            $('#myProfileModal').on('show.bs.modal', function () {
+                var modal = $(this);
+                // Reset previous data
+                modal.find('#modal-display-name').text('Đang tải...');
+                modal.find('#modal-phone').text('');
+                modal.find('#modal-email').text('');
+                modal.find('#modal-avatar').attr('src', '/Content/default-avatar.png');
+                modal.find('#modal-qr-code').attr('src', '');
+                modal.find('#modal-cover').css('background-image', 'linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%)');
+
+                $.ajax({
+                    url: '@Url.Action("GetMyProfileSummary", "Profile")',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.success) {
+                            modal.find('#modal-display-name').text(response.displayName);
+                            modal.find('#modal-phone').text(response.phoneNumber || 'Chưa cập nhật');
+                            modal.find('#modal-email').text(response.email || 'Chưa cập nhật');
+                            modal.find('#modal-avatar').attr('src', response.avatarUrl || '/Content/default-avatar.png');
+                            modal.find('#modal-qr-code').attr('src', response.qrCodeUrl);
+                            if (response.coverUrl) {
+                                modal.find('#modal-cover').css('background-image', 'url(' + response.coverUrl + ')');
+                            }
+                        } else {
+                            modal.find('#modal-display-name').text('Lỗi tải thông tin');
+                        }
+                    },
+                    error: function () {
+                        modal.find('#modal-display-name').text('Lỗi kết nối');
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>

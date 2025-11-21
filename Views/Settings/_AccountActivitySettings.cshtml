@@ -1,0 +1,59 @@
+@model IEnumerable<Online_chat.Models.UserActivity>
+
+<div class="settings-card">
+    <div class="settings-header">📈 Hoạt động tài khoản</div>
+    <div class="settings-body">
+        <p>Đây là danh sách các hoạt động gần đây của bạn.</p>
+        <div class="activity-list">
+            @foreach (var activity in Model)
+            {
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas @(GetIconForActivity(activity.ActivityType))"></i>
+                    </div>
+                    <div class="activity-details">
+                        <strong>@activity.Description</strong>
+                        <p>@activity.Timestamp.ToString("g") - IP: @activity.IpAddress</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    public static string GetIconForActivity(string activityType)
+    {
+        switch (activityType)
+        {
+            case "Login":
+                return "fa-sign-in-alt";
+            case "Logout":
+                return "fa-sign-out-alt";
+            case "ChangePassword":
+                return "fa-key";
+            default:
+                return "fa-info-circle";
+        }
+    }
+}
+
+<style>
+    .activity-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .activity-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #f1f8e9;
+    }
+    .activity-icon {
+        font-size: 1.5rem;
+        color: #90a4ae;
+        margin-right: 20px;
+        width: 30px;
+        text-align: center;
+    }
+</style>

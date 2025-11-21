@@ -1,0 +1,69 @@
+@model Online_chat.Models.NotificationViewModel
+
+<!-- Bell (Reports) Dropdown -->
+<div class="dropdown">
+    <div class="topbar-icon" id="bellDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-bell"></i>
+        @if (Model.UnresolvedReportsCount > 0)
+        {
+            <span class="badge">@Model.UnresolvedReportsCount</span>
+        }
+    </div>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="bellDropdown" style="width: 350px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+        <li class="dropdown-header">@Model.UnresolvedReportsCount Báo cáo chưa giải quyết</li>
+        @if (Model.RecentUnresolvedReports.Any())
+        {
+            foreach (var report in Model.RecentUnresolvedReports)
+            {
+                <li>
+                    <a class="dropdown-item d-flex flex-column" href="@Url.Action("Reports", "Admin")" style="white-space: normal;">
+                        <div>
+                            <strong>@report.Reporter.Username</strong> đã báo cáo <strong>@report.ReportedUser.Username</strong>
+                        </div>
+                        <small class="text-muted">Lý do: @(report.Reason.Length > 40 ? report.Reason.Substring(0, 40) + "..." : report.Reason)</small>
+                        <small class="text-muted mt-1">@report.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                    </a>
+                </li>
+            }
+        }
+        else
+        {
+            <li><span class="dropdown-item text-muted">Không có báo cáo mới</span></li>
+        }
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item text-center fw-bold" href="@Url.Action("Reports", "Admin")">Xem tất cả báo cáo</a></li>
+    </ul>
+</div>
+
+<!-- Mail Dropdown -->
+<div class="dropdown">
+    <div class="topbar-icon" id="mailDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-envelope"></i>
+        @if (Model.UnreadMessagesCount > 0)
+        {
+            <span class="badge">@Model.UnreadMessagesCount</span>
+        }
+    </div>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="mailDropdown" style="width: 350px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+        <li class="dropdown-header">@Model.UnreadMessagesCount Tin nhắn mới</li>
+        @if (Model.RecentUnreadMessages.Any())
+        {
+            foreach (var message in Model.RecentUnreadMessages)
+            {
+                <li>
+                    <a class="dropdown-item d-flex flex-column" href="@Url.Action("ConversationDetails", "Admin", new { user1Id = message.SenderId, user2Id = message.ReceiverId })" style="white-space: normal;">
+                        <strong>Từ: @message.Sender.Username</strong>
+                        <span class="text-truncate">@message.Content</span>
+                        <small class="text-muted mt-1">@message.Timestamp.ToString("dd/MM/yyyy HH:mm")</small>
+                    </a>
+                </li>
+            }
+        }
+        else
+        {
+            <li><span class="dropdown-item text-muted">Không có tin nhắn mới</span></li>
+        }
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item text-center fw-bold" href="@Url.Action("ManagePrivateMessages", "Admin")">Xem tất cả tin nhắn</a></li>
+    </ul>
+</div>

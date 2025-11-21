@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Entity.Migrations;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using System.Web.Optimization;
 using System.Web.Routing;
+using WebChat_Online_MVC.Migrations;
 
 namespace Online_chat
 {
@@ -23,6 +25,11 @@ namespace Online_chat
 
             // Đăng ký Bundle (CSS, JS, v.v.)
             BundleConfig.RegisterBundles(BundleTable.Bundles);
+
+            // Tự động chạy migration
+            var configuration = new Configuration();
+            var migrator = new DbMigrator(configuration);
+            migrator.Update();
         }
     }
 }

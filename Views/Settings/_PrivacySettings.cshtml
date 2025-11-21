@@ -1,0 +1,50 @@
+@model Online_chat.Models.UserPrivacySettings
+@*
+    This view provides a form for users to manage their privacy settings,
+    such as online status visibility and searchability by email.
+*@
+
+<div class="settings-card">
+    <div class="settings-header">
+        Cài đặt quyền riêng tư
+    </div>
+    <div class="settings-body">
+        @if (TempData["PrivacySuccess"] != null)
+        {
+            <div class="alert alert-success">@TempData["PrivacySuccess"]</div>
+        }
+
+        @using (Html.BeginForm("UpdatePrivacySettings", "Settings", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+
+            <div class="settings-item">
+                <div class="settings-item-label">
+                    <strong>Hiển thị trạng thái online</strong>
+                    <p>Cho phép người khác thấy khi bạn đang hoạt động.</p>
+                </div>
+                <label class="custom-toggle-switch">
+                    @Html.CheckBoxFor(m => m.ShowOnlineStatus, new { @class = "form-check-input" })
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
+            <div class="settings-item">
+                <div class="settings-item-label">
+                    <strong>Cho phép tìm kiếm qua Email</strong>
+                    <p>Cho phép người khác tìm thấy bạn bằng địa chỉ email.</p>
+                </div>
+                <label class="custom-toggle-switch">
+                    @Html.CheckBoxFor(m => m.AllowSearchByEmail, new { @class = "form-check-input" })
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
+            <hr />
+
+            <div class="form-group mt-3">
+                <button type="submit" class="btn btn-save-password">Lưu cài đặt</button>
+            </div>
+        }
+    </div>
+</div>

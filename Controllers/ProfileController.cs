@@ -23,18 +23,30 @@ namespace Online_chat.Controllers
         private readonly ApplicationDbContext _context = new ApplicationDbContext();
 
         public ActionResult Index()
-        {
+        {   
+            System.Diagnostics.Debug.WriteLine($"Is Authenticated: {User.Identity.IsAuthenticated}");
+            System.Diagnostics.Debug.WriteLine($"Username: {User.Identity.Name}");
+
             var currentUsername = User.Identity.Name;
+
+            if (string.IsNullOrEmpty(currentUsername))
+            {
+                System.Diagnostics.Debug.WriteLine("Username is NULL - Redirecting to Login");
+                return RedirectToAction("Login", "Account");
+            }
+
             var userProfile = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+
             if (userProfile == null)
             {
+                System.Diagnostics.Debug.WriteLine($"User not found: {currentUsername}");
                 return HttpNotFound();
             }
 
             ViewBag.CurrentUserAvatarUrl = userProfile?.AvatarUrl;
             ViewBag.CurrentUserAvatarVersion = userProfile?.AvatarVersion ?? 0;
 
-            return View(userProfile); 
+            return View(userProfile);
         }
 
         [HttpPost]
@@ -139,56 +151,69 @@ namespace Online_chat.Controllers
         }
 
         [HttpGet]
-        public async Task<JsonResult> GetUserPublicProfile(string username)
+        public JsonResult GetUserPublicProfile(string username)
         {
             if (string.IsNullOrEmpty(username))
             {
-                return Json(new { success = false, message = "Username không được rỗng" }, JsonRequestBehavior.AllowGet);
+                return Json(new { success = false, message = "Username không hợp lệ" }, JsonRequestBehavior.AllowGet);
             }
 
             try
             {
-                // Tôi dùng lại _context vì file ProfileController.cs trước bạn gửi đã có
-                // 'private readonly ApplicationDbContext _context = new ApplicationDbContext();'
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+                var user = _context.Users.FirstOrDefault(u => u.Username == username);
 
                 if (user == null)
                 {
                     return Json(new { success = false, message = "Không tìm thấy người dùng" }, JsonRequestBehavior.AllowGet);
                 }
 
+                // Lấy thông tin friendship nếu có
                 var currentUsername = User.Identity.Name;
-                var friendship = await _context.Friendships
-                    .Include(f => f.Sender)
-                    .Include(f => f.Receiver)
-                    .FirstOrDefaultAsync(f =>
-                        (f.Sender.Username == currentUsername && f.Receiver.Username == username && f.Status == FriendshipStatus.Accepted) ||
-                        (f.Sender.Username == username && f.Receiver.Username == currentUsername && f.Status == FriendshipStatus.Accepted)
+                var friendship = _context.Friendships
+                    .FirstOrDefault(f =>
+                        ((f.Sender.Username == currentUsername && f.Receiver.Username == username) ||
+                         (f.Sender.Username == username && f.Receiver.Username == currentUsername)) &&
+                        f.Status == FriendshipStatus.Accepted
                     );
-            
+
                 var publicProfile = new
                 {
-                    user.Username,
-                    user.DisplayName,
-                    user.AvatarUrl,
-                    CoverUrl = user.CoverPhotoUrl, 
-
-                    user.Gender,
-                    DateOfBirth = user.DateOfBirth?.ToString("o"),
-                    user.Bio, 
-
-                    PhoneNumber = string.IsNullOrEmpty(user.PhoneNumber) ? "" : "**********",
-                    Email = string.IsNullOrEmpty(user.Email) ? "" : "**********",
-
-                    FriendshipId = friendship?.Id 
+                    Username = user.Username,
+                    DisplayName = user.DisplayName,
+                    AvatarUrl = user.AvatarUrl,
+                    CoverUrl = user.CoverPhotoUrl,
+                    Gender = user.Gender,
+                    DateOfBirth = user.DateOfBirth?.ToString("o"), // ISO 8601 format
+                    PhoneNumber = string.IsNullOrEmpty(user.PhoneNumber) ? "Chưa cập nhật" : "**********", // Ẩn số điện thoại
+                    Email = string.IsNullOrEmpty(user.Email) ? "Chưa cập nhật" : "**********", // Ẩn email
+                    Bio = user.Bio,
+                    FriendshipId = friendship?.Id,
+                    QrCodeUrl = Url.Action("GetQrCodeByUsername", "Profile", new { username = user.Username })
                 };
 
                 return Json(new { success = true, user = publicProfile }, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Lỗi máy chủ: " + ex.Message }, JsonRequestBehavior.AllowGet);
+                return Json(new { success = false, message = "Lỗi server: " + ex.Message }, JsonRequestBehavior.AllowGet);
             }
+        }
+
+        [HttpGet]
+        public ActionResult GetQrCodeByUsername(string username)
+        {
+            var user = _context.Users.FirstOrDefault(u => u.Username == username);
+            if (user == null || string.IsNullOrEmpty(user.UserCode))
+            {
+                return HttpNotFound();
+            }
+
+            QRCodeGenerator qrGenerator = new QRCodeGenerator();
+            QRCodeData qrCodeData = qrGenerator.CreateQrCode(user.UserCode, QRCodeGenerator.ECCLevel.Q);
+            PngByteQRCode qrCode = new PngByteQRCode(qrCodeData);
+            byte[] qrCodeAsPngByteArr = qrCode.GetGraphic(10);
+
+            return File(qrCodeAsPngByteArr, "image/png");
         }
     }
 }

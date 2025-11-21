@@ -212,6 +212,45 @@ namespace Online_chat.Controllers
         }
 
 
+        [HttpPost]
+        public JsonResult Voice(HttpPostedFileBase voice)
+        {
+            try
+            {
+                if (voice == null || voice.ContentLength == 0)
+                    return Json(new { success = false, message = "Không có file ghi âm nào được gửi." });
+
+                // Giới hạn kích thước file ghi âm, ví dụ 5MB
+                if (voice.ContentLength > 5 * 1024 * 1024)
+                    return Json(new { success = false, message = "File ghi âm vượt quá 5MB." });
+
+                var fileName = Guid.NewGuid().ToString() + ".wav";
+                var uploadDir = Server.MapPath("~/Uploads/Voice");
+
+                if (!Directory.Exists(uploadDir))
+                    Directory.CreateDirectory(uploadDir);
+
+                var serverPath = Path.Combine(uploadDir, fileName);
+                voice.SaveAs(serverPath);
+
+                var timestamp = DateTime.Now.Ticks;
+                var relativePath = $"/Uploads/Voice/{fileName}?v={timestamp}";
+
+                return Json(new
+                {
+                    success = true,
+                    filePath = relativePath,
+                    fileSize = FormatFileSize(voice.ContentLength)
+                });
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                System.Diagnostics.Debug.WriteLine("Voice upload error: " + ex.Message);
+                return Json(new { success = false, message = "Lỗi khi xử lý file ghi âm." });
+            }
+        }
+
         private string FormatFileSize(long bytes)
         {
             string[] sizes = { "B", "KB", "MB", "GB" };

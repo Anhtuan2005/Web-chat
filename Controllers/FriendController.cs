@@ -2,6 +2,7 @@
 using Microsoft.AspNet.SignalR;
 using Online_chat.Hubs;
 using Online_chat.Models;
+using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
@@ -62,6 +63,7 @@ namespace Online_chat.Controllers
                 return new FriendItemViewModel
                 {
                     FriendshipId = f.Id,
+                    FriendId = friendUser.Id,
                     FriendDisplayName = friendUser.DisplayName,
                     FriendUsername = friendUser.Username,
                     FriendAvatarUrl = friendUser.AvatarUrl 
@@ -181,7 +183,8 @@ namespace Online_chat.Controllers
             {
                 SenderId = senderId,
                 ReceiverId = receiverId,
-                Status = FriendshipStatus.Pending
+                Status = FriendshipStatus.Pending,
+                CreatedAt = DateTime.Now
             };
             _context.Friendships.Add(friendship);
             _context.SaveChanges();
@@ -274,38 +277,238 @@ namespace Online_chat.Controllers
         [HttpGet]
         public JsonResult GetFriends()
         {
-            var currentUsername = User.Identity.Name;
-            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername && u.IsDeleted == false);
-
-            if (currentUser == null)
+            try
             {
-                return Json(new { success = false, message = "User not found" }, JsonRequestBehavior.AllowGet);
-            }
-            var currentUserId = currentUser.Id;
+                var currentUsername = User.Identity.Name;
+                var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername && u.IsDeleted == false);
 
-            var friendships = _context.Friendships
-                .Where(f => f.Status == FriendshipStatus.Accepted &&
-                            (
-                                (f.SenderId == currentUserId && f.Receiver.IsDeleted == false) ||
-                                (f.ReceiverId == currentUserId && f.Sender.IsDeleted == false)
-                            ))
-                .Include(f => f.Sender)
-                .Include(f => f.Receiver)
+                if (currentUser == null)
+                {
+                    return Json(new { success = false, message = "User not found" }, JsonRequestBehavior.AllowGet);
+                }
+
+                var currentUserId = currentUser.Id;
+
+                var friendships = _context.Friendships
+                    .Include(f => f.Sender)
+                    .Include(f => f.Receiver)
+                    .Where(f => f.Status == FriendshipStatus.Accepted &&
+                               (
+                                   (f.SenderId == currentUserId && f.Receiver.IsDeleted == false) ||
+                                   (f.ReceiverId == currentUserId && f.Sender.IsDeleted == false)
+                               ))
+                    .ToList();
+
+                var friends = friendships.Select(f =>
+                {
+                    var friendUser = f.SenderId == currentUserId ? f.Receiver : f.Sender;
+
+                    var lastMessage = _context.PrivateMessages
+                        .Where(m => (m.SenderId == currentUserId && m.ReceiverId == friendUser.Id) ||
+                                   (m.SenderId == friendUser.Id && m.ReceiverId == currentUserId))
+                        .OrderByDescending(m => m.Timestamp)
+                        .FirstOrDefault();
+
+                    var unreadCount = _context.PrivateMessages
+                        .Count(m => m.SenderId == friendUser.Id &&
+                                   m.ReceiverId == currentUserId &&
+                                   !m.IsRead);
+
+                    return new
+                    {
+                        Id = friendUser.Id,
+                        Username = friendUser.Username,
+                        DisplayName = friendUser.DisplayName ?? friendUser.Username,
+                        AvatarUrl = friendUser.AvatarUrl ?? "/Content/default-avatar.png",
+                        LastMessage = lastMessage != null ? GetMessagePreview(lastMessage.Content) : null,
+                        LastMessageTime = lastMessage?.Timestamp,
+                        UnreadCount = unreadCount
+                    };
+                })
+                .OrderByDescending(f => f.LastMessageTime ?? DateTime.MinValue)
                 .ToList();
 
-            var friends = friendships.Select(f => {
-                var friendUser = f.SenderId == currentUserId ? f.Receiver : f.Sender;
+                return Json(new { success = true, friends = friends }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
 
-                return new
+        // Helper method để lấy preview của tin nhắn
+        private string GetMessagePreview(string messageContent)
+        {
+            try
+            {
+                // Parse JSON content
+                var obj = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(messageContent);
+                var type = obj?.type?.ToString();
+
+                switch (type)
                 {
-                    Id = friendUser.Id,
-                    Username = friendUser.Username,
-                    DisplayName = friendUser.DisplayName,
-                    AvatarUrl = friendUser.AvatarUrl
-                };
-            }).ToList();
+                    case "text":
+                        var content = obj?.content?.ToString();
+                        if (string.IsNullOrEmpty(content)) return "";
+                        return content.Length > 50 ? content.Substring(0, 50) + "..." : content;
 
-            return Json(new { success = true, friends = friends }, JsonRequestBehavior.AllowGet);
+                    case "image":
+                        return "📷 Hình ảnh";
+
+                    case "video":
+                        return "🎥 Video";
+
+                    case "file":
+                        return "📎 File đính kèm";
+
+                    case "call_log":
+                        return "📞 Cuộc gọi";
+
+                    default:
+                        // Nếu không parse được JSON, trả về text thuần
+                        if (string.IsNullOrEmpty(messageContent)) return "";
+                        return messageContent.Length > 50
+                            ? messageContent.Substring(0, 50) + "..."
+                            : messageContent;
+                }
+            }
+            catch
+            {
+                // Fallback: nếu không parse được, coi như text thuần
+                if (string.IsNullOrEmpty(messageContent)) return "";
+                return messageContent.Length > 50
+                    ? messageContent.Substring(0, 50) + "..."
+                    : messageContent;
+            }
+        }
+
+        [HttpGet]
+        public JsonResult GetFriendSuggestions()
+        {
+            try
+            {
+                var currentUsername = User.Identity.Name;
+                var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername && !u.IsDeleted);
+                if (currentUser == null)
+                {
+                    return Json(new { success = false, message = "User not found." }, JsonRequestBehavior.AllowGet);
+                }
+                var currentUserId = currentUser.Id;
+
+                // 1. Get IDs of current user's direct friends
+                var friendIds = _context.Friendships
+                    .Where(f => f.Status == FriendshipStatus.Accepted && (f.SenderId == currentUserId || f.ReceiverId == currentUserId))
+                    .Select(f => f.SenderId == currentUserId ? f.ReceiverId : f.SenderId)
+                    .ToList();
+
+                // 2. Get IDs of users with pending requests (sent or received)
+                var pendingIds = _context.Friendships
+                    .Where(f => f.Status == FriendshipStatus.Pending && (f.SenderId == currentUserId || f.ReceiverId == currentUserId))
+                    .Select(f => f.SenderId == currentUserId ? f.ReceiverId : f.SenderId)
+                    .ToList();
+
+                // 3. Combine all excluded IDs: self, friends, and pending
+                var excludedIds = new HashSet<int>(friendIds);
+                excludedIds.UnionWith(pendingIds);
+                excludedIds.Add(currentUserId);
+
+                if (!friendIds.Any())
+                {
+                    // If user has no friends, suggest random users they don't have any relationship with
+                    var randomUsers = _context.Users
+                        .Where(u => !excludedIds.Contains(u.Id) && !u.IsDeleted)
+                        .ToList() // Fetch to memory
+                        .OrderBy(u => Guid.NewGuid()) // Random order in memory
+                        .Take(5)
+                        .Select(u => new {
+                            u.Id,
+                            u.Username,
+                            DisplayName = u.DisplayName ?? u.Username,
+                            AvatarUrl = u.AvatarUrl ?? "/Content/default-avatar.png"
+                        })
+                        .ToList();
+                    return Json(new { success = true, suggestions = randomUsers }, JsonRequestBehavior.AllowGet);
+                }
+
+                // 4. Get IDs of friends of friends
+                var friendsOfFriendsIds = _context.Friendships
+                    .Where(f => f.Status == FriendshipStatus.Accepted && (friendIds.Contains(f.SenderId) || friendIds.Contains(f.ReceiverId)))
+                    .Select(f => friendIds.Contains(f.SenderId) ? f.ReceiverId : f.SenderId)
+                    .Distinct()
+                    .ToList();
+
+                // 5. Filter out excluded IDs
+                var suggestedUserIds = friendsOfFriendsIds
+                    .Where(id => !excludedIds.Contains(id))
+                    .ToList();
+
+                // 6. Fetch user details for the suggestions, then randomize in memory
+                var suggestions = _context.Users
+                    .Where(u => suggestedUserIds.Contains(u.Id) && !u.IsDeleted)
+                    .ToList() // Fetch to memory
+                    .OrderBy(u => Guid.NewGuid()) // Randomize in memory
+                    .Take(5) // Limit to 5 suggestions
+                    .Select(u => new {
+                        u.Id,
+                        u.Username,
+                        DisplayName = u.DisplayName ?? u.Username,
+                        AvatarUrl = u.AvatarUrl ?? "/Content/default-avatar.png"
+                    })
+                    .ToList();
+
+                // If not enough suggestions from friends-of-friends, fill with random users
+                if (suggestions.Count < 5)
+                {
+                    var currentSuggestionIds = new HashSet<int>(suggestions.Select(s => s.Id));
+                    var allExcludedIds = new HashSet<int>(excludedIds);
+                    allExcludedIds.UnionWith(currentSuggestionIds);
+
+                    var additionalUsers = _context.Users
+                        .Where(u => !allExcludedIds.Contains(u.Id) && !u.IsDeleted)
+                        .ToList() // Fetch to memory
+                        .OrderBy(u => Guid.NewGuid()) // Randomize in memory
+                        .Take(5 - suggestions.Count)
+                        .Select(u => new {
+                            u.Id,
+                            u.Username,
+                            DisplayName = u.DisplayName ?? u.Username,
+                            AvatarUrl = u.AvatarUrl ?? "/Content/default-avatar.png"
+                        })
+                        .ToList();
+                    suggestions.AddRange(additionalUsers);
+                }
+
+
+                return Json(new { success = true, suggestions = suggestions }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "An error occurred: " + ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        [HttpGet]
+        public JsonResult GetUserDetails(int userId)
+        {
+            var user = _context.Users.FirstOrDefault(u => u.Id == userId && !u.IsDeleted);
+            if (user == null)
+            {
+                return Json(new { success = false, message = "User not found." }, JsonRequestBehavior.AllowGet);
+            }
+
+            var profileData = new
+            {
+                user.Id,
+                user.Username,
+                DisplayName = user.DisplayName ?? user.Username,
+                AvatarUrl = user.AvatarUrl ?? "/Content/default-avatar.png",
+                CoverPhotoUrl = user.CoverPhotoUrl ?? "/Content/default-cover.jpg",
+                user.Bio,
+                Gender = user.Gender?.ToString() ?? "Not specified",
+                DateOfBirth = user.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Not specified"
+            };
+
+            return Json(new { success = true, user = profileData }, JsonRequestBehavior.AllowGet);
         }
 
         protected override void Dispose(bool disposing)

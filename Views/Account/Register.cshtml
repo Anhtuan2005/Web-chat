@@ -1,46 +1,493 @@
 ﻿@{
-    ViewBag.Title = "Đăng Ký";
+    Layout = null;
 }
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng Ký - Chat App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<div class="row">
-    <div class="col-md-6 offset-md-3">
-        <div class="card">
-            <div class="card-header text-center">
-                <h2>Đăng Ký Tài Khoản Mới</h2>
-            </div>
-            <div class="card-body">
-                <form action="/Account/Register" method="post">
-                    <div class="form-group">
-                        <label>Tên đăng nhập:</label>
-                        <input type="text" name="username" class="form-control" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Mật khẩu:</label>
-                        <input type="password" name="password" class="form-control" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Tên hiển thị:</label>
-                        <input type="text" name="displayName" class="form-control" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Email:</label>
-                        <input type="email" name="email" class="form-control" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Số điện thoại:</label>
-                        <input type="tel" name="phoneNumber" class="form-control" />
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-block">Đăng Ký</button>
-                </form>
+        body {
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #a7f3d0 0%, #34d399 100%);
+            position: relative;
+            overflow-x: hidden;
+          
+        }
 
-                @if (ViewBag.Error != null)
-                {
-                    <p class="text-danger mt-3">@ViewBag.Error</p>
-                }
+
+        /* Animated background elements */
+        .bg-decoration {
+            position: fixed;
+            border-radius: 50%;
+            opacity: 0.1;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .circle-1 {
+            width: 400px;
+            height: 400px;
+            background: #4ade80;
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .circle-2 {
+            width: 300px;
+            height: 300px;
+            background: #22c55e;
+            bottom: -50px;
+            right: -50px;
+            animation-delay: 5s;
+        }
+
+        .circle-3 {
+            width: 200px;
+            height: 200px;
+            background: #86efac;
+            top: 50%;
+            right: 10%;
+            animation-delay: 10s;
+        }
+
+        .leaf {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            opacity: 0.15;
+            animation: fall 15s infinite linear;
+        }
+
+        .leaf:nth-child(4) {
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .leaf:nth-child(5) {
+            left: 30%;
+            animation-delay: 3s;
+        }
+
+        .leaf:nth-child(6) {
+            left: 50%;
+            animation-delay: 6s;
+        }
+
+        .leaf:nth-child(7) {
+            left: 70%;
+            animation-delay: 9s;
+        }
+
+        .leaf:nth-child(8) {
+            left: 90%;
+            animation-delay: 12s;
+        }
+
+        @@keyframes fall {
+            0% {
+                top: -50px;
+                transform: rotate(0deg);
+            }
+            100% {
+                top: 100vh;
+                transform: rotate(360deg);
+            }
+        }
+
+        keyframes float {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            25% {
+                transform: translateY(-30px) rotate(90deg);
+            }
+            50% {
+                transform: translateY(-60px) rotate(180deg);
+            }
+            75% {
+                transform: translateY(-30px) rotate(270deg);
+            }
+        }
+
+        .register-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 520px;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 45px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @@keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+            box-shadow: 0 10px 30px rgba(34, 197, 94, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @@keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .logo-icon svg {
+            width: 40px;
+            height: 40px;
+            stroke: white;
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .auth-card h2 {
+            color: #1a1a1a;
+            font-weight: 700;
+            font-size: 28px;
+            margin-bottom: 6px;
+        }
+
+        .auth-card p.subtitle {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 28px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            display: block;
+            color: #374151;
+            font-weight: 500;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            transition: color 0.3s;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 14px 12px 42px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: #f9fafb;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #22c55e;
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1);
+        }
+
+        .form-control:focus + .input-icon {
+            color: #22c55e;
+        }
+
+        .form-control::placeholder {
+            color: #d1d5db;
+            font-size: 13px;
+        }
+
+        .btn-register {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+            margin-top: 8px;
+        }
+
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4);
+        }
+
+        .btn-register:active {
+            transform: translateY(0);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 22px 0;
+            color: #9ca3af;
+            font-size: 12px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e5e7eb;
+        }
+
+        .divider span {
+            padding: 0 12px;
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 22px;
+        }
+
+        .auth-footer p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .auth-footer a {
+            color: #22c55e;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .auth-footer a:hover {
+            color: #16a34a;
+            text-decoration: underline;
+        }
+
+        .text-danger {
+            color: #ef4444 !important;
+            font-weight: 500;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 15px;
+            padding: 12px;
+            background: #fee2e2;
+            border-radius: 8px;
+            border-left: 4px solid #ef4444;
+        }
+
+        .terms {
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .terms a {
+            color: #22c55e;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .terms a:hover {
+            text-decoration: underline;
+        }
+
+        @@media (max-width: 576px) {
+            .auth-card {
+                padding: 35px 25px;
+            }
+
+            .register-container {
+                padding: 15px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+
+            .form-group.full-width {
+                grid-column: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-decoration circle-1"></div>
+    <div class="bg-decoration circle-2"></div>
+    <div class="bg-decoration circle-3"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+
+    <div class="register-container">
+        <div class="auth-card">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </div>
+                <h2>Tạo tài khoản mới</h2>
+                <p class="subtitle">Tham gia cộng đồng và bắt đầu trò chuyện</p>
             </div>
-            <div class="card-footer text-center">
-                <a href="/Account/Login">Đã có tài khoản? Đăng nhập ngay</a>
+
+            <form action="/Account/Register" method="post">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Tên đăng nhập *</label>
+                        <div class="input-wrapper">
+                            <input type="text" name="username" class="form-control" placeholder="username" required />
+                            <span class="input-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tên hiển thị *</label>
+                        <div class="input-wrapper">
+                            <input type="text" name="displayName" class="form-control" placeholder="Tên của bạn" required />
+                            <span class="input-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email *</label>
+                    <div class="input-wrapper">
+                        <input type="email" name="email" class="form-control" placeholder="email@example.com" required />
+                        <span class="input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Mật khẩu *</label>
+                        <div class="input-wrapper">
+                            <input type="password" name="password" class="form-control" placeholder="••••••••" required />
+                            <span class="input-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Số điện thoại</label>
+                        <div class="input-wrapper">
+                            <input type="tel" name="phoneNumber" class="form-control" placeholder="0123456789" />
+                            <span class="input-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-register">Đăng Ký Ngay</button>
+
+                <p class="terms">
+                    Bằng cách đăng ký, bạn đồng ý với <a href="/Home/Terms">Điều khoản dịch vụ</a> và <a href="/Home/Privacy">Chính sách bảo mật</a> của chúng tôi
+                </p>
+            </form>
+
+            <div class="divider">
+                <span>ĐÃ CÓ TÀI KHOẢN?</span>
+            </div>
+
+            <div class="auth-footer">
+                <p><a href="/Account/Login">Đăng nhập tại đây</a></p>
             </div>
         </div>
     </div>
-</div>
+</body>
+</html>

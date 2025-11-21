@@ -10,6 +10,7 @@ namespace Online_chat.Models
     public class FriendItemViewModel
     {
         public int FriendshipId { get; set; }
+        public int FriendId { get; set; }
         public string FriendDisplayName { get; set; }
         public string FriendUsername { get; set; }
         public string FriendAvatarUrl { get; set; } 

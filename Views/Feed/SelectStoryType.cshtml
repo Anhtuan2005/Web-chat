@@ -1,0 +1,210 @@
+﻿@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạo tin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #18191a;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .story-container {
+            width: 100%;
+            max-width: 900px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @@keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .story-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 0;
+            color: white;
+        }
+
+            .story-header h2 {
+                font-size: 28px;
+                font-weight: 700;
+            }
+
+        .close-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #3a3b3c;
+            border: none;
+            color: #b0b3b8;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 20px;
+        }
+
+            .close-btn:hover {
+                background: #4e4f50;
+                color: white;
+            }
+
+        .story-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .story-option-card {
+            background: #242526;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            height: 420px;
+            border: 2px solid transparent;
+        }
+
+            .story-option-card:hover {
+                transform: translateY(-4px);
+                border-color: #4267b2;
+            }
+
+        .story-card-preview {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .story-option-card.image-story .story-card-preview {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .story-option-card.text-story .story-card-preview {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .story-card-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 38px;
+            color: white;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .story-option-card:hover .story-card-icon {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .story-card-footer {
+            padding: 24px;
+            background: #242526;
+            text-align: center;
+        }
+
+            .story-card-footer h3 {
+                font-size: 17px;
+                font-weight: 600;
+                color: #e4e6eb;
+                margin: 0;
+            }
+
+        @@media (max-width: 768px) {
+            .story-options {
+                grid-template-columns: 1fr;
+            }
+
+            .story-header h2 {
+                font-size: 24px;
+            }
+
+            .story-option-card {
+                height: 380px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="story-container">
+        <div class="story-header">
+            <h2>Tạo tin</h2>
+            <button class="close-btn" onclick="goBack()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="story-options">
+            <!-- Image Story Option -->
+            <a href="/Feed/CreateStory?type=image" class="story-option-card image-story">
+                <div class="story-card-preview">
+                    <div class="story-card-icon">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                </div>
+                <div class="story-card-footer">
+                    <h3>Tạo tin dạng ảnh</h3>
+                </div>
+            </a>
+
+            <!-- Text Story Option -->
+            <a href="/Feed/CreateStory?type=text" class="story-option-card text-story">
+                <div class="story-card-preview">
+                    <div class="story-card-icon">
+                        <i class="fas fa-font"></i>
+                    </div>
+                </div>
+                <div class="story-card-footer">
+                    <h3>Tạo tin dạng văn bản</h3>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        function goBack() {
+            window.location.href = '/Feed/Index';
+        }
+    </script>
+</body>
+</html>

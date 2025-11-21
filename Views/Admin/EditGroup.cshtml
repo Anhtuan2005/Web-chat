@@ -6,7 +6,7 @@
 
 <div class="page-header">
     <h1 class="page-title">Chỉnh sửa nhóm</h1>
-    <p class="page-subtitle">Cập nhật thông tin nhóm: <strong>@Model.GroupName</strong></p>
+    <p class="page-subtitle">Cập nhật thông tin nhóm: <strong>@Model.Name</strong></p>
 </div>
 
 <div class="row">
@@ -28,9 +28,9 @@
                     @Html.HiddenFor(model => model.CreatedAt)
 
                     <div class="mb-3">
-                        @Html.LabelFor(model => model.GroupName, "Tên nhóm", new { @class = "form-label fw-bold" })
-                        @Html.EditorFor(model => model.GroupName, new { htmlAttributes = new { @class = "form-control", placeholder = "Nhập tên nhóm" } })
-                        @Html.ValidationMessageFor(model => model.GroupName, "", new { @class = "text-danger small" })
+                        @Html.LabelFor(model => model.Name, "Tên nhóm", new { @class = "form-label fw-bold" })
+                        @Html.EditorFor(model => model.Name, new { htmlAttributes = new { @class = "form-control", placeholder = "Nhập tên nhóm" } })
+                        @Html.ValidationMessageFor(model => model.Name, "", new { @class = "text-danger small" })
                     </div>
 
                     <div class="mb-4">
@@ -103,7 +103,7 @@
                     @Html.AntiForgeryToken()
                     <button type="submit"
                             class="btn btn-danger w-100"
-                            onclick="return confirm('XÓA VĨNH VIỄN nhóm @Model.GroupName? Hành động này KHÔNG THỂ HOÀN TÁC!');">
+                            onclick="return confirm('XÓA VĨNH VIỄN nhóm @Model.Name? Hành động này KHÔNG THỂ HOÀN TÁC!');">
                         <i class="fas fa-trash me-2"></i>Xóa nhóm
                     </button>
                 }

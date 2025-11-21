@@ -1,0 +1,92 @@
+@model Online_chat.Models.Post
+
+@{ 
+    var currentUserId = ViewBag.CurrentUserId as int?;
+    var currentUserAvatar = ViewBag.CurrentUserAvatar as string;
+    var likeCount = Model.Likes != null ? Model.Likes.Count : 0;
+    var userHasLiked = currentUserId.HasValue && Model.Likes != null && Model.Likes.Any(l => l.UserId == currentUserId.Value);
+}
+
+<div class="post-card" data-post-id="@Model.Id" data-post-url="@Url.Action("Post", "Feed", new { id = Model.Id })">
+    <div class="card-header">
+        <img src="@(string.IsNullOrEmpty(Model.User.AvatarUrl) ? "/Content/default-avatar.png" : Model.User.AvatarUrl)" alt="Avatar">
+        <div class="user-info">
+            <strong>@Model.User.DisplayName</strong>
+            <small>@Model.CreatedAt.ToString("dd/MM/yyyy 'lúc' HH:mm")</small>
+        </div>
+
+        <div class="post-menu dropdown">
+            <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-ellipsis-h"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                @if (currentUserId.HasValue && Model.UserId == currentUserId.Value)
+                {
+                    <li><a class="dropdown-item delete-post-btn" href="#"><i class="fas fa-trash"></i>Xóa bài viết</a></li>
+                    <li><a class="dropdown-item privacy-toggle-btn" href="#" data-post-id="@Model.Id"><i class="fas fa-lock"></i>@(Model.Privacy == "Public" ? "Chuyển sang Riêng tư" : "Chuyển sang Công khai")</a></li>
+                }
+                else
+                {
+                    <li><a class="dropdown-item hide-post-btn" href="#"><i class="fas fa-eye-slash"></i>Ẩn bài viết</a></li>
+                    <li><a class="dropdown-item report-post-btn" href="#"><i class="fas fa-flag"></i>Báo cáo bài viết</a></li>
+                }
+            </ul>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (!string.IsNullOrEmpty(Model.Content))
+        {
+            <p class="card-text">@Html.Raw(Model.Content.Replace("\n", "<br />"))</p>
+        }
+        @if (!string.IsNullOrEmpty(Model.MediaUrl))
+        {
+            if (Model.MediaType == "Image")
+            {
+                <img src="@Url.Content(Model.MediaUrl)" class="img-fluid" alt="Post Image" />
+            }
+            else if (Model.MediaType == "Video")
+            {
+                <video controls class="w-100">
+                    <source src="@Url.Content(Model.MediaUrl)" type="video/mp4">
+                    Trình duyệt của bạn không hỗ trợ video.
+                </video>
+            }
+        }
+    </div>
+
+    @if (likeCount > 0)
+    {
+        <div class="like-info">
+            <i class="fas fa-heart" style="color: #e74c3c;"></i>
+            <span class="like-count">@likeCount</span>
+        </div>
+    }
+
+    <div class="post-actions">
+        <button class="btn like-btn @(userHasLiked ? "liked" : "")" data-post-id="@Model.Id">
+            <i class="fa-heart @(userHasLiked ? "fas" : "far")"></i> Thích
+        </button>
+        <button class="btn comment-btn">
+            <i class="far fa-comment"></i> Bình luận
+        </button>
+        <button class="btn share-btn">
+            <i class="far fa-share-square"></i> Chia sẻ
+        </button>
+    </div>
+
+    <div class="post-comments">
+        <div class="comment-list">
+            @if (Model.Comments != null)
+            {
+                foreach (var comment in Model.Comments.OrderBy(c => c.CreatedAt))
+                {
+                    @Html.Partial("_CommentPartial", comment, new ViewDataDictionary { { "CurrentUserId", currentUserId } })
+                }
+            }
+        </div>
+        <form class="comment-add-form" data-post-id="@Model.Id">
+            <img src="@(string.IsNullOrEmpty(currentUserAvatar) ? "/Content/default-avatar.png" : currentUserAvatar)" alt="Avatar">
+            <input type="text" class="form-control comment-input" placeholder="Viết bình luận..." required>
+        </form>
+    </div>
+</div>

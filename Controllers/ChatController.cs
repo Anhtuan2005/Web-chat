@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
@@ -11,11 +11,19 @@ namespace Online_chat.Controllers
     [Authorize]
     public class ChatController : BaseController
     {
-        private ApplicationDbContext db = new ApplicationDbContext();
 
-        public ActionResult Index(string friend)
+        public ActionResult Index(string friendUsername)
         {
-            ViewBag.SelectedFriendUsername = friend;
+            var currentUsername = User.Identity.Name;
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+
+            if (currentUser != null)
+            {
+                ViewBag.CurrentUserAvatarUrl = currentUser.AvatarUrl;
+                ViewBag.CurrentUserAvatarVersion = currentUser.AvatarVersion;
+            }
+
+            ViewBag.SelectedFriendUsername = friendUsername;
             return View();
         }
 
@@ -25,57 +33,74 @@ namespace Online_chat.Controllers
             try
             {
                 var currentUsername = User.Identity.Name;
-                var currentUser = db.Users.FirstOrDefault(u => u.Username == currentUsername);
+                var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
 
-                if (currentUser == null)
-                {
-                    return Json(new List<ConversationViewModel>(), JsonRequestBehavior.AllowGet);
-                }
+                if (currentUser == null) return Json(new List<ConversationViewModel>(), JsonRequestBehavior.AllowGet);
 
+                // ID của User hiện tại là String
                 var currentUserId = currentUser.Id;
+
+                var hiddenPartnerUsernames = _context.HiddenConversations
+                    .Where(h => h.UserId == currentUserId.ToString())
+                    .Select(h => h.PartnerUsername)
+                    .ToList();
+
+                // Key của dictionary: ConversationId ép về string để dễ so sánh
+                var pinnedConversations = _context.PinnedConversations
+                    .Where(p => p.UserId == currentUserId)
+                    .ToList() // Lấy về bộ nhớ trước
+                    .ToDictionary(p => new { Id = p.ConversationId.ToString(), Type = p.ConversationType }, p => p.PinnedAt);
+
                 var conversations = new List<ConversationViewModel>();
 
-                // Lấy các cuộc trò chuyện cá nhân
-                var privateMessages = db.PrivateMessages
-                    .Where(m => m.SenderId == currentUserId || m.ReceiverId == currentUserId)
-                    .ToList() // Execute query first
-                    .GroupBy(m => m.SenderId == currentUserId ? m.ReceiverId : m.SenderId)
+                // --- XỬ LÝ PRIVATE MESSAGES ---
+                // Đảm bảo SenderId/ReceiverId trong DB đã là String
+                var privateMessages = _context.PrivateMessages
+                .Where(m => m.SenderId == currentUserId || m.ReceiverId == currentUserId)
+                .ToList()
+                .GroupBy(m => m.SenderId == currentUserId ? m.ReceiverId : m.SenderId)
                     .Select(g => new
                     {
-                        PartnerId = g.Key,
+                        PartnerId = g.Key, // Đây là string
                         LastMessage = g.OrderByDescending(m => m.Timestamp).FirstOrDefault()
                     })
                     .ToList();
 
                 foreach (var pm in privateMessages)
                 {
-                    var partner = db.Users.Find(pm.PartnerId);
-                    if (partner != null && partner.Username != currentUsername)
+                    var partner = _context.Users.Find(pm.PartnerId); // Find hoạt động tốt vì PartnerId là string
+                    if (partner != null && partner.Username != currentUsername && !hiddenPartnerUsernames.Contains(partner.Username))
                     {
-                        var unreadCount = db.PrivateMessages.Count(m =>
+                        var unreadCount = _context.PrivateMessages.Count(m =>
                             m.SenderId == pm.PartnerId &&
                             m.ReceiverId == currentUserId &&
                             !m.IsRead);
 
+                        var isPinned = pinnedConversations.TryGetValue(
+                        new { Id = partner.Id.ToString(), Type = "Private" }, // Convert partner.Id to string
+                        out var pinnedAt);
+
                         conversations.Add(new ConversationViewModel
                         {
                             Type = "Private",
-                            Id = partner.Id,
+                            Id = partner.Id.ToString(),
                             Username = partner.Username,
                             DisplayName = partner.DisplayName ?? partner.Username,
                             Name = partner.DisplayName ?? partner.Username,
                             AvatarUrl = partner.AvatarUrl ?? "/Content/default-avatar.png",
                             LastMessage = pm.LastMessage?.Content ?? "",
                             LastMessageTimestamp = pm.LastMessage?.Timestamp ?? DateTime.MinValue,
-                            UnreadCount = unreadCount
+                            UnreadCount = unreadCount,
+                            IsPinned = isPinned,
+                            PinnedAt = isPinned ? pinnedAt : DateTime.MinValue
                         });
                     }
                 }
 
-                // Lấy các cuộc trò chuyện nhóm
-                var groupMemberships = db.GroupMembers
-                    .Where(gm => gm.UserId == currentUserId)
-                    .Include(gm => gm.Group)
+                // --- XỬ LÝ GROUP MESSAGES ---
+                var groupMemberships = _context.GroupMembers
+                    .Where(gm => gm.UserId == currentUser.Id)
+                    .Include(gm => gm.Group.Members.Select(m => m.User)) // Eager load members and their users
                     .ToList();
 
                 foreach (var membership in groupMemberships)
@@ -83,22 +108,44 @@ namespace Online_chat.Controllers
                     var group = membership.Group;
                     if (group != null)
                     {
-                        var lastMessage = db.GroupMessages
+                        var lastMessage = _context.GroupMessages
                             .Where(gm => gm.GroupId == group.Id)
                             .OrderByDescending(m => m.Timestamp)
                             .FirstOrDefault();
 
+                        var isPinned = pinnedConversations.TryGetValue(new { Id = group.Id.ToString(), Type = "Group" }, out var pinnedAt);
+
+                        // Get member avatars for composite avatar
+                        var allMemberAvatars = group.Members
+                            .Select(m => m.User.AvatarUrl ?? "/Content/default-avatar.png")
+                            .ToList();
+
+                        List<string> memberAvatars;
+                        if (allMemberAvatars.Count > 3)
+                        {
+                            // Randomly select 3
+                            var rnd = new Random();
+                            memberAvatars = allMemberAvatars.OrderBy(x => rnd.Next()).Take(3).ToList();
+                        }
+                        else
+                        {
+                            memberAvatars = allMemberAvatars;
+                        }
+
                         conversations.Add(new ConversationViewModel
                         {
                             Type = "Group",
-                            Id = group.Id,
+                            Id = group.Id.ToString(),
                             Name = group.Name,
                             Username = null,
                             DisplayName = group.Name,
-                            AvatarUrl = group.AvatarUrl ?? "/Content/default-group-avatar.png",
+                            AvatarUrl = group.AvatarUrl, // Keep custom uploaded avatar if it exists
+                            MemberAvatarUrls = memberAvatars, // Add the list here
                             LastMessage = lastMessage?.Content ?? "",
                             LastMessageTimestamp = lastMessage?.Timestamp ?? DateTime.MinValue,
-                            UnreadCount = 0
+                            UnreadCount = 0,
+                            IsPinned = isPinned,
+                            PinnedAt = isPinned ? pinnedAt : DateTime.MinValue
                         });
                     }
                 }
@@ -113,19 +160,156 @@ namespace Online_chat.Controllers
                     conversations = conversations.Where(c => c.Type == "Group").ToList();
                 }
 
-                // Sắp xếp theo thời gian tin nhắn cuối
+                // Sắp xếp: ghim lên đầu, sau đó theo thời gian ghim, cuối cùng là tin nhắn mới nhất
                 var sortedConversations = conversations
-                    .OrderByDescending(c => c.LastMessageTimestamp)
+                    .OrderByDescending(c => c.IsPinned)
+                    .ThenByDescending(c => c.PinnedAt)
+                    .ThenByDescending(c => c.LastMessageTimestamp)
                     .ToList();
 
                 return Json(sortedConversations, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
             {
-                // Log error (you should add logging here)
                 System.Diagnostics.Debug.WriteLine($"Error in GetConversations: {ex.Message}");
                 return Json(new List<ConversationViewModel>(), JsonRequestBehavior.AllowGet);
             }
+        }
+
+        [HttpGet]
+        public ActionResult GetChatUsers()
+        {
+            try
+            {
+                var username = User.Identity.Name;
+                var currentUser = _context.Users.FirstOrDefault(u => u.Username == username && !u.IsDeleted);
+
+                if (currentUser == null)
+                {
+                    return Json(new List<object>(), JsonRequestBehavior.AllowGet);
+                }
+
+                var users = _context.Users
+                    .Where(u => !u.IsDeleted && u.Id != currentUser.Id)
+                    .OrderBy(u => u.Username)
+                    .Select(u => new
+                    {
+                        Id = u.Id,
+                        Username = u.Username,
+                        AvatarUrl = u.AvatarUrl
+                    })
+                    .ToList();
+
+                return Json(users, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new List<object>(), JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public JsonResult DeleteConversation(string partnerUsername)
+        {
+            var currentUsername = User.Identity.Name;
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+            var partner = _context.Users.FirstOrDefault(u => u.Username == partnerUsername);
+
+            if (currentUser == null || partner == null)
+            {
+                return Json(new { success = false, message = "User not found." });
+            }
+
+            // Check if it's already hidden
+            var existingHiddenConversation = _context.HiddenConversations
+                .FirstOrDefault(h => h.UserId == currentUser.Id.ToString() && h.PartnerUsername == partnerUsername);
+
+            if (existingHiddenConversation == null)
+            {
+                var hiddenConversation = new HiddenConversation
+                {
+                    UserId = currentUser.Id.ToString(),
+                    PartnerUsername = partnerUsername
+                };
+                _context.HiddenConversations.Add(hiddenConversation);
+                _context.SaveChanges();
+            }
+
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public JsonResult PinConversation(string conversationId, string conversationType)
+        {
+            var currentUsername = User.Identity.Name;
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+
+            if (currentUser == null)
+            {
+                return Json(new { success = false, message = "User not found." });
+            }
+
+            var existingPin = _context.PinnedConversations.FirstOrDefault(p =>
+                p.UserId == currentUser.Id &&
+                p.ConversationId == conversationId && 
+                p.ConversationType == conversationType);
+
+            bool isPinned;
+
+            if (existingPin != null)
+            {
+                _context.PinnedConversations.Remove(existingPin);
+                isPinned = false;
+            }
+            else
+            {
+                var newPin = new PinnedConversation
+                {
+                    UserId = currentUser.Id,
+                    ConversationId = conversationId, 
+                    ConversationType = conversationType,
+                    PinnedAt = DateTime.UtcNow
+                };
+                _context.PinnedConversations.Add(newPin);
+                isPinned = true;
+            }
+
+            _context.SaveChanges();
+            return Json(new { success = true, isPinned = isPinned });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public JsonResult ReportConversation(string reportedUsername, string reason)
+        {
+            var currentUsername = User.Identity.Name;
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+            var reportedUser = _context.Users.FirstOrDefault(u => u.Username == reportedUsername);
+
+            if (currentUser == null || reportedUser == null)
+            {
+                return Json(new { success = false, message = "User not found." });
+            }
+
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                return Json(new { success = false, message = "Reason is required." });
+            }
+
+            var report = new Report
+            {
+                ReporterId = currentUser.Id, 
+                ReportedUserId = reportedUser.Id, 
+                Reason = reason,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Reports.Add(report);
+            _context.SaveChanges();
+
+            return Json(new { success = true });
         }
 
         [HttpGet]
@@ -142,6 +326,8 @@ namespace Online_chat.Controllers
             // Đếm số tin nhắn chưa đọc từ mỗi người
             var unreadCounts = _context.PrivateMessages
                 .Where(m => m.ReceiverId == currentUser.Id && !m.IsRead)
+                .Include(m => m.Sender)
+                .ToList()
                 .GroupBy(m => m.Sender.Username)
                 .Select(g => new { Username = g.Key, Count = g.Count() })
                 .ToDictionary(x => x.Username, x => x.Count);
@@ -150,6 +336,7 @@ namespace Online_chat.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public JsonResult MarkAsRead(string partnerUsername)
         {
             var currentUsername = User.Identity.Name;
@@ -182,30 +369,100 @@ namespace Online_chat.Controllers
         public JsonResult GetChatHistory(string partnerUsername)
         {
             var currentUsername = User.Identity.Name;
-            var currentUser = db.Users.FirstOrDefault(u => u.Username == currentUsername);
-            var partnerUser = db.Users.FirstOrDefault(u => u.Username == partnerUsername);
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+            var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername);
 
             if (currentUser == null || partnerUser == null)
             {
                 return Json(new { success = false, message = "User not found" }, JsonRequestBehavior.AllowGet);
             }
 
-            var messages = db.PrivateMessages
+            // CORRECTION: Charger toutes les données puis faire la projection
+            var messages = _context.PrivateMessages
+                .Include(m => m.Sender)
+                .Include(m => m.Receiver)
+                .Include(m => m.ParentMessage)
+                .Include(m => m.ParentMessage.Sender)
+                .Include(m => m.Reactions.Select(r => r.User))
+                .Include(m => m.ForwardedFrom)
                 .Where(m => (m.SenderId == currentUser.Id && m.ReceiverId == partnerUser.Id) ||
-                             (m.SenderId == partnerUser.Id && m.ReceiverId == currentUser.Id))
+                            (m.SenderId == partnerUser.Id && m.ReceiverId == currentUser.Id))
                 .OrderBy(m => m.Timestamp)
-                .Select(m => new
+                .ToList(); // Exécuter la requête AVANT la projection
+
+            // Puis faire la projection en mémoire
+            var result = messages.Select(m => new
+            {
+                Id = m.Id,
+                SenderUsername = m.Sender.Username,
+                SenderAvatar = m.Sender.AvatarUrl ?? "/Content/default-avatar.png",
+                Content = m.Content,
+                Timestamp = m.Timestamp.ToString("o"),
+                Status = m.Status.ToString(),
+                EditedAt = m.EditedAt?.ToString("o"),
+                IsDeleted = m.IsDeleted,
+                ParentMessage = m.ParentMessage != null ? new
                 {
-                    Id = m.Id,
-                    SenderUsername = m.Sender.Username,
-                    SenderAvatar = m.Sender.AvatarUrl,
-                    Content = m.Content,
-                    Timestamp = m.Timestamp,
-                    Status = m.Status
-                })
+                    Id = m.ParentMessage.Id,
+                    Content = m.ParentMessage.Content,
+                    SenderUsername = m.ParentMessage.Sender.Username
+                } : null,
+                Reactions = m.Reactions.Select(r => new
+                {
+                    Id = r.Id,
+                    UserId = r.UserId,
+                    Username = r.User.Username,
+                    Emoji = r.Emoji
+                }).ToList(),
+                ForwardedFrom = m.ForwardedFrom != null ? new
+                {
+                    Id = m.ForwardedFrom.Id,
+                    Username = m.ForwardedFrom.Username,
+                    DisplayName = m.ForwardedFrom.DisplayName
+                } : null
+            }).ToList();
+
+            return Json(new { success = true, messages = result }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult GetGroupChatHistory(int groupId)
+        {
+            var currentUsername = User.Identity.Name;
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+
+            if (currentUser == null)
+            {
+                return Json(new { success = false, message = "User not found" }, JsonRequestBehavior.AllowGet);
+            }
+
+            // Check if user is a member of the group
+            var isMember = _context.GroupMembers.Any(gm => gm.GroupId == groupId && gm.UserId == currentUser.Id);
+            if (!isMember)
+            {
+                // Or handle as an error, e.g., return new HttpStatusCodeResult(HttpStatusCode.Forbidden);
+                return Json(new { success = false, message = "Access denied." }, JsonRequestBehavior.AllowGet);
+            }
+
+            var messages = _context.GroupMessages
+                .Include(m => m.Sender)
+                .Where(m => m.GroupId == groupId)
+                .OrderBy(m => m.Timestamp)
                 .ToList();
 
-            return Json(new { success = true, messages = messages }, JsonRequestBehavior.AllowGet);
+            var result = messages.Select(m => new
+            {
+                Id = m.Id,
+                SenderUsername = m.Sender.Username,
+                SenderAvatar = m.Sender.AvatarUrl ?? "/Content/default-avatar.png",
+                Content = m.Content,
+                Timestamp = m.Timestamp.ToString("o"),
+                // Add any other properties you need, similar to GetChatHistory
+                IsDeleted = m.IsDeleted,
+                EditedAt = m.EditedAt?.ToString("o")
+            }).ToList();
+
+            return Json(new { success = true, messages = result }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpPost]
@@ -213,20 +470,21 @@ namespace Online_chat.Controllers
         public JsonResult ClearHistory(string partnerUsername)
         {
             var currentUsername = User.Identity.Name;
-            var currentUser = db.Users.FirstOrDefault(u => u.Username == currentUsername);
-            var partnerUser = db.Users.FirstOrDefault(u => u.Username == partnerUsername);
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+            var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername);
 
             if (currentUser == null || partnerUser == null)
             {
                 return Json(new { success = false, message = "User not found" });
             }
 
-            var messagesToDelete = db.PrivateMessages
-                .Where(m => (m.SenderId == currentUser.Id && m.ReceiverId == partnerUser.Id) ||
-                             (m.SenderId == partnerUser.Id && m.ReceiverId == currentUser.Id));
+            var messagesToDelete = _context.PrivateMessages
+                .Where(m => (m.SenderId == currentUser.Id & m.ReceiverId == partnerUser.Id) ||
+                             (m.SenderId == partnerUser.Id & m.ReceiverId == currentUser.Id))
+                .ToList();
 
-            db.PrivateMessages.RemoveRange(messagesToDelete);
-            db.SaveChanges();
+            _context.PrivateMessages.RemoveRange(messagesToDelete);
+            _context.SaveChanges();
 
             return Json(new { success = true });
         }
@@ -235,40 +493,174 @@ namespace Online_chat.Controllers
         public JsonResult GetConversationInfo(string partnerUsername)
         {
             var currentUsername = User.Identity.Name;
-            var currentUser = db.Users.FirstOrDefault(u => u.Username == currentUsername);
-            var partnerUser = db.Users.FirstOrDefault(u => u.Username == partnerUsername);
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+            var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername);
 
             if (currentUser == null || partnerUser == null)
             {
                 return Json(new { success = false, message = "User not found" }, JsonRequestBehavior.AllowGet);
             }
 
-            var messages = db.PrivateMessages
+            var messages = _context.PrivateMessages
                 .Where(m => (m.SenderId == currentUser.Id && m.ReceiverId == partnerUser.Id) ||
-                             (m.SenderId == partnerUser.Id && m.ReceiverId == currentUser.Id))
+                             (m.SenderId == partnerUser.Id& m.ReceiverId == currentUser.Id))
                 .OrderByDescending(m => m.Timestamp)
                 .ToList();
 
             var images = messages
                 .Where(m => m.MessageType == "image")
-                .Select(m => new { Url = m.Content, Timestamp = m.Timestamp })
+                .Select(m => new
+                {
+                    Url = GetContentFromJson(m.Content), 
+                    Timestamp = m.Timestamp.ToString("dd/MM/yyyy")
+                })
                 .Take(20)
                 .ToList();
 
             var files = messages
                 .Where(m => m.MessageType == "file")
-                .Select(m => new { Url = m.Content, FileName = "File", Timestamp = m.Timestamp })
+                .Select(m => new
+                {
+                    Url = GetContentFromJson(m.Content),
+                    FileName = GetFileNameFromJson(m.Content),
+                    Timestamp = m.Timestamp.ToString("dd/MM/yyyy")
+                })
                 .Take(20)
                 .ToList();
 
             return Json(new { success = true, images = images, files = files }, JsonRequestBehavior.AllowGet);
         }
 
+        // Helper methods pour extraire les données JSON
+        private string GetContentFromJson(string jsonContent)
+        {
+            try
+            {
+                var obj = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(jsonContent);
+                return obj?.content?.ToString() ?? jsonContent;
+            }
+            catch
+            {
+                return jsonContent;
+            }
+        }
+
+        private string GetFileNameFromJson(string jsonContent)
+        {
+            try
+            {
+                var obj = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(jsonContent);
+                return obj?.fileName?.ToString() ?? "File";
+            }
+            catch
+            {
+                return "File";
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public JsonResult CreateGroup(string groupName, List<string> memberUsernames)
+        {
+            if (string.IsNullOrWhiteSpace(groupName))
+            {
+                return Json(new { success = false, message = "Tên nhóm không được để trống." });
+            }
+
+            if (memberUsernames == null || memberUsernames.Count < 1)
+            {
+                return Json(new { success = false, message = "Vui lòng chọn ít nhất 1 thành viên để tạo nhóm." });
+            }
+
+            var currentUsername = User.Identity.Name;
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+
+            // Create the group
+            var newGroup = new Group
+            {
+                Name = groupName,
+                CreatedBy = currentUsername,
+                CreatedAt = DateTime.UtcNow,
+                CreatedById = currentUser.Id
+            };
+            _context.Groups.Add(newGroup);
+            _context.SaveChanges(); // Save to get the newGroup.Id
+
+            // Add the creator to the group
+            var creatorMember = new GroupMember
+            {
+                GroupId = newGroup.Id,
+                UserId = currentUser.Id,
+                JoinedAt = DateTime.UtcNow
+            };
+            _context.GroupMembers.Add(creatorMember);
+
+            // Add the selected members
+            foreach (var username in memberUsernames)
+            {
+                var user = _context.Users.FirstOrDefault(u => u.Username == username);
+                if (user != null)
+                {
+                    var member = new GroupMember
+                    {
+                        GroupId = newGroup.Id,
+                        UserId = user.Id,
+                        JoinedAt = DateTime.UtcNow
+                    };
+                    _context.GroupMembers.Add(member);
+                }
+            }
+
+            _context.SaveChanges();
+
+            return Json(new { success = true, groupId = newGroup.Id, groupName = newGroup.Name });
+        }
+
+        [HttpGet]
+        public JsonResult SearchMessages(string term, string partnerUsername)
+        {
+            if (string.IsNullOrWhiteSpace(term) || string.IsNullOrWhiteSpace(partnerUsername))
+            {
+                return Json(new { success = false, message = "Invalid parameters." }, JsonRequestBehavior.AllowGet);
+            }
+
+            var currentUsername = User.Identity.Name;
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+            var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername);
+
+            if (currentUser == null || partnerUser == null)
+            {
+                return Json(new { success = false, message = "User not found." }, JsonRequestBehavior.AllowGet);
+            }
+
+            var messages = _context.PrivateMessages
+                .Include(m => m.Sender)
+                .Where(m => ((m.SenderId == currentUser.Id && m.ReceiverId == partnerUser.Id) ||
+                             (m.SenderId == partnerUser.Id && m.ReceiverId == currentUser.Id)) &&
+                            !m.IsDeleted &&
+                            m.MessageType == "text" && // Chỉ tìm kiếm trong tin nhắn văn bản
+                            m.Content.Contains(term))
+                .OrderByDescending(m => m.Timestamp)
+                .Take(50) // Limit results
+                .ToList();
+
+            var results = messages.Select(m => new
+            {
+                Id = m.Id,
+                Content = m.Content, // In a real app, you'd want to sanitize and highlight the term
+                SenderUsername = m.Sender.Username,
+                SenderAvatar = m.Sender.AvatarUrl ?? "/Content/default-avatar.png",
+                Timestamp = m.Timestamp
+            }).ToList();
+
+            return Json(new { success = true, results = results }, JsonRequestBehavior.AllowGet);
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                db.Dispose();
+                _context.Dispose();
             }
             base.Dispose(disposing);
         }

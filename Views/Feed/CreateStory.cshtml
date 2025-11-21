@@ -1,0 +1,741 @@
+﻿@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạo tin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #18191a;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .story-creator {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            height: 100vh;
+        }
+
+        /* Left Sidebar */
+        .story-sidebar {
+            background: #242526;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+            .sidebar-header h2 {
+                font-size: 24px;
+                font-weight: 700;
+                color: #e4e6eb;
+            }
+
+        .close-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #3a3b3c;
+            border: none;
+            color: #b0b3b8;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+            .close-btn:hover {
+                background: #4e4f50;
+            }
+
+        .story-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .story-tab {
+            flex: 1;
+            padding: 10px;
+            background: #3a3b3c;
+            border: none;
+            border-radius: 8px;
+            color: #b0b3b8;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+            .story-tab.active {
+                background: #4267b2;
+                color: white;
+            }
+
+            .story-tab:hover:not(.active) {
+                background: #4e4f50;
+            }
+
+        /* Text Story Controls */
+        .text-controls {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+            .text-controls.active {
+                display: flex;
+            }
+
+        .control-section {
+            background: #3a3b3c;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+            .control-section h3 {
+                color: #e4e6eb;
+                font-size: 16px;
+                font-weight: 600;
+                margin-bottom: 12px;
+            }
+
+        .text-input-wrapper {
+            position: relative;
+        }
+
+        .story-text-input {
+            width: 100%;
+            min-height: 120px;
+            background: #242526;
+            border: 2px solid #4e4f50;
+            border-radius: 8px;
+            padding: 12px;
+            color: #e4e6eb;
+            font-size: 15px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+            .story-text-input:focus {
+                outline: none;
+                border-color: #4267b2;
+            }
+
+        .char-counter {
+            position: absolute;
+            bottom: 8px;
+            right: 12px;
+            color: #b0b3b8;
+            font-size: 12px;
+        }
+
+        .bg-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .bg-option {
+            height: 60px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+            .bg-option:hover {
+                transform: scale(1.05);
+            }
+
+            .bg-option.active {
+                border-color: #4267b2;
+            }
+
+        .font-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .font-option {
+            padding: 12px;
+            background: #242526;
+            border: 2px solid #4e4f50;
+            border-radius: 8px;
+            color: #e4e6eb;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+            .font-option:hover {
+                background: #3a3b3c;
+            }
+
+            .font-option.active {
+                border-color: #4267b2;
+                background: #3a3b3c;
+            }
+
+        /* Image Story Controls */
+        .image-controls {
+            display: none;
+        }
+
+            .image-controls.active {
+                display: block;
+            }
+
+        .upload-area {
+            background: #3a3b3c;
+            border: 2px dashed #4e4f50;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+            .upload-area:hover {
+                border-color: #4267b2;
+                background: #4e4f50;
+            }
+
+            .upload-area i {
+                font-size: 48px;
+                color: #b0b3b8;
+                margin-bottom: 16px;
+                display: block;
+            }
+
+            .upload-area p {
+                color: #e4e6eb;
+                font-size: 16px;
+                font-weight: 600;
+            }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        /* Right Preview */
+        .story-preview-area {
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .phone-frame {
+            width: 360px;
+            height: 640px;
+            background: white;
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .story-preview {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+            .story-preview img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+        .story-text-display {
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            text-align: center;
+            padding: 40px;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .story-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 100%);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .story-user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid white;
+            object-fit: cover;
+        }
+
+        .story-user-info {
+            flex: 1;
+        }
+
+        .story-user-name {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .story-time {
+            color: rgba(255,255,255,0.8);
+            font-size: 12px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* Submit Button */
+        .submit-section {
+            margin-top: auto;
+            padding-top: 20px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: #4267b2;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+            .btn-submit:hover:not(:disabled) {
+                background: #365899;
+            }
+
+            .btn-submit:disabled {
+                background: #4e4f50;
+                cursor: not-allowed;
+            }
+
+        @@media (max-width: 768px) {
+            .story-creator {
+                grid-template-columns: 1fr;
+            }
+
+            .story-preview-area {
+                display: none;
+            }
+
+            .phone-frame {
+                width: 100%;
+                max-width: 360px;
+                height: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <form id="storyForm" enctype="multipart/form-data">
+        <div class="story-creator">
+            <!-- Left Sidebar -->
+            <div class="story-sidebar">
+                <div class="sidebar-header">
+                    <h2>Tin của bạn</h2>
+                    <button type="button" class="close-btn" onclick="goBack()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <!-- Story Type Tabs -->
+                <div class="story-tabs">
+                    <button type="button" class="story-tab active" data-type="text">
+                        <i class="fas fa-font"></i> Văn bản
+                    </button>
+                    <button type="button" class="story-tab" data-type="image">
+                        <i class="fas fa-camera"></i> Ảnh
+                    </button>
+                </div>
+
+                <!-- Text Story Controls -->
+                <div class="text-controls active" id="text-controls">
+                    <div class="control-section">
+                        <h3>Nội dung</h3>
+                        <div class="text-input-wrapper">
+                            <textarea class="story-text-input"
+                                      id="storyText"
+                                      name="storyText"
+                                      placeholder="Bắt đầu nhập..."
+                                      maxlength="200"
+                                      oninput="updateTextPreview()"></textarea>
+                            <span class="char-counter" id="charCounter">0/200</span>
+                        </div>
+                    </div>
+
+                    <div class="control-section">
+                        <h3>Màu nền</h3>
+                        <div class="bg-grid">
+                            <div class="bg-option active" style="background: linear-gradient(135deg, #667eea, #764ba2);" onclick="changeBg(this, 'linear-gradient(135deg, #667eea, #764ba2)')"></div>
+                            <div class="bg-option" style="background: linear-gradient(135deg, #f093fb, #f5576c);" onclick="changeBg(this, 'linear-gradient(135deg, #f093fb, #f5576c)')"></div>
+                            <div class="bg-option" style="background: linear-gradient(135deg, #4facfe, #00f2fe);" onclick="changeBg(this, 'linear-gradient(135deg, #4facfe, #00f2fe)')"></div>
+                            <div class="bg-option" style="background: linear-gradient(135deg, #43e97b, #38f9d7);" onclick="changeBg(this, 'linear-gradient(135deg, #43e97b, #38f9d7)')"></div>
+                            <div class="bg-option" style="background: linear-gradient(135deg, #fa709a, #fee140);" onclick="changeBg(this, 'linear-gradient(135deg, #fa709a, #fee140)')"></div>
+                            <div class="bg-option" style="background: linear-gradient(135deg, #30cfd0, #330867);" onclick="changeBg(this, 'linear-gradient(135deg, #30cfd0, #330867)')"></div>
+                        </div>
+                    </div>
+
+                    <div class="control-section">
+                        <h3>Phông chữ</h3>
+                        <div class="font-selector">
+                            <div class="font-option active" style="font-family: 'Inter', sans-serif;" onclick="changeFont(this, 'Inter, sans-serif')">Aa</div>
+                            <div class="font-option" style="font-family: Georgia, serif;" onclick="changeFont(this, 'Georgia, serif')">Aa</div>
+                            <div class="font-option" style="font-family: 'Courier New', monospace;" onclick="changeFont(this, 'Courier New', monospace')">Aa</div>
+                            <div class="font-option" style="font-family: 'Comic Sans MS', cursive;" onclick="changeFont(this, 'Comic Sans MS', cursive')">Aa</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image Story Controls -->
+                <div class="image-controls" id="image-controls">
+                    <div class="control-section">
+                        <label for="imageInput" class="upload-area">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Thêm ảnh từ thiết bị</p>
+                        </label>
+                        <input type="file" id="imageInput" name="imageInput" accept="image/*" onchange="handleImageUpload(event)">
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="submit-section">
+                    <button type="submit" class="btn-submit" id="submitBtn">
+                        <i class="fas fa-paper-plane"></i> Chia sẻ lên tin
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Preview -->
+            <div class="story-preview-area">
+                <div class="phone-frame">
+                    <div class="story-preview" id="storyPreview">
+                        <div class="story-text-display" id="textDisplay">Bắt đầu nhập...</div>
+                        <img id="imageDisplay" style="display: none;">
+
+                        <div class="story-overlay">
+                            <img src="https://via.placeholder.com/40" alt="Avatar" class="story-user-avatar" id="previewAvatar">
+                            <div class="story-user-info">
+                                <div class="story-user-name" id="previewName">Tên của bạn</div>
+                                <div class="story-time">Vừa xong</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <input type="hidden" name="storyType" id="storyType" value="text">
+
+                <input type="hidden" name="background" id="backgroundValue" value="linear-gradient(135deg, #667eea, #764ba2)">
+
+                <input type="hidden" name="fontFamily" id="fontValue" value="Inter, sans-serif">
+
+                @Html.AntiForgeryToken()
+
+            </form>
+
+        
+
+            <script>
+
+                let currentStoryType = 'text';
+
+                let currentBg = 'linear-gradient(135deg, #667eea, #764ba2)';
+
+                let currentFont = 'Inter, sans-serif';
+
+        
+
+                // Tab switching
+
+                document.querySelectorAll('.story-tab').forEach(tab => {
+
+                    tab.addEventListener('click', function() {
+
+                        const type = this.getAttribute('data-type');
+
+                        currentStoryType = type;
+
+        
+
+                        document.querySelectorAll('.story-tab').forEach(t => t.classList.remove('active'));
+
+                        this.classList.add('active');
+
+        
+
+                        document.getElementById('text-controls').classList.remove('active');
+
+                        document.getElementById('image-controls').classList.remove('active');
+
+        
+
+                        if (type === 'text') {
+
+                            document.getElementById('text-controls').classList.add('active');
+
+                            document.getElementById('textDisplay').style.display = 'block';
+
+                            document.getElementById('imageDisplay').style.display = 'none';
+
+                        } else {
+
+                            document.getElementById('image-controls').classList.add('active');
+
+                            document.getElementById('textDisplay').style.display = 'none';
+
+                        }
+
+        
+
+                        document.getElementById('storyType').value = type;
+
+                    });
+
+                });
+
+        
+
+                // Text preview
+
+                function updateTextPreview() {
+
+                    const text = document.getElementById('storyText').value;
+
+                    const charCount = text.length;
+
+                    document.getElementById('charCounter').textContent = charCount + '/200';
+
+                    document.getElementById('textDisplay').textContent = text || 'Bắt đầu nhập...';
+
+                }
+
+        
+
+                // Background change
+
+                function changeBg(element, gradient) {
+
+                    document.querySelectorAll('.bg-option').forEach(opt => opt.classList.remove('active'));
+
+                    element.classList.add('active');
+
+                    currentBg = gradient;
+
+                    document.getElementById('storyPreview').style.background = gradient;
+
+                    document.getElementById('backgroundValue').value = gradient;
+
+                }
+
+        
+
+                // Font change
+
+                function changeFont(element, font) {
+
+                    document.querySelectorAll('.font-option').forEach(opt => opt.classList.remove('active'));
+
+                    element.classList.add('active');
+
+                    currentFont = font;
+
+                    document.getElementById('textDisplay').style.fontFamily = font;
+
+                    document.getElementById('fontValue').value = font;
+
+                }
+
+        
+
+                // Image upload
+
+                function handleImageUpload(event) {
+
+                    const file = event.target.files[0];
+
+                    if (!file) return;
+
+        
+
+                    const reader = new FileReader();
+
+                    reader.onload = function(e) {
+
+                        document.getElementById('imageDisplay').src = e.target.result;
+
+                        document.getElementById('imageDisplay').style.display = 'block';
+
+                        document.getElementById('textDisplay').style.display = 'none';
+
+                    };
+
+                    reader.readAsDataURL(file);
+
+                }
+
+        
+
+                // Go back
+
+                function goBack() {
+
+                    window.location.href = '@Url.Action("SelectStoryType", "Feed")';
+
+                }
+
+        
+
+                // Form submission
+
+                document.getElementById('storyForm').addEventListener('submit', function(e) {
+
+                    e.preventDefault();
+
+        
+
+                    const submitBtn = document.getElementById('submitBtn');
+
+                    submitBtn.disabled = true;
+
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang đăng...';
+
+        
+
+                    const formData = new FormData(this);
+
+        
+
+                    fetch('@Url.Action("CreateStory", "Feed")', {
+
+                        method: 'POST',
+
+                        body: formData
+
+                    })
+
+                    .then(response => {
+
+                        if (!response.ok) {
+
+                            // If we get an error page (like a 404 or 500), it's not JSON
+
+                            // This prevents the "Unexpected token '<'" error.
+
+                            throw new Error('Network response was not ok. Status: ' + response.status);
+
+                        }
+
+                        return response.json();
+
+                    })
+
+                    .then(data => {
+
+                        if (data.success) {
+
+                            alert('Đã chia sẻ tin thành công!');
+
+                            window.location.href = '@Url.Action("Index", "Feed")';
+
+                        } else {
+
+                            alert('Lỗi: ' + (data.message || 'Không thể tạo tin'));
+
+                            submitBtn.disabled = false;
+
+                            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Chia sẻ lên tin';
+
+                        }
+
+                    })
+
+                    .catch(error => {
+
+                        console.error('Error:', error);
+
+                        alert('Đã xảy ra lỗi. Vui lòng thử lại!');
+
+                        submitBtn.disabled = false;
+
+                        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Chia sẻ lên tin';
+
+                    });
+
+                });
+
+        
+
+                // Load user info
+
+                window.addEventListener('DOMContentLoaded', function() {
+
+                    fetch('@Url.Action("GetCurrentUser", "Account")')
+
+                        .then(response => {
+
+                             if (!response.ok) {
+
+                                throw new Error('Network response was not ok. Status: ' + response.status);
+
+                            }
+
+                            return response.json();
+
+                        })
+
+                        .then(user => {
+
+                            document.getElementById('previewName').textContent = user.name;
+
+                            document.getElementById('previewAvatar').src = user.avatar;
+
+                        })
+
+                        .catch(error => console.error('Error loading user:', error));
+
+                });
+    </script>
+</body>
+</html>

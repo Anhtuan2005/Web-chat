@@ -52,7 +52,7 @@ namespace Online_chat.Controllers
                     CreatedAt = DateTime.Now,
                     CreatedBy = currentUser.Username,
                     OwnerId = currentUser.Id,
-                    AvatarUrl = "/Content/default-group-avatar.png" // Mặc định
+                    AvatarUrl = "/Content/default-avatar.png" // Mặc định
                 };
 
                 db.Groups.Add(group);
@@ -110,9 +110,9 @@ namespace Online_chat.Controllers
                 .Select(g => new ConversationViewModel
                 {
                     Type = "Group",
-                    Id = g.Id,
+                    Id = g.Id.ToString(),
                     Name = g.Name,
-                    AvatarUrl = g.AvatarUrl ?? "/Content/default-group-avatar.png",
+                    AvatarUrl = g.AvatarUrl ?? "/Content/default-avatar.png",
                     LastMessage = g.Messages
                         .OrderByDescending(m => m.Timestamp)
                         .Select(m => m.Content)
@@ -328,6 +328,52 @@ namespace Online_chat.Controllers
             catch (Exception ex)
             {
                 return Json(new { success = false, message = "Lỗi: " + ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public JsonResult DeleteGroup(int groupId)
+        {
+            var currentUsername = User.Identity.Name;
+            var currentUser = db.Users.FirstOrDefault(u => u.Username == currentUsername);
+
+            if (currentUser == null)
+            {
+                return Json(new { success = false, message = "User not found." });
+            }
+
+            var group = db.Groups.Find(groupId);
+
+            if (group == null)
+            {
+                return Json(new { success = false, message = "Group not found." });
+            }
+
+            // Only the owner can delete the group
+            if (group.OwnerId != currentUser.Id)
+            {
+                return Json(new { success = false, message = "You are not the owner of this group." });
+            }
+
+            try
+            {
+                // Manually delete related entities first to avoid constraint violations
+                var members = db.GroupMembers.Where(gm => gm.GroupId == groupId).ToList();
+                db.GroupMembers.RemoveRange(members);
+
+                var messages = db.GroupMessages.Where(gm => gm.GroupId == groupId).ToList();
+                db.GroupMessages.RemoveRange(messages);
+
+                db.Groups.Remove(group);
+                db.SaveChanges();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                return Json(new { success = false, message = "An error occurred while deleting the group." });
             }
         }
 

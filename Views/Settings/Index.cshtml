@@ -1,18 +1,73 @@
-﻿@{
+@{
     ViewBag.Title = "Cài đặt";
-    Layout = "~/Views/Shared/_ChatLayout.cshtml"; 
+    Layout = "~/Views/Shared/_ChatLayout.cshtml";
+    string activePage = (string)ViewBag.ActivePage ?? "Appearance";
 }
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+
 <style>
-    .settings-content-area {
+    .settings-container {
+        display: flex;
         height: 100%;
-        overflow-y: auto;
         background-color: #fafffe;
-        padding: 40px;
     }
 
+    .settings-sidebar {
+        width: 280px;
+        background-color: #ffffff;
+        border-right: 1px solid #e8f5e9;
+        padding: 20px;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.03);
+        flex-shrink: 0;
+    }
+
+    .settings-menu-title {
+        font-weight: 700;
+        color: #2e7d32;
+        font-size: 1.5rem;
+        margin-bottom: 25px;
+        padding-left: 15px;
+    }
+
+    .settings-menu ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .settings-menu li a {
+        display: flex;
+        align-items: center;
+        padding: 15px 20px;
+        color: #333;
+        text-decoration: none;
+        border-radius: 12px;
+        margin-bottom: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+        .settings-menu li a:hover, .settings-menu li a.active {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+    .settings-menu .menu-icon {
+        margin-right: 15px;
+        width: 20px;
+        text-align: center;
+    }
+
+    .settings-content {
+        flex-grow: 1;
+        padding: 40px;
+        overflow-y: auto;
+    }
+
+    /* Styles from the old page that are still needed */
     .settings-card {
-        max-width: 600px;
+        max-width: 800px;
         margin: 0 auto 30px auto;
         background: #fff;
         border-radius: 18px;
@@ -105,6 +160,7 @@
         .slider.round:before {
             border-radius: 50%;
         }
+
     .form-group label {
         font-weight: 600;
         color: #388e3c;
@@ -132,111 +188,126 @@
     }
 </style>
 
-<div class="settings-content-area">
-
-    <div class="settings-card">
-        <div class="settings-header">🎨 Giao diện</div>
-        <div class="settings-body">
-            <div class="settings-item">
-                <div class="settings-item-label">
-                    <strong>Chủ đề Tối (Dark Mode)</strong>
-                    <p>Giảm độ chói và cải thiện khả năng đọc.</p>
-                </div>
-                <label class="custom-toggle-switch">
-                    <input type="checkbox" id="toggle-theme">
-                    <span class="slider round"></span>
-                </label>
-            </div>
-        </div>
+<div class="settings-container">
+    <div class="settings-sidebar">
+        <div class="settings-menu-title">Cài đặt</div>
+        <nav class="settings-menu">
+            <ul>
+                <li><a href="@Url.Action("Index", new { page = "Appearance" })" class="@(activePage == "Appearance" ? "active" : "")"><i class="fas fa-paint-brush menu-icon"></i>Giao diện</a></li>
+                <li><a href="@Url.Action("Index", new { page = "Notifications" })" class="@(activePage == "Notifications" ? "active" : "")"><i class="fas fa-bell menu-icon"></i>Thông báo</a></li>
+                <li><a href="@Url.Action("Index", new { page = "Security" })" class="@(activePage == "Security" ? "active" : "")"><i class="fas fa-shield-alt menu-icon"></i>Tài khoản & Bảo mật</a></li>
+                <li><a href="@Url.Action("Index", new { page = "Block" })" class="@(activePage == "Block" ? "active" : "")"><i class="fas fa-ban menu-icon"></i>Danh sách chặn</a></li>
+                <li><a href="@Url.Action("Index", new { page = "Language" })" class="@(activePage == "Language" ? "active" : "")"><i class="fas fa-language menu-icon"></i>Ngôn ngữ</a></li>
+            </ul>
+        </nav>
     </div>
-
-    <div class="settings-card">
-        <div class="settings-header">🔔 Thông báo</div>
-        <div class="settings-body">
-            <div class="settings-item">
-                <div class="settings-item-label">
-                    <strong>Âm thanh thông báo</strong>
-                    <p>Phát âm thanh khi có tin nhắn mới.</p>
-                </div>
-                <label class="custom-toggle-switch">
-                    <input type="checkbox" id="toggle-sounds">
-                    <span class="slider round"></span>
-                </label>
-            </div>
-        </div>
+    <div class="settings-content">
+        @switch (activePage)
+        {
+            case "Notifications":
+                Html.RenderPartial("_NotificationSettings");
+                break;
+            case "Security":
+                Html.RenderPartial("_SecuritySettings");
+                break;
+            case "Block":
+                Html.RenderPartial("_BlockSettings", (IEnumerable<Online_chat.Models.BlockedUser>)ViewBag.BlockedUsers);
+                break;
+            case "Language":
+                Html.RenderPartial("_LanguageSettings");
+                break;
+            case "Appearance":
+            default:
+                Html.RenderPartial("_AppearanceSettings");
+                break;
+        }
     </div>
-
-    <div class="settings-card">
-        <div class="settings-header">🔒 Tài khoản & Bảo mật</div>
-        <div class="settings-body">
-            <strong>Đổi mật khẩu</strong>
-
-            @if (TempData["PasswordError"] != null)
-            {
-                <div class="alert alert-danger mt-3">@TempData["PasswordError"]</div>
-            }
-            @if (TempData["PasswordSuccess"] != null)
-            {
-                <div class="alert alert-success mt-3">@TempData["PasswordSuccess"]</div>
-            }
-
-            @using (Html.BeginForm("ChangePassword", "Settings", FormMethod.Post, new { @class = "mt-3" }))
-            {
-                @Html.AntiForgeryToken()
-                <div class="form-group">
-                    <label for="oldPassword">Mật khẩu cũ</label>
-                    <input type="password" name="oldPassword" class="form-control" required />
-                </div>
-                <div class="form-group">
-                    <label for="newPassword">Mật khẩu mới (ít nhất 6 ký tự)</label>
-                    <input type="password" name="newPassword" class="form-control" required />
-                </div>
-                <div class="form-group">
-                    <label for="confirmPassword">Xác nhận mật khẩu mới</label>
-                    <input type="password" name="confirmPassword" class="form-control" required />
-                </div>
-                <button type="submit" class="btn btn-save-password mt-2">Lưu mật khẩu</button>
-            }
-        </div>
-    </div>
-
 </div>
 
 @section scripts {
     <script>
-        $(function () {
-            const themeToggle = $('#toggle-theme');
+        $(document).ready(function () {
 
-            if (localStorage.getItem('theme') === 'dark') {
-                themeToggle.prop('checked', true);
-            }
-            themeToggle.on('change', function() {
-                if ($(this).is(':checked')) {
-                    localStorage.setItem('theme', 'dark');
+            // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+            // EVENT HANDLERS FOR SETTINGS PAGES
+            // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+            // For _AppearanceSettings.cshtml
+            $('#darkModeToggle').change(function () {
+                if ($(this).is(":checked")) {
                     $('html').addClass('dark-mode');
+                    localStorage.setItem('theme', 'dark');
                 } else {
-
-                    localStorage.setItem('theme', 'light');
                     $('html').removeClass('dark-mode');
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+            // check darkmode is enable or not
+            var theme = localStorage.getItem('theme');
+            if (theme === 'dark') {
+                $('#darkModeToggle').prop('checked', true);
+            } else {
+                $('#darkModeToggle').prop('checked', false);
+            }
+
+
+            // For _NotificationSettings.cshtml
+            $('#soundNotificationToggle').change(function () {
+                if ($(this).is(":checked")) {
+                    console.log("Sound notifications enabled (UI only)");
+                } else {
+                    console.log("Sound notifications disabled (UI only)");
                 }
             });
 
-            // === 2. LOGIC CHO ÂM THANH ===
-            const soundToggle = $('#toggle-sounds');
+            // For _LanguageSettings.cshtml
+            $('#languageSelect').change(function () {
+                var selectedLanguage = $(this).val();
+                console.log("Language selected: " + selectedLanguage + " (UI only)");
+            });
 
-            // Đặt trạng thái (Mặc định là BẬT - true)
-            if (localStorage.getItem('playSounds') === 'false') {
-                soundToggle.prop('checked', false);
-            } else {
-                soundToggle.prop('checked', true);
-            }
-
-            // Khi bấm nút gạt
-            soundToggle.on('change', function() {
-                if ($(this).is(':checked')) {
-                    localStorage.setItem('playSounds', 'true');
-                } else {
-                    localStorage.setItem('playSounds', 'false');
+            // For _SecuritySettings.cshtml (Change Password)
+            $('#changePasswordForm').submit(function (e) {
+                e.preventDefault();
+                var form = $(this);
+                var messagePlaceholder = $('#password-message-placeholder');
+                $.ajax({
+                    type: "POST",
+                    url: '@Url.Action("ChangePassword")',
+                    data: form.serialize(),
+                    success: function (data) {
+                        var alertClass = data.success ? 'alert-success' : 'alert-danger';
+                        messagePlaceholder.html('<div class="alert ' + alertClass + '">' + data.message + '</div>');
+                        if (data.success) {
+                            form[0].reset();
+                        }
+                    },
+                    error: function () {
+                        messagePlaceholder.html('<div class="alert alert-danger">Đã có lỗi xảy ra. Vui lòng thử lại.</div>');
+                    }
+                });
+            });
+            
+            // For _BlockSettings.cshtml
+            $('.unblock-user-btn').click(function () {
+                var button = $(this);
+                var blockedUserId = button.data('userid');
+                if (confirm('Bạn có chắc chắn muốn bỏ chặn người dùng này không?')) {
+                    $.ajax({
+                        url: '@Url.Action("UnblockUser")',
+                        type: 'POST',
+                        data: { blockedUserId: blockedUserId },
+                        success: function (response) {
+                            if (response.success) {
+                                $('#blocked-user-' + blockedUserId).fadeOut(300, function () { $(this).remove(); });
+                            } else {
+                                alert('Lỗi: ' + response.message);
+                            }
+                        },
+                        error: function () {
+                            alert('Đã xảy ra lỗi khi kết nối tới máy chủ.');
+                        }
+                    });
                 }
             });
         });

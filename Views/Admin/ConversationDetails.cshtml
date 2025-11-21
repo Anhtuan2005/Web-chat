@@ -1,0 +1,56 @@
+@model IEnumerable<Online_chat.Models.PrivateMessage>
+@{
+    ViewBag.Title = "Chi tiết cuộc trò chuyện";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var user1 = (Online_chat.Models.User)ViewBag.User1;
+    var user2 = (Online_chat.Models.User)ViewBag.User2;
+}
+
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="fas fa-comments me-2"></i>
+        Chi tiết cuộc trò chuyện
+    </h1>
+    <p class="page-subtitle">Xem lịch sử tin nhắn giữa <strong>@user1.Username</strong> và <strong>@user2.Username</strong></p>
+</div>
+
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="content-card-title">Lịch sử tin nhắn</h5>
+                <a href="@Url.Action("ManagePrivateMessages")" class="btn btn-sm btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Tất cả cuộc trò chuyện
+                </a>
+            </div>
+            <div class="content-card-body">
+                <div class="chat-log" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
+                    @foreach (var message in Model)
+                    {
+                        <div class="d-flex align-items-start mb-3">
+                            <img src="@(message.Sender.AvatarUrl ?? "/Content/default-avatar.png")"
+                                 class="rounded-circle me-3"
+                                 style="width: 40px; height: 40px; object-fit: cover;"
+                                 alt="Avatar" />
+                            <div class="flex-grow-1">
+                                <div>
+                                    <strong>@message.Sender.Username</strong>
+                                    <small class="text-muted ms-2">@message.Timestamp.ToString("dd/MM/yyyy HH:mm")</small>
+                                </div>
+                                <div class="p-2 mt-1 rounded bg-light border" style="display: inline-block; max-width: 80%;">
+                                    @message.Content
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <div class="text-center py-5">
+                            <p class="text-muted">Không có tin nhắn nào trong cuộc trò chuyện này.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

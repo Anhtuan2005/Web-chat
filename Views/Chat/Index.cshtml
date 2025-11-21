@@ -1,4 +1,4 @@
-﻿@Styles.Render("~/Content/chat-styles.css")
+﻿@Styles.Render("~/Content/chat-styles.css?v=" + DateTime.Now.Ticks)
 
 @{
     ViewBag.Title = "Chat";
@@ -114,6 +114,13 @@
             <button id="toggle-attach-menu" class="btn btn-light" type="button" title="Đính kèm khác">
                 <i class="fas fa-paperclip"></i>
             </button>
+            <button id="record-voice-btn" class="btn btn-light" type="button" title="Ghi âm giọng nói">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <div id="recording-timer" style="display: none; align-items: center; gap: 5px; color: #d9534f; font-weight: 600; margin: 0 10px;">
+                <i class="fas fa-circle" style="font-size: 8px;"></i>
+                <span>00:00</span>
+            </div>
             <input type="text" id="messageInput" placeholder="Nhập tin nhắn..." autocomplete="off" />
             <button id="sendButton"><i class="fas fa-paper-plane"></i></button>
         </div>
@@ -130,9 +137,15 @@
         <div class="info-sidebar-body">
             <!-- User info -->
             <div class="info-sidebar-user">
-                <img id="info-sidebar-avatar" src="/Content/default-avatar.png" />
+                <div id="info-sidebar-avatar-wrapper" class="position-relative">
+                    <img id="info-sidebar-avatar" src="/Content/default-avatar.png" />
+                    <button id="change-group-avatar-btn" class="btn btn-sm btn-light" style="display: none; position: absolute; bottom: 5px; right: 5px; border-radius: 50%;">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                </div>
                 <h5 id="info-sidebar-displayname">Đang tải...</h5>
             </div>
+            <input type="file" id="groupAvatarInput" accept="image/*" style="display: none;" />
 
             <div class="chat-settings-section">
                 <h6>
@@ -242,6 +255,10 @@
                             <!-- BÁO XẤU -->
                             <a href="#" class="list-group-item list-group-item-action text-danger" id="info-action-report">
                                 <i class="fas fa-exclamation-triangle"></i> Báo xấu
+                            </a>
+                            <!-- CHẶN -->
+                            <a href="#" class="list-group-item list-group-item-action text-danger" id="info-action-block-user">
+                                <i class="fas fa-ban"></i> Chặn người dùng
                             </a>
                             <!-- XÓA LỊCH SỬ -->
                             <a href="#" class="list-group-item list-group-item-action text-danger" id="info-action-clear-history">
@@ -372,12 +389,12 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Xem trước ảnh</h5>
-                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    <h5 class="modal-title">Xem trước tệp</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body text-center" id="imagePreviewContainer" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"></div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
                     <button type="button" class="btn btn-primary" id="sendImageButton">Gửi</button>
                 </div>
             </div>
@@ -488,7 +505,7 @@
     </div>
     <!-- Partner Profile Modal -->
     <div class="modal fade" id="partnerProfileModal" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content" style="border-radius: 16px; overflow: hidden;">
                 <!-- Cover Photo -->
                 <div id="partner-modal-cover" style="height: 150px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); background-size: cover; background-position: center;"></div>
@@ -553,14 +570,6 @@
                 </div>
             </div>
         </div>
-        <div style="margin-top: 20px; padding: 12px; background: #f8f9fa; border-radius: 8px; text-align: left;">
-            <p style="margin: 0; font-size: 0.9rem; color: #555;" id="partner-modal-bio">Không có tiểu sử.</p>
-        </div>
-
-        <div style="text-align: center; margin-top: 20px;">
-            <p style="font-size: 0.8rem; color: #999; margin-bottom: 5px;">Mã kết bạn</p>
-            <img id="partner-modal-qrcode" src="" style="width: 150px; height: 150px; border: 1px solid #eee; padding: 5px;" />
-        </div>
     </div>
 
     <!-- Forward Message Modal -->
@@ -568,22 +577,25 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Chuyển tiếp tin nhắn</h5>
-                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    <h5 class="modal-title">Chuyển tiếp đến...</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <input type="text" id="forward-search-input" class="form-control mb-3" placeholder="Tìm kiếm bạn bè...">
-                    <div id="forward-friends-list" style="max-height: 300px; overflow-y: auto;">
-                        <!-- Friend list will be populated here by JS -->
+                    <div class="input-group mb-3">
+                        <input type="text" id="forward-search-input" class="form-control" placeholder="Tìm kiếm cuộc trò chuyện...">
+                    </div>
+                    <div id="forward-conversations-list" style="max-height: 300px; overflow-y: auto;">
+                        <!-- Conversation list will be populated here by JS -->
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                    <button type="button" class="btn btn-primary" id="confirm-forward-btn">Gửi</button>
+                    <button type="button" class="btn btn-primary" id="confirm-forward-btn">Chuyển tiếp</button>
                 </div>
             </div>
         </div>
     </div>
+
 </div>
 
 @section scripts {
@@ -605,7 +617,10 @@
                 deleteConversation: '@Url.Action("DeleteConversation", "Chat")',
                 pinConversation: '@Url.Action("PinConversation", "Chat")',
                 reportConversation: '@Url.Action("ReportConversation", "Chat")',
-                searchMessages: '@Url.Action("SearchMessages", "Chat")'
+                searchMessages: '@Url.Action("SearchMessages", "Chat")',
+                getGroupChatHistory: '@Url.Action("GetGroupChatHistory", "Chat")',
+                changeGroupAvatar: '@Url.Action("ChangeGroupAvatar", "Chat")',
+                blockUser: '@Url.Action("BlockUser", "Settings")'
             }
         };
 

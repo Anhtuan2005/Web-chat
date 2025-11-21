@@ -1,0 +1,803 @@
+@{
+    Layout = null;  
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạo bài đăng</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .create-container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(46, 125, 50, 0.2);
+            overflow: hidden;
+            animation: slideUp 0.4s ease;
+        }
+
+        @@keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .create-header {
+            padding: 24px 28px;
+            border-bottom: 1px solid #e4e6eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
+            color: white;
+        }
+
+            .create-header h2 {
+                font-size: 24px;
+                font-weight: 700;
+                margin: 0;
+            }
+
+        .close-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 20px;
+        }
+
+            .close-btn:hover {
+                background: rgba(255, 255, 255, 0.3);
+                transform: rotate(90deg);
+            }
+
+        .user-section {
+            padding: 20px 28px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border-bottom: 1px solid #e4e6eb;
+        }
+
+        .user-avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #4caf50;
+        }
+
+        .user-info h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #050505;
+            margin-bottom: 6px;
+        }
+
+        .privacy-select {
+            padding: 6px 14px;
+            border-radius: 8px;
+            background: #e4e6eb;
+            border: none;
+            font-size: 14px;
+            color: #65676b;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+            .privacy-select:hover {
+                background: #d8dadf;
+            }
+
+        .post-type-tabs {
+            display: flex;
+            padding: 20px 28px;
+            gap: 10px;
+            border-bottom: 1px solid #e4e6eb;
+            overflow-x: auto;
+            scrollbar-width: none; 
+            -ms-overflow-style: none;
+        }
+
+            .post-type-tabs::-webkit-scrollbar {
+                display: none; 
+            }
+
+        .post-type-tab {
+            padding: 12px 24px;
+            border-radius: 12px;
+            background: #f0f2f5;
+            border: none;
+            color: #65676b;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .post-type-tab:hover {
+                background: #e4e6eb;
+                color: #050505;
+            }
+
+            .post-type-tab.active {
+                background: linear-gradient(135deg, #4caf50, #66bb6a);
+                color: white;
+                box-shadow: 0 3px 10px rgba(76, 175, 80, 0.3);
+            }
+
+            .post-type-tab i {
+                font-size: 18px;
+            }
+
+        .content-section {
+            padding: 24px 28px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+            .content-section::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            .content-section::-webkit-scrollbar-thumb {
+                background: #d8dadf;
+                border-radius: 10px;
+            }
+
+        .post-content {
+            display: none;
+        }
+
+            .post-content.active {
+                display: block;
+                animation: fadeIn 0.3s ease;
+            }
+
+        @@keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            color: #050505;
+            resize: vertical;
+            font-family: inherit;
+            line-height: 1.5;
+        }
+
+            textarea::placeholder {
+                color: #b0b3b8;
+            }
+
+        .media-preview {
+            margin-top: 20px;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            display: none;
+            background: #f0f2f5;
+        }
+
+            .media-preview.active {
+                display: block;
+            }
+
+            .media-preview img,
+            .media-preview video {
+                width: 100%;
+                max-height: 450px;
+                object-fit: contain;
+            }
+
+        .remove-media {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.6);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 18px;
+        }
+
+            .remove-media:hover {
+                background: rgba(0, 0, 0, 0.8);
+                transform: rotate(90deg);
+            }
+
+        .media-upload-btn {
+            width: 100%;
+            padding: 16px;
+            border: 2px dashed #4caf50;
+            border-radius: 12px;
+            background: #f1f8f4;
+            color: #4caf50;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            margin-top: 16px;
+            font-size: 15px;
+        }
+
+            .media-upload-btn:hover {
+                background: #e8f5e9;
+                border-color: #2e7d32;
+                color: #2e7d32;
+                transform: translateY(-2px);
+            }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .emoji-picker {
+            margin-top: 16px;
+            padding: 16px;
+            background: #f0f2f5;
+            border-radius: 12px;
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 10px;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .emoji-item {
+            font-size: 28px;
+            cursor: pointer;
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+            .emoji-item:hover {
+                background: white;
+                transform: scale(1.2);
+            }
+
+        .event-form {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+            .form-group label {
+                font-size: 15px;
+                font-weight: 600;
+                color: #050505;
+            }
+
+            .form-group input,
+            .form-group select {
+                padding: 14px;
+                border: 1px solid #e4e6eb;
+                border-radius: 10px;
+                font-size: 15px;
+                transition: all 0.3s ease;
+            }
+
+                .form-group input:focus,
+                .form-group select:focus {
+                    outline: none;
+                    border-color: #4caf50;
+                    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.1);
+                }
+
+        .action-buttons {
+            padding: 20px 28px;
+            border-top: 1px solid #e4e6eb;
+            display: flex;
+            gap: 14px;
+        }
+
+        .btn-submit {
+            flex: 1;
+            padding: 16px;
+            background: linear-gradient(135deg, #4caf50, #66bb6a);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+            .btn-submit:hover:not(:disabled) {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+            }
+
+            .btn-submit:active:not(:disabled) {
+                transform: translateY(0);
+            }
+
+            .btn-submit:disabled {
+                background: #b0b3b8;
+                cursor: not-allowed;
+                box-shadow: none;
+            }
+
+        .btn-cancel {
+            padding: 16px 32px;
+            background: #f0f2f5;
+            color: #65676b;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+            .btn-cancel:hover {
+                background: #e4e6eb;
+                color: #050505;
+            }
+
+        .story-preview {
+            position: relative;
+            width: 100%;
+            height: 550px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .story-text {
+            color: white;
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            padding: 30px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .bg-selector {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .bg-option {
+            height: 70px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+            .bg-option:hover {
+                transform: scale(1.05);
+            }
+
+            .bg-option.active {
+                border-color: #4caf50;
+                box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+            }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .loading-overlay.active {
+                display: flex;
+            }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #4caf50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @@keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @@media (max-width: 768px) {
+            .create-container {
+                border-radius: 0;
+                max-width: 100%;
+            }
+
+            .emoji-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+
+            .bg-selector {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            body {
+                padding: 0;
+            }
+
+            .create-header h2 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="create-container">
+        <!-- Header -->
+        <div class="create-header">
+            <h2>Tạo bài viết</h2>
+            <button class="close-btn" onclick="goBack()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form id="createPostForm" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <!-- User Section -->
+            <div class="user-section">
+                <img src="https://via.placeholder.com/52" alt="Avatar" class="user-avatar" id="userAvatar">
+                <div class="user-info">
+                    <h4 id="userName">Nguyễn Văn A</h4>
+                    <select class="privacy-select" name="privacy" id="privacySelect">
+                        <option value="public">🌍 Công khai</option>
+                        <option value="friends">👥 Bạn bè</option>
+                        <option value="private">🔒 Chỉ mình tôi</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Post Type Tabs -->
+            <div class="post-type-tabs">
+                <button type="button" class="post-type-tab active" data-type="post">
+                    <i class="fas fa-pen"></i> Bài viết
+                </button>
+                <button type="button" class="post-type-tab" data-type="story">
+                    <i class="fas fa-book-open"></i> Tạo tin
+                </button>
+                <button type="button" class="post-type-tab" data-type="event">
+                    <i class="fas fa-calendar-alt"></i> Sự kiện
+                </button>
+                <button type="button" class="post-type-tab" data-type="feeling">
+                    <i class="fas fa-smile"></i> Cảm xúc
+                </button>
+            </div>
+
+            <!-- Content Section -->
+            <div class="content-section">
+                <!-- Regular Post -->
+                <div class="post-content active" id="post-content">
+                    <textarea placeholder="Bạn đang nghĩ gì?" name="content" id="post-textarea" required></textarea>
+
+                    <div class="media-preview" id="media-preview">
+                        <img id="preview-image" style="display: none;" />
+                        <video id="preview-video" controls style="display: none;"></video>
+                        <button type="button" class="remove-media" onclick="removeMedia()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <label for="file-input" class="media-upload-btn">
+                        <i class="fas fa-images"></i> Thêm ảnh/video
+                    </label>
+                    <input type="file" id="file-input" name="mediaFile" accept="image/*,video/*" onchange="handleFileSelect(event)">
+                </div>
+
+                <!-- Story -->
+                <div class="post-content" id="story-content">
+                    <div class="story-preview" id="story-preview">
+                        <div class="story-text" id="story-text">Nhập nội dung tin của bạn...</div>
+                    </div>
+                    <textarea placeholder="Nhập văn bản cho tin..." name="storyContent" id="story-textarea"
+                              oninput="updateStoryText(this.value)" style="margin-top: 20px;"></textarea>
+
+                    <div class="bg-selector">
+                        <div class="bg-option active" style="background: linear-gradient(135deg, #667eea, #764ba2);" onclick="changeStoryBg(this, 'linear-gradient(135deg, #667eea, #764ba2)')"></div>
+                        <div class="bg-option" style="background: linear-gradient(135deg, #f093fb, #f5576c);" onclick="changeStoryBg(this, 'linear-gradient(135deg, #f093fb, #f5576c)')"></div>
+                        <div class="bg-option" style="background: linear-gradient(135deg, #4facfe, #00f2fe);" onclick="changeStoryBg(this, 'linear-gradient(135deg, #4facfe, #00f2fe)')"></div>
+                        <div class="bg-option" style="background: linear-gradient(135deg, #43e97b, #38f9d7);" onclick="changeStoryBg(this, 'linear-gradient(135deg, #43e97b, #38f9d7)')"></div>
+                        <div class="bg-option" style="background: linear-gradient(135deg, #fa709a, #fee140);" onclick="changeStoryBg(this, 'linear-gradient(135deg, #fa709a, #fee140)')"></div>
+                        <div class="bg-option" style="background: linear-gradient(135deg, #30cfd0, #330867);" onclick="changeStoryBg(this, 'linear-gradient(135deg, #30cfd0, #330867)')"></div>
+                        <div class="bg-option" style="background: linear-gradient(135deg, #a8edea, #fed6e3);" onclick="changeStoryBg(this, 'linear-gradient(135deg, #a8edea, #fed6e3)')"></div>
+                        <div class="bg-option" style="background: linear-gradient(135deg, #ff9a9e, #fecfef);" onclick="changeStoryBg(this, 'linear-gradient(135deg, #ff9a9e, #fecfef)')"></div>
+                    </div>
+                    <input type="hidden" name="storyBackground" id="storyBackground" value="linear-gradient(135deg, #667eea, #764ba2)">
+                </div>
+
+                <!-- Event -->
+                <div class="post-content" id="event-content">
+                    <div class="event-form">
+                        <div class="form-group">
+                            <label>Tên sự kiện</label>
+                            <input type="text" name="eventName" placeholder="VD: Sinh nhật, Họp mặt, Hội thảo...">
+                        </div>
+                        <div class="form-group">
+                            <label>Địa điểm</label>
+                            <input type="text" name="eventLocation" placeholder="Nhập địa điểm tổ chức">
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày bắt đầu</label>
+                            <input type="datetime-local" name="eventStartDate">
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày kết thúc</label>
+                            <input type="datetime-local" name="eventEndDate">
+                        </div>
+                        <div class="form-group">
+                            <label>Mô tả</label>
+                            <textarea name="eventDescription" placeholder="Mô tả chi tiết về sự kiện..." style="min-height: 100px;"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feeling -->
+                <div class="post-content" id="feeling-content">
+                    <textarea placeholder="Bạn đang cảm thấy thế nào?" name="feelingContent" id="feeling-textarea"></textarea>
+
+                    <div class="emoji-picker">
+                        <div class="emoji-grid">
+                            <span class="emoji-item" onclick="addEmoji('😊')">😊</span>
+                            <span class="emoji-item" onclick="addEmoji('😂')">😂</span>
+                            <span class="emoji-item" onclick="addEmoji('❤️')">❤️</span>
+                            <span class="emoji-item" onclick="addEmoji('😍')">😍</span>
+                            <span class="emoji-item" onclick="addEmoji('😢')">😢</span>
+                            <span class="emoji-item" onclick="addEmoji('😡')">😡</span>
+                            <span class="emoji-item" onclick="addEmoji('😴')">😴</span>
+                            <span class="emoji-item" onclick="addEmoji('🤔')">🤔</span>
+                            <span class="emoji-item" onclick="addEmoji('🎉')">🎉</span>
+                            <span class="emoji-item" onclick="addEmoji('🎂')">🎂</span>
+                            <span class="emoji-item" onclick="addEmoji('🎁')">🎁</span>
+                            <span class="emoji-item" onclick="addEmoji('🌟')">🌟</span>
+                            <span class="emoji-item" onclick="addEmoji('✨')">✨</span>
+                            <span class="emoji-item" onclick="addEmoji('💪')">💪</span>
+                            <span class="emoji-item" onclick="addEmoji('👍')">👍</span>
+                            <span class="emoji-item" onclick="addEmoji('🙏')">🙏</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <input type="hidden" name="postType" id="postType" value="post">
+
+            <div class="action-buttons">
+                <button type="button" class="btn-cancel" onclick="goBack()">Hủy</button>
+                <button type="submit" class="btn-submit" id="submitBtn">
+                    <i class="fas fa-paper-plane"></i> Đăng bài
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.post-type-tab').forEach(tab => {
+            tab.addEventListener('click', function () {
+                document.querySelectorAll('.post-type-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.post-content').forEach(c => c.classList.remove('active'));
+
+                this.classList.add('active');
+                const type = this.getAttribute('data-type');
+                document.getElementById(type + '-content').classList.add('active');
+                document.getElementById('postType').value = type;
+            });
+        });
+
+        // File upload preview
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const preview = document.getElementById('media-preview');
+            const previewImage = document.getElementById('preview-image');
+            const previewVideo = document.getElementById('preview-video');
+
+            preview.classList.add('active');
+
+            if (file.type.startsWith('image/')) {
+                previewImage.style.display = 'block';
+                previewVideo.style.display = 'none';
+                previewImage.src = URL.createObjectURL(file);
+            } else if (file.type.startsWith('video/')) {
+                previewVideo.style.display = 'block';
+                previewImage.style.display = 'none';
+                previewVideo.src = URL.createObjectURL(file);
+            }
+        }
+
+        function removeMedia() {
+            const preview = document.getElementById('media-preview');
+            const previewImage = document.getElementById('preview-image');
+            const previewVideo = document.getElementById('preview-video');
+            const fileInput = document.getElementById('file-input');
+
+            preview.classList.remove('active');
+            previewImage.src = '';
+            previewVideo.src = '';
+            fileInput.value = '';
+        }
+
+        // Story functions
+        function updateStoryText(text) {
+            document.getElementById('story-text').textContent = text || 'Nhập nội dung tin của bạn...';
+        }
+
+        function changeStoryBg(element, gradient) {
+            document.querySelectorAll('.bg-option').forEach(opt => opt.classList.remove('active'));
+            element.classList.add('active');
+            document.getElementById('story-preview').style.background = gradient;
+            document.getElementById('storyBackground').value = gradient;
+        }
+
+        // Emoji functions
+        function addEmoji(emoji) {
+            const textarea = document.getElementById('feeling-textarea');
+            textarea.value += emoji;
+            textarea.focus();
+        }
+
+        // Go back to index
+        function goBack() {
+            window.location.href = '/Feed/Index';
+        }
+
+        // Form submission
+        document.getElementById('createPostForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+
+            // Disable submit button
+            submitBtn.disabled = true;
+            loadingOverlay.classList.add('active');
+
+            const formData = new FormData(this);
+
+            // Send to server
+            fetch('/Feed/CreatePost', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        alert('Đăng bài thành công!');
+                        window.location.href = '/Feed/Index';
+                    } else {
+                        alert('Lỗi: ' + (data.message || 'Không thể đăng bài'));
+                        submitBtn.disabled = false;
+                        loadingOverlay.classList.remove('active');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Đã xảy ra lỗi khi đăng bài. Vui lòng thử lại!');
+                    submitBtn.disabled = false;
+                    loadingOverlay.classList.remove('active');
+                });
+        });
+
+        window.addEventListener('DOMContentLoaded', function () {
+            fetch('/Account/GetCurrentUser')
+                .then(response => response.json())
+                .then(user => {
+                    document.getElementById('userName').textContent = user.name;
+                    document.getElementById('userAvatar').src = user.avatar;
+                });
+
+            // Read query parameter and activate tab
+            const urlParams = new URLSearchParams(window.location.search);
+            const postTypeParam = urlParams.get('type');
+
+            if (postTypeParam) {
+                const targetTab = document.querySelector(`.post-type-tab[data-type="${postTypeParam}"]`);
+                if (targetTab) {
+                    targetTab.click(); // Programmatically click the tab to activate it
+                }
+            }
+        });
+    </script>
+</body>
+</html>

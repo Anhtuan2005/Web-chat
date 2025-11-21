@@ -1,0 +1,22 @@
+@model Online_chat.Models.Comment
+@{
+    var currentUserId = ViewData["CurrentUserId"] as int?;
+}
+
+<div class="comment-item" data-comment-id="@Model.Id">
+    <img src="@(string.IsNullOrEmpty(Model.User.AvatarUrl) ? "/Content/default-avatar.png" : Model.User.AvatarUrl)" alt="Avatar" class="rounded-circle" width="35" height="35" style="object-fit: cover;">
+    <div class="comment-content">
+        <div>
+            <strong>@Model.User.DisplayName</strong>
+            <span class="comment-text">@Html.Raw(Model.Content.Replace("\n", "<br />"))</span>
+        </div>
+        <small class="text-muted">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+    </div>
+    @if (currentUserId.HasValue && Model.UserId == currentUserId.Value)
+    {
+        <button class="btn btn-sm btn-light delete-comment-btn" title="Xóa bình luận" data-comment-id="@Model.Id">
+            <i class="fas fa-times"></i>
+        </button>
+    }
+</div>
+

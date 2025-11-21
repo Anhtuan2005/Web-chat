@@ -1,0 +1,34 @@
+@model List<Online_chat.Models.Post>
+
+@if (Model != null && Model.Any())
+{
+    foreach (var story in Model)
+    {
+        <div class="story-item">
+            <div class="story-avatar" style="background: @story.MediaUrl;">
+                @if (story.MediaType != "StoryBackground" && !string.IsNullOrEmpty(story.MediaUrl))
+                {
+                    <img src="@story.MediaUrl" alt="Story">
+                }
+                <div class="story-ring">
+                    <img src="@(story.User.AvatarUrl ?? "/Content/default-avatar.png")" alt="Avatar">
+                </div>
+            </div>
+            <div class="story-name">@(story.User.Username ?? "Người dùng")</div>
+        </div>
+    }
+}
+else
+{
+    <div class="story-item create-story">
+        <a href="@Url.Action("SelectStoryType", "Feed")" style="text-decoration: none; color: inherit;">
+            <div class="story-avatar">
+                <div class="create-story-icon">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <span style="color: #43a047; font-weight: 600; font-size: 13px;">Hãy là người đăng tin đầu tiên</span>
+            </div>
+            <div class="story-name">Tạo tin</div>
+        </a>
+    </div>
+}

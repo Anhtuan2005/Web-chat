@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\EntityFramework.6.4.4\build\EntityFramework.props" Condition="Exists('..\packages\EntityFramework.6.4.4\build\EntityFramework.props')" />
+  <Import Project="..\packages\EntityFramework.6.5.1\build\EntityFramework.props" Condition="Exists('..\packages\EntityFramework.6.5.1\build\EntityFramework.props')" />
   <Import Project="..\packages\Microsoft.TypeScript.MSBuild.5.9.3\build\Microsoft.TypeScript.MSBuild.props" Condition="Exists('..\packages\Microsoft.TypeScript.MSBuild.5.9.3\build\Microsoft.TypeScript.MSBuild.props')" />
   <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -18,6 +18,7 @@
     <RootNamespace>WebChat_Online_MVC</RootNamespace>
     <AssemblyName>WebChat_Online_MVC</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <LangVersion>7.3</LangVersion>
     <MvcBuildViews>false</MvcBuildViews>
     <UseIISExpress>true</UseIISExpress>
     <Use64BitIISExpress />
@@ -37,6 +38,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -55,10 +57,10 @@
       <HintPath>..\packages\BCrypt.Net-Next.4.0.3\lib\net472\BCrypt.Net-Next.dll</HintPath>
     </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.4.4\lib\net45\EntityFramework.dll</HintPath>
+      <HintPath>..\packages\EntityFramework.6.5.1\lib\net45\EntityFramework.dll</HintPath>
     </Reference>
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.4.4\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+      <HintPath>..\packages\EntityFramework.6.5.1\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.AspNet.Identity.Core, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.AspNet.Identity.Core.2.2.4\lib\net45\Microsoft.AspNet.Identity.Core.dll</HintPath>
@@ -267,50 +269,39 @@
     <Compile Include="Controllers\ProfileController.cs" />
     <Compile Include="Controllers\SettingsController.cs" />
     <Compile Include="Controllers\UploadController.cs" />
+    <Compile Include="Controllers\FeedController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Hubs\Chathub.cs" />
     <Compile Include="Hubs\UserHandler.cs" />
-    <Compile Include="Migrations\202510310622520_InitClean.cs" />
-    <Compile Include="Migrations\202510310622520_InitClean.Designer.cs">
-      <DependentUpon>202510310622520_InitClean.cs</DependentUpon>
+    <Compile Include="Migrations\202511121452357_InitialCreate.cs" />
+    <Compile Include="Migrations\202511121452357_InitialCreate.Designer.cs">
+      <DependentUpon>202511121452357_InitialCreate.cs</DependentUpon>
     </Compile>
-    <Compile Include="Migrations\202511010533030_AddMessageTypeToPrivateMessage.cs" />
-    <Compile Include="Migrations\202511010533030_AddMessageTypeToPrivateMessage.Designer.cs">
-      <DependentUpon>202511010533030_AddMessageTypeToPrivateMessage.cs</DependentUpon>
+    <Compile Include="Migrations\202511150531280_AddCreatedByIdToGroup.cs" />
+    <Compile Include="Migrations\202511150531280_AddCreatedByIdToGroup.Designer.cs">
+      <DependentUpon>202511150531280_AddCreatedByIdToGroup.cs</DependentUpon>
     </Compile>
-    <Compile Include="Migrations\202511080754564_AddProfileFields.cs" />
-    <Compile Include="Migrations\202511080754564_AddProfileFields.Designer.cs">
-      <DependentUpon>202511080754564_AddProfileFields.cs</DependentUpon>
+    <Compile Include="Migrations\202511150733030_AddPostEntity.cs" />
+    <Compile Include="Migrations\202511150733030_AddPostEntity.Designer.cs">
+      <DependentUpon>202511150733030_AddPostEntity.cs</DependentUpon>
     </Compile>
-    <Compile Include="Migrations\202511091008046_FixFriendshipForeignKeys.cs" />
-    <Compile Include="Migrations\202511091008046_FixFriendshipForeignKeys.Designer.cs">
-      <DependentUpon>202511091008046_FixFriendshipForeignKeys.cs</DependentUpon>
+    <Compile Include="Migrations\202511151625303_AddLikeTable.cs" />
+    <Compile Include="Migrations\202511151625303_AddLikeTable.Designer.cs">
+      <DependentUpon>202511151625303_AddLikeTable.cs</DependentUpon>
     </Compile>
-    <Compile Include="Migrations\202511091027502_AddRequestedAtRespondedAtToFriendship.cs" />
-    <Compile Include="Migrations\202511091027502_AddRequestedAtRespondedAtToFriendship.Designer.cs">
-      <DependentUpon>202511091027502_AddRequestedAtRespondedAtToFriendship.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Migrations\202511091038396_AddIsReadToPrivateMessages.cs" />
-    <Compile Include="Migrations\202511091038396_AddIsReadToPrivateMessages.Designer.cs">
-      <DependentUpon>202511091038396_AddIsReadToPrivateMessages.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Migrations\202511091039141_SyncIsReadColumn.cs" />
-    <Compile Include="Migrations\202511091039141_SyncIsReadColumn.Designer.cs">
-      <DependentUpon>202511091039141_SyncIsReadColumn.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Migrations\202511110148142_AddMissingTables.cs" />
-    <Compile Include="Migrations\202511110148142_AddMissingTables.Designer.cs">
-      <DependentUpon>202511110148142_AddMissingTables.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Migrations\202511120242189_AddMessageStatusAndDeliveredAt.cs" />
-    <Compile Include="Migrations\202511120242189_AddMessageStatusAndDeliveredAt.Designer.cs">
-      <DependentUpon>202511120242189_AddMessageStatusAndDeliveredAt.cs</DependentUpon>
+    <Compile Include="Migrations\202511151633126_AddCommentTable.cs" />
+    <Compile Include="Migrations\202511151633126_AddCommentTable.Designer.cs">
+      <DependentUpon>202511151633126_AddCommentTable.cs</DependentUpon>
     </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\ApplicationDbContext.cs" />
+    <Compile Include="Models\BlockedUser.cs" />
+    <Compile Include="Models\Comment.cs" />
     <Compile Include="Models\ConversationViewModel.cs" />
+    <Compile Include="Models\AdminConversationViewModel.cs" />
+    <Compile Include="Models\NotificationViewModel.cs" />
     <Compile Include="Models\CustomUserIdProvider.cs" />
     <Compile Include="Models\FriendInfoViewModel.cs" />
     <Compile Include="Models\FriendRequestViewModel.cs" />
@@ -319,11 +310,19 @@
     <Compile Include="Models\FriendshipStatus.cs" />
     <Compile Include="Models\FriendViewModel.cs" />
     <Compile Include="Models\Group.cs" />
+    <Compile Include="Models\HiddenConversation.cs" />
+    <Compile Include="Models\Like.cs" />
+    <Compile Include="Models\MessageReaction.cs" />
+    <Compile Include="Models\PinnedConversation.cs" />
     <Compile Include="Models\PrivateMessage.cs" />
+    <Compile Include="Models\Report.cs" />
     <Compile Include="Models\SearchResultViewModel.cs" />
     <Compile Include="Models\Setting.cs" />
     <Compile Include="Models\TopSenderViewModel.cs" />
+    <Compile Include="Models\UserActivityViewModel.cs" />
     <Compile Include="Models\User.cs" />
+    <Compile Include="Models\Post.cs" />
+    <Compile Include="Models\UserPrivacySettings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\ChatGPTService.cs" />
     <Compile Include="Startup.cs" />
@@ -378,6 +377,7 @@
     <Content Include="Content\bootstrap.min.css.map" />
     <Content Include="Content\bootstrap.rtl.css.map" />
     <Content Include="Content\bootstrap.rtl.min.css.map" />
+    <Content Include="package-lock.json" />
     <None Include="Scripts\jquery-3.7.0.intellisense.js" />
     <Content Include="Scripts\jquery-3.7.0.js" />
     <Content Include="Scripts\jquery-3.7.0.min.js" />
@@ -501,6 +501,15 @@
     <Content Include="Views\Admin\ManagePrivateMessages.cshtml" />
     <Content Include="Views\Admin\ManageMessages.cshtml" />
     <Content Include="Views\Admin\MessageDetail.cshtml" />
+    <Content Include="Views\Feed\Create.cshtml" />
+    <Content Include="Views\Feed\Index.cshtml" />
+    <Content Include="Views\Feed\_CommentPartial.cshtml" />
+    <Content Include="Views\Feed\_PostListPartial.cshtml" />
+    <Content Include="Views\Feed\_PostPartial.cshtml" />
+    <Content Include="Views\Feed\_StoryListPartial.cshtml" />
+    <Content Include="Views\Shared\_AdminHeaderNotifications.cshtml" />
+    <Content Include="Views\Feed\SelectStoryType.cshtml" />
+    <Content Include="Views\Feed\CreateStory.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
@@ -548,32 +557,20 @@
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Migrations\202510310622520_InitClean.resx">
-      <DependentUpon>202510310622520_InitClean.cs</DependentUpon>
+    <EmbeddedResource Include="Migrations\202511121452357_InitialCreate.resx">
+      <DependentUpon>202511121452357_InitialCreate.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202511010533030_AddMessageTypeToPrivateMessage.resx">
-      <DependentUpon>202511010533030_AddMessageTypeToPrivateMessage.cs</DependentUpon>
+    <EmbeddedResource Include="Migrations\202511150531280_AddCreatedByIdToGroup.resx">
+      <DependentUpon>202511150531280_AddCreatedByIdToGroup.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202511080754564_AddProfileFields.resx">
-      <DependentUpon>202511080754564_AddProfileFields.cs</DependentUpon>
+    <EmbeddedResource Include="Migrations\202511150733030_AddPostEntity.resx">
+      <DependentUpon>202511150733030_AddPostEntity.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202511091008046_FixFriendshipForeignKeys.resx">
-      <DependentUpon>202511091008046_FixFriendshipForeignKeys.cs</DependentUpon>
+    <EmbeddedResource Include="Migrations\202511151625303_AddLikeTable.resx">
+      <DependentUpon>202511151625303_AddLikeTable.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202511091027502_AddRequestedAtRespondedAtToFriendship.resx">
-      <DependentUpon>202511091027502_AddRequestedAtRespondedAtToFriendship.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202511091038396_AddIsReadToPrivateMessages.resx">
-      <DependentUpon>202511091038396_AddIsReadToPrivateMessages.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202511091039141_SyncIsReadColumn.resx">
-      <DependentUpon>202511091039141_SyncIsReadColumn.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202511110148142_AddMissingTables.resx">
-      <DependentUpon>202511110148142_AddMissingTables.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202511120242189_AddMessageStatusAndDeliveredAt.resx">
-      <DependentUpon>202511120242189_AddMessageStatusAndDeliveredAt.cs</DependentUpon>
+    <EmbeddedResource Include="Migrations\202511151633126_AddCommentTable.resx">
+      <DependentUpon>202511151633126_AddCommentTable.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>
@@ -612,12 +609,12 @@
     <Error Condition="!Exists('..\packages\Microsoft.Extensions.Logging.Abstractions.6.0.0\build\Microsoft.Extensions.Logging.Abstractions.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Extensions.Logging.Abstractions.6.0.0\build\Microsoft.Extensions.Logging.Abstractions.targets'))" />
     <Error Condition="!Exists('..\packages\Microsoft.TypeScript.MSBuild.5.9.3\build\Microsoft.TypeScript.MSBuild.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.TypeScript.MSBuild.5.9.3\build\Microsoft.TypeScript.MSBuild.props'))" />
     <Error Condition="!Exists('..\packages\Microsoft.TypeScript.MSBuild.5.9.3\build\Microsoft.TypeScript.MSBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.TypeScript.MSBuild.5.9.3\build\Microsoft.TypeScript.MSBuild.targets'))" />
-    <Error Condition="!Exists('..\packages\EntityFramework.6.4.4\build\EntityFramework.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.4.4\build\EntityFramework.props'))" />
-    <Error Condition="!Exists('..\packages\EntityFramework.6.4.4\build\EntityFramework.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.4.4\build\EntityFramework.targets'))" />
+    <Error Condition="!Exists('..\packages\EntityFramework.6.5.1\build\EntityFramework.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.5.1\build\EntityFramework.props'))" />
+    <Error Condition="!Exists('..\packages\EntityFramework.6.5.1\build\EntityFramework.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.5.1\build\EntityFramework.targets'))" />
   </Target>
   <Import Project="..\packages\Microsoft.Extensions.Logging.Abstractions.6.0.0\build\Microsoft.Extensions.Logging.Abstractions.targets" Condition="Exists('..\packages\Microsoft.Extensions.Logging.Abstractions.6.0.0\build\Microsoft.Extensions.Logging.Abstractions.targets')" />
   <Import Project="..\packages\Microsoft.TypeScript.MSBuild.5.9.3\build\Microsoft.TypeScript.MSBuild.targets" Condition="Exists('..\packages\Microsoft.TypeScript.MSBuild.5.9.3\build\Microsoft.TypeScript.MSBuild.targets')" />
-  <Import Project="..\packages\EntityFramework.6.4.4\build\EntityFramework.targets" Condition="Exists('..\packages\EntityFramework.6.4.4\build\EntityFramework.targets')" />
+  <Import Project="..\packages\EntityFramework.6.5.1\build\EntityFramework.targets" Condition="Exists('..\packages\EntityFramework.6.5.1\build\EntityFramework.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

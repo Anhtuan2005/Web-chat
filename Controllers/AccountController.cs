@@ -78,7 +78,10 @@ namespace Online_chat.Controllers
 
             if (user != null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
-                FormsAuthentication.SetAuthCookie(username, false);
+                FormsAuthentication.SetAuthCookie(user.Username, false);
+
+                System.Diagnostics.Debug.WriteLine($"Login thành công: {user.Username}");
+                System.Diagnostics.Debug.WriteLine($"User.Identity.Name: {User.Identity.Name}");
 
                 if (user.IsAdmin)
                 {
@@ -99,6 +102,24 @@ namespace Online_chat.Controllers
         {
             FormsAuthentication.SignOut();
             return RedirectToAction("Login");
+        }
+
+        [Authorize]
+        [HttpGet]
+        public JsonResult GetCurrentUser()
+        {
+            var user = _context.Users.FirstOrDefault(u => u.Username == User.Identity.Name && !u.IsDeleted);
+            if (user == null)
+            {
+                return Json(new { success = false, message = "User not found" }, JsonRequestBehavior.AllowGet);
+            }
+
+            return Json(new
+            {
+                success = true,
+                name = user.DisplayName,
+                avatar = user.AvatarUrl ?? "/Content/default-avatar.png"
+            }, JsonRequestBehavior.AllowGet);
         }
     }
 }

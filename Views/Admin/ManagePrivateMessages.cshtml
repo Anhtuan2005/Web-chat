@@ -1,16 +1,16 @@
-﻿@model IEnumerable<Online_chat.Models.PrivateMessage>
+﻿@model IEnumerable<Online_chat.Models.AdminConversationViewModel>
 
 @{
-    ViewBag.Title = "Quản lý tin nhắn riêng tư";
+    ViewBag.Title = "Quản lý Hội thoại Riêng tư";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
 <div class="page-header">
     <h1 class="page-title">
-        <i class="fas fa-envelope me-2"></i>
-        Quản lý tin nhắn riêng tư
+        <i class="fas fa-comments me-2"></i>
+        Quản lý Hội thoại Riêng tư
     </h1>
-    <p class="page-subtitle">Giám sát và quản lý tin nhắn private giữa các user</p>
+    <p class="page-subtitle">Giám sát và quản lý các cuộc trò chuyện private giữa các user</p>
 </div>
 
 @if (TempData["SuccessMessage"] != null)
@@ -22,20 +22,11 @@
     </div>
 }
 
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="fas fa-exclamation-circle me-2"></i>
-        @TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-
 <div class="content-card">
     <div class="content-card-header">
         <h5 class="content-card-title">
             <i class="fas fa-filter me-2"></i>
-            Bộ lọc tìm kiếm
+            Tìm kiếm hội thoại
         </h5>
     </div>
 
@@ -43,390 +34,108 @@
     <div class="content-card-body border-bottom">
         @using (Html.BeginForm("ManagePrivateMessages", "Admin", FormMethod.Get))
         {
-            <div class="row g-3">
-                <!-- Tìm kiếm -->
-                <div class="col-md-4">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-6">
                     <label class="form-label">
-                        <i class="fas fa-search me-1"></i>Tìm kiếm
+                        <i class="fas fa-search me-1"></i>Tìm theo Username hoặc Tên hiển thị
                     </label>
                     <input type="text" name="search" value="@ViewBag.SearchQuery"
                            class="form-control"
-                           placeholder="Tìm theo nội dung hoặc username..." />
+                           placeholder="Nhập username hoặc tên..." />
                 </div>
-
-                <!-- Lọc theo người gửi -->
-                <div class="col-md-2">
-                    <label class="form-label">
-                        <i class="fas fa-user me-1"></i>Người gửi
-                    </label>
-                    @Html.DropDownList("senderId", ViewBag.Users as IEnumerable<SelectListItem>,
-                        "-- Tất cả --", new { @class = "form-control" })
-                </div>
-
-                <!-- Lọc theo người nhận -->
-                <div class="col-md-2">
-                    <label class="form-label">
-                        <i class="fas fa-user-check me-1"></i>Người nhận
-                    </label>
-                    @Html.DropDownList("receiverId", ViewBag.Users as IEnumerable<SelectListItem>,
-                        "-- Tất cả --", new { @class = "form-control" })
-                </div>
-
-                <!-- Từ ngày -->
-                <div class="col-md-2">
-                    <label class="form-label">
-                        <i class="fas fa-calendar-alt me-1"></i>Từ ngày
-                    </label>
-                    <input type="date" name="fromDate" value="@ViewBag.FromDate" class="form-control" />
-                </div>
-
-                <!-- Đến ngày -->
-                <div class="col-md-2">
-                    <label class="form-label">
-                        <i class="fas fa-calendar-check me-1"></i>Đến ngày
-                    </label>
-                    <input type="date" name="toDate" value="@ViewBag.ToDate" class="form-control" />
-                </div>
-
-                <!-- Nút tìm kiếm -->
-                <div class="col-12">
+                <div class="col-md-6">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-search me-2"></i>Lọc kết quả
+                        <i class="fas fa-search me-2"></i>Tìm kiếm
                     </button>
                     <a href="@Url.Action("ManagePrivateMessages")" class="btn btn-secondary">
                         <i class="fas fa-redo me-2"></i>Đặt lại
                     </a>
-                    <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#statsModal">
-                        <i class="fas fa-chart-bar me-2"></i>Thống kê
-                    </button>
-                    <a href="@Url.Action("ExportPrivateMessages", new { search = ViewBag.SearchQuery, senderId = ViewBag.SelectedSenderId, receiverId = ViewBag.SelectedReceiverId })"
-                       class="btn btn-success">
-                        <i class="fas fa-file-excel me-2"></i>Export CSV
-                    </a>
                 </div>
             </div>
         }
     </div>
 
-    <!-- BẢNG TIN NHẮN -->
+    <!-- BẢNG HỘI THOẠI -->
     <div class="content-card-body">
-        <form id="deleteMultipleForm" method="post" action="@Url.Action("DeleteMultiplePrivateMessages")">
-            @Html.AntiForgeryToken()
-
-            <!-- Toolbar -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                    <span class="text-muted">
-                        <i class="fas fa-info-circle me-1"></i>
-                        Hiển thị <strong>@Model.Count()</strong> tin nhắn (Trang @ViewBag.CurrentPage/@ViewBag.TotalPages)
-                    </span>
-                </div>
-                <div>
-                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleSelectAll()">
-                        <i class="fas fa-check-square me-1"></i>
-                        <span id="selectAllText">Chọn tất cả</span>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-danger" onclick="deleteSelected()">
-                        <i class="fas fa-trash me-1"></i>Xóa đã chọn
-                    </button>
-                </div>
-            </div>
-
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="width: 40px;">
-                                <input type="checkbox" id="checkAll" class="form-check-input" />
-                            </th>
-                            <th style="width: 60px;">ID</th>
-                            <th style="width: 150px;">Người gửi</th>
-                            <th style="width: 150px;">Người nhận</th>
-                            <th>Nội dung</th>
-                            <th style="width: 100px;">Loại</th>
-                            <th style="width: 100px;" class="text-center">Trạng thái</th>
-                            <th style="width: 140px;">Thời gian</th>
-                            <th style="width: 120px;" class="text-center">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.Any())
-                        {
-                            foreach (var message in Model)
-                            {
-                                var messageType = "text";
-                                var displayContent = message.Content;
-
-                                // Phân tích loại tin nhắn từ JSON content
-                                if (message.Content.StartsWith("{"))
-                                {
-                                    try
-                                    {
-                                        var json = Newtonsoft.Json.Linq.JObject.Parse(message.Content);
-                                        messageType = json["type"]?.ToString() ?? "text";
-
-                                        if (messageType == "image")
-                                        {
-                                            displayContent = "🖼️ Hình ảnh";
-                                        }
-                                        else if (messageType == "call_log")
-                                        {
-                                            var status = json["status"]?.ToString();
-                                            displayContent = status == "missed" ? "📞 Cuộc gọi nhỡ" : "📞 Cuộc gọi";
-                                        }
-                                        else if (messageType == "file")
-                                        {
-                                            displayContent = "📎 File đính kèm";
-                                        }
-                                    }
-                                    catch { }
-                                }
-
-                                <tr>
-                                    <td>
-                                        <input type="checkbox" name="messageIds" value="@message.Id"
-                                               class="form-check-input message-checkbox" />
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-secondary">#@message.Id</span>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <img src="@(message.Sender.AvatarUrl ?? "/Content/default-avatar.png")"
-                                                 class="rounded-circle me-2"
-                                                 style="width: 28px; height: 28px; object-fit: cover;"
-                                                 alt="Avatar" />
-                                            <small>@message.Sender.Username</small>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <img src="@(message.Receiver.AvatarUrl ?? "/Content/default-avatar.png")"
-                                                 class="rounded-circle me-2"
-                                                 style="width: 28px; height: 28px; object-fit: cover;"
-                                                 alt="Avatar" />
-                                            <small>@message.Receiver.Username</small>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                                             title="@message.Content">
-                                            @displayContent
-                                        </div>
-                                    </td>
-                                    <td>
-                                        @if (messageType == "image")
-                                        {
-                                            <span class="badge bg-success">Image</span>
-                                        }
-                                        else if (messageType == "call_log")
-                                        {
-                                            <span class="badge bg-info">Call</span>
-                                        }
-                                        else if (messageType == "file")
-                                        {
-                                            <span class="badge bg-warning">File</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary">Text</span>
-                                        }
-                                    </td>
-                                    <td class="text-center">
-                                        @if (message.IsRead)
-                                        {
-                                            <span class="badge bg-success">
-                                                <i class="fas fa-check-double"></i> Đã đọc
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary">
-                                                <i class="fas fa-check"></i> Chưa đọc
-                                            </span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <small class="text-muted">
-                                            <i class="fas fa-clock me-1"></i>
-                                            @message.Timestamp.ToString("dd/MM/yyyy HH:mm")
-                                        </small>
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="btn-group" role="group">
-                                            <a href="@Url.Action("PrivateMessageDetail", new { id = message.Id })"
-                                               class="btn btn-sm btn-info"
-                                               title="Xem chi tiết">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            @using (Html.BeginForm("DeletePrivateMessage", "Admin", new { id = message.Id }, FormMethod.Post, new { style = "display:inline;" }))
-                                            {
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-danger"
-                                                        title="Xóa"
-                                                        onclick="return confirm('Xác nhận xóa tin nhắn này?');">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            }
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                        else
+         <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Người tham gia</th>
+                        <th>Tin nhắn cuối</th>
+                        <th class="text-center">Tổng tin nhắn</th>
+                        <th>Cập nhật lần cuối</th>
+                        <th class="text-center">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        foreach (var conv in Model)
                         {
                             <tr>
-                                <td colspan="9" class="text-center py-5">
-                                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                    <p class="text-muted">Không có tin nhắn nào</p>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-group">
+                                            <img src="@(conv.User1.AvatarUrl ?? "/Content/default-avatar.png")" class="avatar-stacked" alt="@conv.User1.Username" title="@conv.User1.Username" />
+                                            <img src="@(conv.User2.AvatarUrl ?? "/Content/default-avatar.png")" class="avatar-stacked" alt="@conv.User2.Username" title="@conv.User2.Username" />
+                                        </div>
+                                        <div class="ms-2">
+                                            <strong>@conv.User1.Username</strong>
+                                            <i class="fas fa-exchange-alt mx-1 text-muted"></i>
+                                            <strong>@conv.User2.Username</strong>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@conv.LastMessageContent">
+                                        @conv.LastMessageContent
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary">@conv.MessageCount</span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        @conv.LastMessageTimestamp.ToString("dd/MM/yyyy HH:mm")
+                                    </small>
+                                </td>
+                                <td class="text-center">
+                                    <a href="@Url.Action("ConversationDetails", new { user1Id = conv.User1.Id, user2Id = conv.User2.Id })"
+                                       class="btn btn-sm btn-info"
+                                       title="Xem chi tiết hội thoại">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
                                 </td>
                             </tr>
                         }
-                    </tbody>
-                </table>
-            </div>
-        </form>
-
-        <!-- PHÂN TRANG -->
-        @if (ViewBag.TotalPages > 1)
-        {
-            <nav class="mt-4">
-                <ul class="pagination justify-content-center">
-                    @if (ViewBag.CurrentPage > 1)
-                    {
-                        <li class="page-item">
-                            <a class="page-link" href="@Url.Action("ManagePrivateMessages", new { page = ViewBag.CurrentPage - 1, search = ViewBag.SearchQuery })">
-                                <i class="fas fa-chevron-left"></i>
-                            </a>
-                        </li>
                     }
-
-                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                    else
                     {
-                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
-                            <a class="page-link" href="@Url.Action("ManagePrivateMessages", new { page = i, search = ViewBag.SearchQuery })">@i</a>
-                        </li>
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Không có cuộc trò chuyện nào.</p>
+                            </td>
+                        </tr>
                     }
-
-                    @if (ViewBag.CurrentPage < ViewBag.TotalPages)
-                    {
-                        <li class="page-item">
-                            <a class="page-link" href="@Url.Action("ManagePrivateMessages", new { page = ViewBag.CurrentPage + 1, search = ViewBag.SearchQuery })">
-                                <i class="fas fa-chevron-right"></i>
-                            </a>
-                        </li>
-                    }
-                </ul>
-            </nav>
-        }
-    </div>
-</div>
-
-<!-- MODAL THỐNG KÊ -->
-<div class="modal fade" id="statsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-chart-bar me-2"></i>
-                    Thống kê tin nhắn riêng tư
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card bg-primary text-white mb-3">
-                            <div class="card-body">
-                                <h3>@ViewBag.TotalPrivateMessages</h3>
-                                <p class="mb-0">Tổng tin nhắn riêng tư</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card bg-success text-white mb-3">
-                            <div class="card-body">
-                                <h3>@ViewBag.UnreadMessages</h3>
-                                <p class="mb-0">Tin nhắn chưa đọc</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <h6 class="mt-3">Top 10 người dùng nhắn tin nhiều nhất:</h6>
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Hạng</th>
-                                <th>Username</th>
-                                <th>Số tin nhắn</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (ViewBag.TopSenders != null)
-                            {
-                                int rank = 1;
-                                var topSenders = (List<Online_chat.Models.TopSenderViewModel>)ViewBag.TopSenders;
-                                foreach (var sender in topSenders)
-                                {
-                                    <tr>
-                                        <td>@rank</td>
-                                        <td>@sender.Username</td>
-                                        <td><span class="badge bg-primary">@sender.MessageCount</span></td>
-                                    </tr>
-                                    rank++;
-                                }
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-@section scripts {
-    <script>
-        // Toggle checkbox
-        document.getElementById('checkAll').addEventListener('change', function () {
-            const checkboxes = document.querySelectorAll('.message-checkbox');
-            checkboxes.forEach(cb => cb.checked = this.checked);
-            updateSelectAllButton();
-        });
-
-        document.querySelectorAll('.message-checkbox').forEach(cb => {
-            cb.addEventListener('change', updateSelectAllButton);
-        });
-
-        function updateSelectAllButton() {
-            const checkboxes = document.querySelectorAll('.message-checkbox');
-            const checked = document.querySelectorAll('.message-checkbox:checked');
-            const checkAll = document.getElementById('checkAll');
-
-            checkAll.checked = checkboxes.length > 0 && checkboxes.length === checked.length;
-            document.getElementById('selectAllText').textContent =
-                checked.length > 0 ? `Đã chọn ${checked.length}` : 'Chọn tất cả';
-        }
-
-        function toggleSelectAll() {
-            const checkAll = document.getElementById('checkAll');
-            checkAll.checked = !checkAll.checked;
-            checkAll.dispatchEvent(new Event('change'));
-        }
-
-        function deleteSelected() {
-            const checked = document.querySelectorAll('.message-checkbox:checked');
-
-            if (checked.length === 0) {
-                alert('Vui lòng chọn ít nhất 1 tin nhắn để xóa!');
-                return;
-            }
-
-            if (confirm(`Xác nhận xóa ${checked.length} tin nhắn đã chọn?`)) {
-                document.getElementById('deleteMultipleForm').submit();
-            }
-        }
-    </script>
-}
+<style>
+    .avatar-group {
+        display: flex;
+        padding-left: 10px;
+    }
+    .avatar-stacked {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #fff;
+        margin-left: -10px;
+    }
+</style>

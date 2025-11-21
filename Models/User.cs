@@ -47,13 +47,19 @@ namespace Online_chat.Models
 
         [StringLength(50)]
         public string UserCode { get; set; }
+        public string FullName { get; set; }
+
 
         // Navigation properties
+        public virtual UserPrivacySettings PrivacySettings { get; set; }
         public virtual ICollection<GroupMember> GroupMembers { get; set; }
         public virtual ICollection<GroupMessage> SentGroupMessages { get; set; }
         public virtual ICollection<PrivateMessage> SentPrivateMessages { get; set; }
         public virtual ICollection<PrivateMessage> ReceivedPrivateMessages { get; set; }
         public virtual ICollection<Friendship> SentFriendRequests { get; set; }
         public virtual ICollection<Friendship> ReceivedFriendRequests { get; set; }
+        public virtual ICollection<Post> Posts { get; set; }
+        public virtual ICollection<Like> Likes { get; set; }
+        public virtual ICollection<Comment> Comments { get; set; }
     }
 }

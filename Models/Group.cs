@@ -14,6 +14,8 @@ namespace Online_chat.Models
         [StringLength(100)]
         public string Name { get; set; }
 
+        public int CreatedById { get; set; }
+
         public string AvatarUrl { get; set; }
 
         [Required]
@@ -71,5 +73,7 @@ namespace Online_chat.Models
 
         [ForeignKey("SenderId")]
         public virtual User Sender { get; set; }
+        public bool IsDeleted { get; set; }      
+        public DateTime? EditedAt { get; set; }
     }
 }

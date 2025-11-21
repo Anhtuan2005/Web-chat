@@ -358,12 +358,12 @@ namespace Online_chat.Controllers
                 TotalUsers = _context.Users.Count(u => !u.IsDeleted),
                 TotalGroups = _context.Groups.Count(),
 
-                // Top 10 user gửi nhiều tin nhất
                 TopSenders = _context.GroupMessages
-                    .GroupBy(m => m.Sender)
+                    .GroupBy(m => m.SenderId) 
                     .Select(g => new
                     {
-                        User = g.Key,
+                        SenderId = g.Key,
+                        SenderUsername = g.FirstOrDefault().Sender.Username, //  Lấy username
                         MessageCount = g.Count()
                     })
                     .OrderByDescending(x => x.MessageCount)
@@ -372,10 +372,11 @@ namespace Online_chat.Controllers
 
                 // Top 10 nhóm có nhiều tin nhắn nhất
                 TopGroups = _context.GroupMessages
-                    .GroupBy(m => m.Group)
+                    .GroupBy(m => m.GroupId) // Group by GroupId (int)
                     .Select(g => new
                     {
-                        Group = g.Key,
+                        GroupId = g.Key,
+                        GroupName = g.FirstOrDefault().Group.Name, // Lấy group name
                         MessageCount = g.Count()
                     })
                     .OrderByDescending(x => x.MessageCount)
@@ -480,22 +481,22 @@ namespace Online_chat.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult DeleteUserMessages(int userId)
+        public ActionResult DeleteUserMessages(string userId) 
         {
-            var user = _context.Users.Find(userId);
+            var user = _context.Users.Find(userId); 
             if (user == null)
             {
                 TempData["ErrorMessage"] = "Không tìm thấy user.";
                 return RedirectToAction("ManageMessages");
             }
 
-            var messages = _context.GroupMessages.Where(m => m.SenderId == userId);
+            var messages = _context.GroupMessages.Where(m => m.SenderId == int.Parse(userId));
             var count = messages.Count();
 
             _context.GroupMessages.RemoveRange(messages);
 
             var privateMessages = _context.PrivateMessages
-                .Where(m => m.SenderId == userId || m.ReceiverId == userId);
+                .Where(m => m.SenderId == int.Parse(userId) || m.ReceiverId == int.Parse(userId));
 
             _context.PrivateMessages.RemoveRange(privateMessages);
             _context.SaveChanges();
@@ -507,87 +508,73 @@ namespace Online_chat.Controllers
         // ============================================
         // QUẢN LÝ TIN NHẮN RIÊNG TƯ
         // ============================================
-        public ActionResult ManagePrivateMessages(string search, int? senderId, int? receiverId, DateTime? fromDate, DateTime? toDate, int page = 1)
+        public ActionResult ManagePrivateMessages(string search)
         {
-            var query = _context.PrivateMessages
+            IQueryable<PrivateMessage> query = _context.PrivateMessages
                 .Include(m => m.Sender)
-                .Include(m => m.Receiver)
-                .AsQueryable();
+                .Include(m => m.Receiver);
 
-            // Lọc theo người gửi
-            if (senderId.HasValue)
-            {
-                query = query.Where(m => m.SenderId == senderId.Value);
-                ViewBag.SelectedSenderId = senderId.Value;
-            }
+            var conversations = query
+                .ToList() // Fetch all messages to group in memory
+                .GroupBy(m => new {
+                    User1Id = m.SenderId < m.ReceiverId ? m.SenderId : m.ReceiverId,
+                    User2Id = m.SenderId < m.ReceiverId ? m.ReceiverId : m.SenderId
+                })
+                .Select(g => {
+                    var lastMessage = g.OrderByDescending(m => m.Timestamp).First();
+                    return new AdminConversationViewModel
+                    {
+                        User1 = lastMessage.SenderId == g.Key.User1Id ? lastMessage.Sender : lastMessage.Receiver,
+                        User2 = lastMessage.SenderId == g.Key.User2Id ? lastMessage.Sender : lastMessage.Receiver,
+                        MessageCount = g.Count(),
+                        LastMessageTimestamp = lastMessage.Timestamp,
+                        LastMessageContent = lastMessage.Content
+                    };
+                })
+                .AsEnumerable();
 
-            // Lọc theo người nhận
-            if (receiverId.HasValue)
-            {
-                query = query.Where(m => m.ReceiverId == receiverId.Value);
-                ViewBag.SelectedReceiverId = receiverId.Value;
-            }
-
-            // Lọc theo thời gian
-            if (fromDate.HasValue)
-            {
-                query = query.Where(m => m.Timestamp >= fromDate.Value);
-                ViewBag.FromDate = fromDate.Value.ToString("yyyy-MM-dd");
-            }
-
-            if (toDate.HasValue)
-            {
-                var endDate = toDate.Value.AddDays(1);
-                query = query.Where(m => m.Timestamp < endDate);
-                ViewBag.ToDate = toDate.Value.ToString("yyyy-MM-dd");
-            }
-
-            // Tìm kiếm
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.ToLower();
-                query = query.Where(m =>
-                    m.Content.ToLower().Contains(search) ||
-                    m.Sender.Username.ToLower().Contains(search) ||
-                    m.Receiver.Username.ToLower().Contains(search)
+                conversations = conversations.Where(c =>
+                    c.User1.Username.ToLower().Contains(search) ||
+                    c.User2.Username.ToLower().Contains(search) ||
+                    c.User1.DisplayName.ToLower().Contains(search) ||
+                    c.User2.DisplayName.ToLower().Contains(search)
                 );
                 ViewBag.SearchQuery = search;
             }
 
-            int pageSize = 50;
-            int totalMessages = query.Count();
-            ViewBag.TotalPages = (int)Math.Ceiling((double)totalMessages / pageSize);
-            ViewBag.CurrentPage = page;
+            var orderedConversations = conversations
+                .OrderByDescending(c => c.LastMessageTimestamp)
+                .ToList();
 
-            // Thống kê
-            ViewBag.TotalPrivateMessages = _context.PrivateMessages.Count();
-            ViewBag.UnreadMessages = _context.PrivateMessages.Count(m => !m.IsRead);
-            var topSenders = _context.PrivateMessages
-            .GroupBy(m => m.Sender)
-            .Select(g => new TopSenderViewModel
+            return View(orderedConversations);
+        }
+
+        public ActionResult ConversationDetails(int user1Id, int user2Id)
+        {
+            var user1 = _context.Users.Find(user1Id);
+            var user2 = _context.Users.Find(user2Id);
+
+            if (user1 == null || user2 == null)
             {
-                Username = g.Key.Username,
-                MessageCount = g.Count()
-            })
-            .OrderByDescending(x => x.MessageCount)
-            .Take(10)
-            .ToList();
+                return HttpNotFound();
+            }
 
-            ViewBag.TopSenders = topSenders;
+            ViewBag.User1 = user1;
+            ViewBag.User2 = user2;
 
-            var messages = query
-                .OrderByDescending(m => m.Timestamp)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
+            var messages = _context.PrivateMessages
+                .Include(m => m.Sender)
+                .Where(m =>
+                    (m.SenderId == user1Id && m.ReceiverId == user2Id) ||
+                    (m.SenderId == user2Id && m.ReceiverId == user1Id)
+                )
+                .OrderBy(m => m.Timestamp)
                 .ToList();
 
-            ViewBag.Users = _context.Users
-                .Where(u => !u.IsDeleted)
-                .OrderBy(u => u.Username)
-                .Select(u => new SelectListItem { Value = u.Id.ToString(), Text = u.Username })
-                .ToList();
-
-            return View(messages);
+            return View("ConversationDetails", messages);
         }
 
         // Xóa nhiều tin nhắn
@@ -722,7 +709,30 @@ namespace Online_chat.Controllers
         // ============================================
         public ActionResult Reports()
         {
-            return View();
+            var reports = _context.Reports
+                .Include(r => r.Reporter)
+                .Include(r => r.ReportedUser)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToList();
+            return View(reports);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult ResolveReport(int id)
+        {
+            var report = _context.Reports.Find(id);
+            if (report == null)
+            {
+                return HttpNotFound();
+            }
+
+            report.IsResolved = true;
+            _context.Entry(report).State = EntityState.Modified;
+            _context.SaveChanges();
+
+            TempData["SuccessMessage"] = "Đã giải quyết báo cáo.";
+            return RedirectToAction("Reports");
         }
 
         public JsonResult GetNewUserData()
@@ -774,7 +784,7 @@ namespace Online_chat.Controllers
             var activeUsers = _context.GroupMessages
                 .Where(m => m.Timestamp >= thirtyDaysAgo)
                 .GroupBy(m => m.Sender)
-                .Select(g => new
+                .Select(g => new UserActivityViewModel
                 {
                     User = g.Key,
                     MessageCount = g.Count(),
@@ -794,5 +804,33 @@ namespace Online_chat.Controllers
             }
             base.Dispose(disposing);
         }
+
+        [ChildActionOnly]
+        public ActionResult _AdminHeaderNotifications()
+        {
+            var model = new NotificationViewModel();
+            if (User.Identity.IsAuthenticated)
+            {
+                model.RecentUnreadMessages = _context.PrivateMessages
+                    .Include(m => m.Sender)
+                    .OrderByDescending(m => m.Timestamp)
+                    .Where(m => !m.IsRead)
+                    .Take(5)
+                    .ToList();
+                model.UnreadMessagesCount = _context.PrivateMessages.Count(m => !m.IsRead);
+
+                model.RecentUnresolvedReports = _context.Reports
+                    .Include(r => r.Reporter)
+                    .Include(r => r.ReportedUser)
+                    .OrderByDescending(r => r.CreatedAt)
+                    .Where(r => !r.IsResolved)
+                    .Take(5)
+                    .ToList();
+                model.UnresolvedReportsCount = _context.Reports.Count(r => !r.IsResolved);
+            }
+            return PartialView("~/Views/Shared/_AdminHeaderNotifications.cshtml", model);
+        }
+
+        
     }
 }

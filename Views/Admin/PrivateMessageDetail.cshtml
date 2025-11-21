@@ -1,0 +1,113 @@
+@model Online_chat.Models.PrivateMessage
+@{ 
+    ViewBag.Title = "Chi tiết tin nhắn riêng tư";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="fas fa-envelope-open-text me-2"></i>
+        Chi tiết tin nhắn
+    </h1>
+    <p class="page-subtitle">Xem chi tiết tin nhắn riêng tư giữa @Model.Sender.Username và @Model.Receiver.Username</p>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Thông tin chi tiết
+                </h5>
+                <a href="javascript:history.back()" class="btn btn-sm btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Quay lại
+                </a>
+            </div>
+
+            <div class="content-card-body">
+                <div class="message-detail-container p-4 border rounded bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <strong>Từ:</strong>
+                            <img src="@(Model.Sender.AvatarUrl ?? "/Content/default-avatar.png")" class="rounded-circle mx-2" style="width: 32px; height: 32px; object-fit: cover;" alt="Avatar" />
+                            <span>@Model.Sender.Username</span>
+                        </div>
+                        <div>
+                            <strong>Đến:</strong>
+                            <img src="@(Model.Receiver.AvatarUrl ?? "/Content/default-avatar.png")" class="rounded-circle mx-2" style="width: 32px; height: 32px; object-fit: cover;" alt="Avatar" />
+                            <span>@Model.Receiver.Username</span>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <p class="fs-5 mt-3"><strong>Nội dung tin nhắn:</strong></p>
+                    <div class="message-content p-3 border rounded bg-white mb-3" style="min-height: 100px; white-space: pre-wrap; word-wrap: break-word;">
+                        @{
+                            var messageType = "text";
+                            var displayContent = Model.Content;
+                            if (Model.Content.StartsWith("{"))
+                            {
+                                try
+                                {
+                                    var json = Newtonsoft.Json.Linq.JObject.Parse(Model.Content);
+                                    var typeToken = json["type"];
+                                    messageType = typeToken != null ? typeToken.ToString() : "text";
+
+                                    if (messageType == "image")
+                                    {
+                                        var imageUrlToken = json["imageUrl"];
+                                        var imageUrl = imageUrlToken != null ? imageUrlToken.ToString() : null;
+                                        displayContent = string.Format("<a href=\"{0}\" target=\"_blank\"><img src=\"{0}\" style=\"max-width: 200px; max-height: 200px;\" alt=\"Hình ảnh\" /></a>", imageUrl);
+                                    }
+                                    else if (messageType == "call_log")
+                                    {
+                                        var statusToken = json["status"];
+                                        var status = statusToken != null ? statusToken.ToString() : null;
+                                        displayContent = status == "missed" ? "📞 Cuộc gọi nhỡ" : "📞 Cuộc gọi";
+                                    }
+                                    else if (messageType == "file")
+                                    {
+                                        var fileUrlToken = json["fileUrl"];
+                                        var fileUrl = fileUrlToken != null ? fileUrlToken.ToString() : null;
+                                        var fileNameToken = json["fileName"];
+                                        var fileName = fileNameToken != null ? fileNameToken.ToString() : "Tệp đính kèm";
+                                        displayContent = string.Format("📎 <a href=\"{0}\" target=\"_blank\">{1}</a>", fileUrl, fileName);
+                                    }
+                                }
+                                catch
+                                {
+                                    // Bỏ qua nếu parse lỗi
+                                }
+                            }
+                        }
+                        @Html.Raw(displayContent)
+                    </div>
+
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><strong>ID Tin nhắn:</strong></span>
+                            <span class="badge bg-secondary">#@Model.Id</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><strong>Thời gian gửi:</strong></span>
+                            <span class="text-muted">@Model.Timestamp.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><strong>Trạng thái:</strong></span>
+                            @if (Model.IsRead)
+                            {
+                                <span class="badge bg-success"><i class="fas fa-check-double"></i> Đã đọc</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary"><i class="fas fa-check"></i>chưa đọc</span>
+                            }
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
