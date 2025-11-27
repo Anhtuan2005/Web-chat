@@ -268,11 +268,15 @@
             overflow: hidden;
         }
 
-            .story-preview img {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-            }
+        #imageDisplay {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute; 
+            top: 0;
+            left: 0;
+            z-index: 0; 
+        }
 
         .story-text-display {
             color: white;
@@ -283,6 +287,8 @@
             text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
             word-wrap: break-word;
             max-width: 100%;
+            z-index: 10; 
+            position: relative;
         }
 
         .story-overlay {
@@ -295,11 +301,13 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            z-index: 20;
         }
 
         .story-user-avatar {
-            width: 40px;
-            height: 40px;
+            width: 40px !important;
+            height: 40px !important;
+            min-width: 40px;
             border-radius: 50%;
             border: 3px solid white;
             object-fit: cover;
@@ -477,7 +485,7 @@
 
         
 
-            <script>
+    <script>
 
                 let currentStoryType = 'text';
 
@@ -485,7 +493,7 @@
 
                 let currentFont = 'Inter, sans-serif';
 
-        
+
 
                 // Tab switching
 
@@ -497,19 +505,19 @@
 
                         currentStoryType = type;
 
-        
+
 
                         document.querySelectorAll('.story-tab').forEach(t => t.classList.remove('active'));
 
                         this.classList.add('active');
 
-        
+
 
                         document.getElementById('text-controls').classList.remove('active');
 
                         document.getElementById('image-controls').classList.remove('active');
 
-        
+
 
                         if (type === 'text') {
 
@@ -527,7 +535,7 @@
 
                         }
 
-        
+
 
                         document.getElementById('storyType').value = type;
 
@@ -535,7 +543,7 @@
 
                 });
 
-        
+
 
                 // Text preview
 
@@ -551,7 +559,7 @@
 
                 }
 
-        
+
 
                 // Background change
 
@@ -569,7 +577,7 @@
 
                 }
 
-        
+
 
                 // Font change
 
@@ -587,7 +595,7 @@
 
                 }
 
-        
+
 
                 // Image upload
 
@@ -597,7 +605,7 @@
 
                     if (!file) return;
 
-        
+
 
                     const reader = new FileReader();
 
@@ -615,17 +623,13 @@
 
                 }
 
-        
 
-                // Go back
 
                 function goBack() {
-
-                    window.location.href = '@Url.Action("SelectStoryType", "Feed")';
-
+                    window.location.href = '@Url.Action("Index", "Feed")'; 
                 }
 
-        
+
 
                 // Form submission
 
@@ -633,7 +637,7 @@
 
                     e.preventDefault();
 
-        
+
 
                     const submitBtn = document.getElementById('submitBtn');
 
@@ -641,11 +645,11 @@
 
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang đăng...';
 
-        
+
 
                     const formData = new FormData(this);
 
-        
+
 
                     fetch('@Url.Action("CreateStory", "Feed")', {
 
@@ -705,7 +709,7 @@
 
                 });
 
-        
+
 
                 // Load user info
 

@@ -1,0 +1,125 @@
+﻿@model IEnumerable<Online_chat.Models.Post>
+@using Newtonsoft.Json
+
+@* Duyệt qua từng bài viết trong danh sách *@
+@foreach (var item in Model)
+{
+    <div class="post-card" data-post-id="@item.Id">
+        @* --- PHẦN HEADER (AVATAR, TÊN) --- *@
+        <div class="post-header">
+            <img src="@(item.User.AvatarUrl ?? "/Content/default-avatar.png")" alt="Avatar" class="post-avatar">
+            <div class="post-user-info">
+                <strong>@item.User.Username</strong>
+                <small>@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+            </div>
+
+            @* --- NÚT MENU (XÓA, SỬA...) --- *@
+            <div class="post-menu dropdown">
+                <button class="dropdown-toggle" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-h"></i></button>
+                <ul class="dropdown-menu dropdown-menu-right">
+                    @if (item.UserId == (int?)ViewBag.CurrentUserId)
+                    {
+                        <li><a href="#" class="dropdown-item delete-post-btn" data-post-id="@item.Id">Xóa bài viết</a></li>
+                        <li class="dropdown-submenu">
+                            <a href="#" class="dropdown-item dropdown-toggle" data-bs-toggle="dropdown">Quyền riêng tư</a>
+                            <ul class="dropdown-menu">
+                                <li><a href="#" class="dropdown-item privacy-option" data-post-id="@item.Id" data-privacy="Public">Công khai</a></li>
+                                <li><a href="#" class="dropdown-item privacy-option" data-post-id="@item.Id" data-privacy="Private">Riêng tư</a></li>
+                                <li><a href="#" class="dropdown-item privacy-option" data-post-id="@item.Id" data-privacy="Friends">Bạn bè</a></li>
+                            </ul>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        @* --- PHẦN NỘI DUNG (TEXT) --- *@
+    <div class="post-body">
+        @if (!string.IsNullOrEmpty(item.Content))
+        {
+            <div class="post-content-text" style="@(item.PostBackground != "default" ? "background:" + item.PostBackground + "; padding: 20px; color: white; text-align: center; font-size: 18px; font-weight: bold; border-radius: 8px;" : "")">
+                @item.Content
+            </div>
+        }
+
+        @* --- PHẦN HIỂN THỊ ẢNH (LƯỚI FACEBOOK) --- *@
+        @if (item.PostImages != null && item.PostImages.Count > 0)
+        {
+            var images = item.PostImages.Select(x => x.ImageUrl).ToList();
+            var count = images.Count;
+            var extraCount = count - 4;
+
+            // Chuyển danh sách ảnh thành chuỗi JSON để truyền vào hàm JS
+            // Ví dụ: "['/img1.jpg', '/img2.jpg']"
+            var imagesJson = JsonConvert.SerializeObject(images);
+
+            <div class="photo-grid grid-@((count > 4) ? 4 : count)">
+                @for (int i = 0; i < count && i < 4; i++)
+                {
+                    // Khi click, gọi hàm openGallery với (index hiện tại, danh sách tất cả ảnh)
+                    <div class="grid-item @(i == 0 ? "main-photo" : "")"
+                         onclick='openGallery(@i, @Html.Raw(imagesJson))'>
+
+                        <img src="@images[i]" alt="Post Image" loading="lazy" />
+
+                        @if (i == 3 && count > 4)
+                        {
+                            <div class="more-photos-overlay">
+                                <span>+@extraCount</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(item.MediaUrl))
+        {
+            var singleImageJson = JsonConvert.SerializeObject(new List<string> { item.MediaUrl });
+
+            if (item.MediaType == "Image")
+            {
+                <img src="@item.MediaUrl" class="post-single-media"
+                     onclick='openGallery(0, @Html.Raw(singleImageJson))' alt="Post Image">
+            }
+            else if (item.MediaType == "Video")
+            {
+                <video controls class="post-single-media"><source src="@item.MediaUrl" type="video/mp4"></video>
+            }
+        }
+    </div>
+
+        @* --- PHẦN TƯƠNG TÁC (LIKE, COMMENT) --- *@
+        <div class="post-stats">
+            <div class="likes-count">
+                <i class="fas fa-heart" style="color:red"></i>
+                <span class="like-count">@item.Likes.Count</span>
+            </div>
+        </div>
+
+        <div class="post-actions">
+            @{
+                var isLiked = item.Likes.Any(l => l.UserId == (int?)ViewBag.CurrentUserId);
+            }
+            <button class="btn like-btn @(isLiked ? "liked" : "")" data-post-id="@item.Id">
+                <i class="@(isLiked ? "fas" : "far") fa-heart"></i> Thích
+            </button>
+            <button class="btn comment-btn"><i class="far fa-comment"></i> Bình luận</button>
+            <button class="btn share-btn" data-post-id="@item.Id" data-post-url=""><i class="far fa-share-square"></i> Chia sẻ</button>
+        </div>
+
+        @* --- PHẦN COMMENT LIST --- *@
+        <div class="post-comments">
+            <div class="comment-list">
+                @foreach (var cmt in item.Comments)
+                {
+                    <div class="comment-item">
+                        <strong>@cmt.User.Username</strong>: @cmt.Content
+                    </div>
+                }
+            </div>
+            <form class="comment-add-form" data-post-id="@item.Id">
+                <input type="text" class="form-control comment-input" placeholder="Viết bình luận...">
+            </form>
+        </div>
+    </div>
+}

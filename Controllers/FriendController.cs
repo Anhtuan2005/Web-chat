@@ -88,14 +88,20 @@ namespace Online_chat.Controllers
             var currentUserId = currentUser.Id;
             var results = new List<SearchResultViewModel>();
 
+            var blockedUserIds = _context.BlockedUsers
+                .Where(b => b.BlockerId == currentUserId || b.BlockedId == currentUserId)
+                .Select(b => b.BlockerId == currentUserId ? b.BlockedId : b.BlockerId)
+                .ToHashSet();
+
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 int.TryParse(searchTerm, out int searchId);
 
-                // SỬA LỖI 3: Lọc ra user đã bị xóa (u.IsDeleted == false)
+                // SỬA LỖI 3: Lọc ra user đã bị xóa (u.IsDeleted == false) và user đã bị chặn
                 var foundUsers = _context.Users
                     .Where(u => u.Id != currentUserId &&
-                                u.IsDeleted == false && // <--- THÊM ĐIỀU KIỆN NÀY
+                                !u.IsDeleted &&
+                                !blockedUserIds.Contains(u.Id) && 
                                 (u.PhoneNumber == searchTerm || u.UserCode == searchTerm || (searchId != 0 && u.Id == searchId)))
                     .ToList();
 
@@ -412,12 +418,18 @@ namespace Online_chat.Controllers
                 excludedIds.UnionWith(pendingIds);
                 excludedIds.Add(currentUserId);
 
+                // Exclude blocked users
+                var blockedUserIds = _context.BlockedUsers
+                    .Where(b => b.BlockerId == currentUserId || b.BlockedId == currentUserId)
+                    .Select(b => b.BlockerId == currentUserId ? b.BlockedId : b.BlockerId)
+                    .ToList();
+                excludedIds.UnionWith(blockedUserIds);
+
                 if (!friendIds.Any())
                 {
                     // If user has no friends, suggest random users they don't have any relationship with
-                    var randomUsers = _context.Users
-                        .Where(u => !excludedIds.Contains(u.Id) && !u.IsDeleted)
-                        .ToList() // Fetch to memory
+                                                            var randomUsers = _context.Users
+                                                                .Where(u => !excludedIds.Contains(u.Id) && !u.IsDeleted && !u.IsAdmin && u.Username != "Admin")                        .ToList() // Fetch to memory
                         .OrderBy(u => Guid.NewGuid()) // Random order in memory
                         .Take(5)
                         .Select(u => new {
@@ -443,9 +455,8 @@ namespace Online_chat.Controllers
                     .ToList();
 
                 // 6. Fetch user details for the suggestions, then randomize in memory
-                var suggestions = _context.Users
-                    .Where(u => suggestedUserIds.Contains(u.Id) && !u.IsDeleted)
-                    .ToList() // Fetch to memory
+                                                var suggestions = _context.Users
+                                                    .Where(u => suggestedUserIds.Contains(u.Id) && !u.IsDeleted && !u.IsAdmin && u.Username != "Admin")                    .ToList() // Fetch to memory
                     .OrderBy(u => Guid.NewGuid()) // Randomize in memory
                     .Take(5) // Limit to 5 suggestions
                     .Select(u => new {
@@ -463,9 +474,9 @@ namespace Online_chat.Controllers
                     var allExcludedIds = new HashSet<int>(excludedIds);
                     allExcludedIds.UnionWith(currentSuggestionIds);
 
-                    var additionalUsers = _context.Users
-                        .Where(u => !allExcludedIds.Contains(u.Id) && !u.IsDeleted)
-                        .ToList() // Fetch to memory
+                                                            var additionalUsers = _context.Users
+
+                                                                .Where(u => !allExcludedIds.Contains(u.Id) && !u.IsDeleted && !u.IsAdmin && u.Username != "Admin")                        .ToList() // Fetch to memory
                         .OrderBy(u => Guid.NewGuid()) // Randomize in memory
                         .Take(5 - suggestions.Count)
                         .Select(u => new {
@@ -504,12 +515,88 @@ namespace Online_chat.Controllers
                 AvatarUrl = user.AvatarUrl ?? "/Content/default-avatar.png",
                 CoverPhotoUrl = user.CoverPhotoUrl ?? "/Content/default-cover.jpg",
                 user.Bio,
-                Gender = user.Gender?.ToString() ?? "Not specified",
-                DateOfBirth = user.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Not specified"
+                Gender = user.Gender?.ToString() ?? "Chưa cập nhật",
+                DateOfBirth = user.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật",
+                Email = string.IsNullOrEmpty(user.Email) ? "Chưa cập nhật" : "**********",
+                PhoneNumber = string.IsNullOrEmpty(user.PhoneNumber) ? "Chưa cập nhật" : "**********"
             };
 
             return Json(new { success = true, user = profileData }, JsonRequestBehavior.AllowGet);
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public JsonResult BlockUser(int blockedId)
+        {
+            if (blockedId <= 0)
+            {
+                return Json(new { success = false, message = "ID người dùng không hợp lệ." });
+            }
+            var currentUsername = User.Identity.Name;
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+
+            if (currentUser == null)
+            {
+                return Json(new { success = false, message = "Không thể xác thực người dùng." });
+            }
+
+            if (currentUser.Id == blockedId)
+            {
+                return Json(new { success = false, message = "Bạn không thể tự chặn chính mình." });
+            }
+
+            // Check if block already exists
+            var alreadyBlocked = _context.BlockedUsers.Any(b => b.BlockerId == currentUser.Id && b.BlockedId == blockedId);
+            if (alreadyBlocked)
+            {
+                return Json(new { success = true, message = "Người dùng đã bị chặn từ trước." });
+            }
+
+            // Create new block record
+            var newBlock = new BlockedUser
+            {
+                BlockerId = currentUser.Id,
+                BlockedId = blockedId
+            };
+            _context.BlockedUsers.Add(newBlock);
+
+            // Remove any existing friendship (sent, received, or accepted)
+            var friendship = _context.Friendships.FirstOrDefault(f =>
+                (f.SenderId == currentUser.Id && f.ReceiverId == blockedId) ||
+                (f.SenderId == blockedId && f.ReceiverId == currentUser.Id));
+
+            if (friendship != null)
+            {
+                _context.Friendships.Remove(friendship);
+            }
+
+            _context.SaveChanges();
+
+            return Json(new { success = true, message = "Đã chặn người dùng." });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public JsonResult UnblockUser(int blockedId)
+        {
+            if (blockedId <= 0)
+            {
+                return Json(new { success = false, message = "ID người dùng không hợp lệ." });
+            }
+            var currentUsername = User.Identity.Name;
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+            var blockedUser = _context.BlockedUsers.FirstOrDefault(bu => bu.BlockedId == blockedId && bu.BlockerId == currentUser.Id);
+
+            if (blockedUser != null)
+            {
+                _context.BlockedUsers.Remove(blockedUser);
+                _context.SaveChanges();
+                return Json(new { success = true });
+            }
+
+            return Json(new { success = false, message = "Không tìm thấy người dùng này trong danh sách chặn." });
+        }
+
 
         protected override void Dispose(bool disposing)
         {

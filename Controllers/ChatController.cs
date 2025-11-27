@@ -12,19 +12,53 @@ namespace Online_chat.Controllers
     public class ChatController : BaseController
     {
 
+        public class ChatViewModel
+        {
+            public string CurrentUserAvatarUrl { get; set; }
+            public int CurrentUserAvatarVersion { get; set; }
+            public string SelectedFriendUsername { get; set; }
+            public string BlockStatus { get; set; }
+            public string BlockedUserDisplayName { get; set; }
+        }
+
         public ActionResult Index(string friendUsername)
         {
             var currentUsername = User.Identity.Name;
             var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
 
+            var viewModel = new ChatViewModel
+            {
+                SelectedFriendUsername = friendUsername,
+                BlockStatus = "None"
+            };
+
             if (currentUser != null)
             {
-                ViewBag.CurrentUserAvatarUrl = currentUser.AvatarUrl;
-                ViewBag.CurrentUserAvatarVersion = currentUser.AvatarVersion;
+                viewModel.CurrentUserAvatarUrl = currentUser.AvatarUrl;
+                viewModel.CurrentUserAvatarVersion = (int)currentUser.AvatarVersion;
             }
 
-            ViewBag.SelectedFriendUsername = friendUsername;
-            return View();
+            if (!string.IsNullOrEmpty(friendUsername) && currentUser != null)
+            {
+                var friendUser = _context.Users.FirstOrDefault(u => u.Username == friendUsername);
+                if (friendUser != null)
+                {
+                    var youBlockedThem = _context.BlockedUsers.Any(b => b.BlockerId == currentUser.Id && b.BlockedId == friendUser.Id);
+                    var theyBlockedYou = _context.BlockedUsers.Any(b => b.BlockerId == friendUser.Id && b.BlockedId == currentUser.Id);
+
+                    if (youBlockedThem)
+                    {
+                        viewModel.BlockStatus = "YouBlocked";
+                        viewModel.BlockedUserDisplayName = friendUser.DisplayName ?? friendUser.Username;
+                    }
+                    else if (theyBlockedYou)
+                    {
+                        viewModel.BlockStatus = "TheyBlocked";
+                    }
+                }
+            }
+
+            return View(viewModel);
         }
 
         [HttpGet]
@@ -189,8 +223,13 @@ namespace Online_chat.Controllers
                     return Json(new List<object>(), JsonRequestBehavior.AllowGet);
                 }
 
+                var blockedUserIds = _context.BlockedUsers
+                    .Where(b => b.BlockerId == currentUser.Id || b.BlockedId == currentUser.Id)
+                    .Select(b => b.BlockerId == currentUser.Id ? b.BlockedId : b.BlockerId)
+                    .ToHashSet();
+
                 var users = _context.Users
-                    .Where(u => !u.IsDeleted && u.Id != currentUser.Id)
+                    .Where(u => !u.IsDeleted && u.Id != currentUser.Id && !blockedUserIds.Contains(u.Id))
                     .OrderBy(u => u.Username)
                     .Select(u => new
                     {
@@ -369,60 +408,61 @@ namespace Online_chat.Controllers
         public JsonResult GetChatHistory(string partnerUsername)
         {
             var currentUsername = User.Identity.Name;
-            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
-            var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername);
 
-            if (currentUser == null || partnerUser == null)
+            using (var db = new ApplicationDbContext())
             {
-                return Json(new { success = false, message = "User not found" }, JsonRequestBehavior.AllowGet);
+                var currentUser = db.Users.FirstOrDefault(u => u.Username == currentUsername);
+                var partner = db.Users.FirstOrDefault(u => u.Username == partnerUsername);
+
+                if (currentUser == null || partner == null)
+                {
+                    return Json(new { success = false, message = "User not found" }, JsonRequestBehavior.AllowGet);
+                }
+
+                var messages = db.PrivateMessages
+                    .Include(m => m.Sender)
+                    .Include(m => m.Receiver)
+                    .Include(m => m.ParentMessage)
+                    .Include(m => m.ParentMessage.Sender)
+                    .Include(m => m.ForwardedFrom)
+                    .Include(m => m.Reactions.Select(r => r.User))  // ← THÊM DÒNG NÀY
+                    .Where(m =>
+                        (m.SenderId == currentUser.Id && m.ReceiverId == partner.Id) ||
+                        (m.SenderId == partner.Id && m.ReceiverId == currentUser.Id))
+                    .OrderBy(m => m.Timestamp)
+                    .ToList();
+
+                var result = messages.Select(m => new
+                {
+                    Id = m.Id,
+                    Content = m.Content,
+                    SenderId = m.Sender.Id,
+                    SenderUsername = m.Sender.Username,
+                    SenderAvatar = m.Sender.AvatarUrl ?? "/Content/default-avatar.png",
+                    Timestamp = m.Timestamp,
+                    Status = m.Status.ToString(),
+                    IsDeleted = m.IsDeleted,
+                    EditedAt = m.EditedAt,
+                    ParentMessage = m.ParentMessage != null ? new
+                    {
+                        Content = m.ParentMessage.Content,
+                        SenderUsername = m.ParentMessage.Sender.Username
+                    } : null,
+                    ForwardedFrom = m.ForwardedFrom != null ? new
+                    {
+                        Username = m.ForwardedFrom.Username,
+                        DisplayName = m.ForwardedFrom.DisplayName
+                    } : null,
+                    Reactions = m.Reactions.Select(r => new
+                    {
+                        UserId = r.UserId,
+                        Username = r.User.Username,
+                        Emoji = r.Emoji
+                    }).ToList()
+                }).ToList();
+
+                return Json(new { success = true, messages = result }, JsonRequestBehavior.AllowGet);
             }
-
-            // CORRECTION: Charger toutes les données puis faire la projection
-            var messages = _context.PrivateMessages
-                .Include(m => m.Sender)
-                .Include(m => m.Receiver)
-                .Include(m => m.ParentMessage)
-                .Include(m => m.ParentMessage.Sender)
-                .Include(m => m.Reactions.Select(r => r.User))
-                .Include(m => m.ForwardedFrom)
-                .Where(m => (m.SenderId == currentUser.Id && m.ReceiverId == partnerUser.Id) ||
-                            (m.SenderId == partnerUser.Id && m.ReceiverId == currentUser.Id))
-                .OrderBy(m => m.Timestamp)
-                .ToList(); // Exécuter la requête AVANT la projection
-
-            // Puis faire la projection en mémoire
-            var result = messages.Select(m => new
-            {
-                Id = m.Id,
-                SenderUsername = m.Sender.Username,
-                SenderAvatar = m.Sender.AvatarUrl ?? "/Content/default-avatar.png",
-                Content = m.Content,
-                Timestamp = m.Timestamp.ToString("o"),
-                Status = m.Status.ToString(),
-                EditedAt = m.EditedAt?.ToString("o"),
-                IsDeleted = m.IsDeleted,
-                ParentMessage = m.ParentMessage != null ? new
-                {
-                    Id = m.ParentMessage.Id,
-                    Content = m.ParentMessage.Content,
-                    SenderUsername = m.ParentMessage.Sender.Username
-                } : null,
-                Reactions = m.Reactions.Select(r => new
-                {
-                    Id = r.Id,
-                    UserId = r.UserId,
-                    Username = r.User.Username,
-                    Emoji = r.Emoji
-                }).ToList(),
-                ForwardedFrom = m.ForwardedFrom != null ? new
-                {
-                    Id = m.ForwardedFrom.Id,
-                    Username = m.ForwardedFrom.Username,
-                    DisplayName = m.ForwardedFrom.DisplayName
-                } : null
-            }).ToList();
-
-            return Json(new { success = true, messages = result }, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]
@@ -663,6 +703,33 @@ namespace Online_chat.Controllers
                 _context.Dispose();
             }
             base.Dispose(disposing);
+        }
+
+        [HttpGet]
+        public JsonResult GetBlockStatus(string partnerUsername)
+        {
+            var currentUsername = User.Identity.Name;
+            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
+            var partnerUser = _context.Users.FirstOrDefault(u => u.Username == partnerUsername);
+
+            if (currentUser == null || partnerUser == null)
+            {
+                return Json(new { status = "None" }, JsonRequestBehavior.AllowGet);
+            }
+
+            var youBlockedThem = _context.BlockedUsers.Any(b => b.BlockerId == currentUser.Id && b.BlockedId == partnerUser.Id);
+            if (youBlockedThem)
+            {
+                return Json(new { status = "YouBlocked", blockedUserDisplayName = partnerUser.DisplayName ?? partnerUser.Username }, JsonRequestBehavior.AllowGet);
+            }
+
+            var theyBlockedYou = _context.BlockedUsers.Any(b => b.BlockerId == partnerUser.Id && b.BlockedId == currentUser.Id);
+            if (theyBlockedYou)
+            {
+                return Json(new { status = "TheyBlocked" }, JsonRequestBehavior.AllowGet);
+            }
+
+            return Json(new { status = "None" }, JsonRequestBehavior.AllowGet);
         }
     }
 }

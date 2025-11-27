@@ -123,22 +123,22 @@
         gap: 12px;
     }
 
-    .search-form input {
-        flex: 1;
-        background: #f8fdf9;
-        border: 2px solid #c8e6c9;
-        border-radius: 12px;
-        padding: 12px 18px;
-        transition: all 0.3s ease;
-        font-size: 0.95rem;
-    }
+        .search-form input {                                                                                  
+            flex: 1;                                                                                          
+            background: #f8fdf9;                                                                              
+            border: 2px solid #c8e6c9;                                                                        
+            border-radius: 12px;                                                                              
+            padding: 12px 18px;                                                                               
+            transition: all 0.3s ease;                                                                        
+            font-size: 0.95rem;
+            color: #000; /* Changed text color to black for better readability */    }
 
-    .search-form input:focus {
-        border-color: #43a047;
-        box-shadow: 0 0 0 4px rgba(67, 160, 71, 0.1);
-        outline: none;
-        background: white;
-    }
+        .search-form input:focus {                                                                            
+            border-color: #43a047;                                                                            
+            box-shadow: 0 0 0 4px rgba(67, 160, 71, 0.1);                                                     
+            outline: none;                                                                                    
+            background: white;
+            color: #000; /* Ensure text color is black on focus */    }
 
     .btn-action {
         border-radius: 8px;
@@ -497,30 +497,7 @@
     }
 </style>
 
-<!-- User Profile Modal -->
-<div class="modal fade" id="profile-modal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div id="profile-modal-cover"></div>
-            <div class="modal-body text-center">
-                <img id="profile-modal-avatar" src="/Content/default-avatar.png" />
-                <h4 id="profile-modal-name"></h4>
-                <p id="profile-modal-username"></p>
-                <p id="profile-modal-bio" class="px-3"></p>
-                <div class="info-grid">
-                    <i class="fas fa-venus-mars"></i> <span id="profile-modal-gender"></span>
-                    <i class="fas fa-birthday-cake"></i> <span id="profile-modal-dob"></span>
-                </div>
-                <button type="button" class="btn btn-action btn-light mt-3" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-1"></i> Đóng
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Friend Requests Modal -->
-<div class="modal fade" id="friendRequestsModal" tabindex="-1">
+<!-- Friend Requests Modal --><div class="modal fade" id="friendRequestsModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
@@ -634,7 +611,7 @@
                     <div class="col-12 mb-3">
                         <div class="friend-card">
                             <div class="friend-card-body">
-                                <div class="friend-avatar-wrapper" data-userid="@friend.FriendId">
+                                <div class="friend-avatar-wrapper user-avatar-trigger" data-userid="@friend.FriendId">
                                     <img src="@Url.Content(friend.FriendAvatarUrl ?? "/Content/default-avatar.png")" class="friend-avatar" />
                                 </div>
                                 <div class="friend-card-info">
@@ -694,12 +671,13 @@
                                     <div class="col-12 mb-3 suggestion-card" id="suggestion-${user.Id}">
                                         <div class="friend-card">
                                             <div class="friend-card-body">
-                                                <div class="friend-avatar-wrapper" data-userid="${user.Id}">
+                                                <div class="friend-avatar-wrapper user-avatar-trigger" data-userid="${user.Id}">
                                                     <img src="${user.AvatarUrl}" class="friend-avatar" />
                                                 </div>
                                                 <div class="friend-card-info">
                                                     <div class="friend-card-name">${user.DisplayName}</div>
-                                                    <div class="friend-card-username">${user.Username}</div>
+                                                                                                        <div class="friend-card-username">@@${user.Username}</di
+                                                    v>
                                                 </div>
                                             </div>
                                             <div class="friend-card-actions">
@@ -768,48 +746,6 @@
 
             $('#friend-suggestions-list').on('click', '.btn-remove-suggestion', function () {
                 $(this).closest('.suggestion-card').fadeOut(400, function() { $(this).remove(); });
-            });
-
-            $(document).on('click', '.friend-avatar-wrapper', function() {
-                const userId = $(this).data('userid');
-                if (!userId) return;
-
-                const $modal = $('#profile-modal');
-                $modal.find('#profile-modal-name').text('Đang tải...');
-                $modal.find('#profile-modal-username').text('');
-                $modal.find('#profile-modal-bio').text('');
-                $modal.find('#profile-modal-gender').text('');
-                $modal.find('#profile-modal-dob').text('');
-                $modal.find('#profile-modal-avatar').attr('src', '/Content/default-avatar.png');
-                $modal.find('#profile-modal-cover').css('background', 'linear-gradient(135deg, #66bb6a 0%, #43a047 100%)');
-
-                var myModal = new bootstrap.Modal($modal[0]);
-                myModal.show();
-
-                $.ajax({
-                    url: '@Url.Action("GetUserDetails", "Friend")',
-                    type: 'GET',
-                    data: { userId: userId },
-                    success: function(response) {
-                        if (response.success) {
-                            const user = response.user;
-                            $modal.find('#profile-modal-name').text(user.DisplayName);
-                            $modal.find('#profile-modal-username').text('' + user.Username);
-                            $modal.find('#profile-modal-bio').text(user.Bio || 'Chưa có tiểu sử.');
-                            $modal.find('#profile-modal-gender').text(user.Gender || 'Chưa cập nhật');
-                            $modal.find('#profile-modal-dob').text(user.DateOfBirth || 'Chưa cập nhật');
-                            $modal.find('#profile-modal-avatar').attr('src', user.AvatarUrl);
-                            if(user.CoverPhotoUrl) {
-                                $modal.find('#profile-modal-cover').css('background-image', `url(${user.CoverPhotoUrl})`);
-                            }
-                        } else {
-                            $modal.find('#profile-modal-name').text('Không thể tải thông tin.');
-                        }
-                    },
-                    error: function() {
-                        $modal.find('#profile-modal-name').text('Lỗi khi tải thông tin.');
-                    }
-                });
             });
         });
     </script>

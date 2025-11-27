@@ -1,0 +1,187 @@
+@model Online_chat.Models.Post
+
+@{
+    // Xử lý an toàn
+    var avatarUrl = "/Content/default-avatar.png";
+    if (Model.User != null && !string.IsNullOrEmpty(Model.User.AvatarUrl))
+    {
+        avatarUrl = Model.User.AvatarUrl;
+    }
+    var username = (Model.User != null) ? Model.User.Username : "Người dùng";
+    var timeAgo = Model.CreatedAt.ToString("dd/MM HH:mm");
+
+    bool hasBackground = !string.IsNullOrEmpty(Model.PostBackground) && Model.PostBackground != "default";
+    bool hasMedia = Model.PostImages != null && Model.PostImages.Any();
+    var firstImageUrl = hasMedia ? Model.PostImages.First().ImageUrl : null;
+    bool showBackgroundMode = hasBackground && !hasMedia;
+}
+
+<a href="@Url.Action("Details", "Feed", new { id = Model.Id })" target="_blank" class="shared-post-link">
+    <div class="shared-post-container">
+
+        <div class="shared-header">
+            <img src="@avatarUrl" alt="@username" class="shared-avatar" />
+            <div class="shared-info">
+                <strong class="shared-username">@username</strong>
+                <span class="shared-time">@timeAgo</span>
+            </div>
+        </div>
+
+        <div class="shared-content-area">
+            @if (showBackgroundMode)
+            {
+                <div class="shared-post-background" style="background: @Model.PostBackground;">
+                    <span class="background-text">@Model.Content</span>
+                </div>
+            }
+            else if (hasMedia)
+            {
+                <div class="shared-media" style="background-image: url('@firstImageUrl');"></div>
+
+                if (!string.IsNullOrEmpty(Model.Content))
+                {
+                    <div class="shared-caption">@Model.Content</div>
+                }
+            }
+            else
+            {
+                <div class="shared-caption text-only">@Model.Content</div>
+            }
+        </div>
+
+        <div class="shared-footer">
+            <span>Xem bài viết</span>
+        </div>
+    </div>
+</a>
+
+<style>
+    .shared-post-link {
+        text-decoration: none !important;
+        color: inherit !important;
+        display: block;
+        max-width: 320px;
+        margin-top: 8px;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    .shared-post-container {
+        background-color: #fff;
+        border-radius: 12px;
+        border: 1px solid #e0e0e0;
+        overflow: hidden;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .shared-header {
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px; /* Khoảng cách giữa avatar và tên */
+        background: #fff;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    /* --- PHẦN BẠN CẦN SỬA LÀ ĐÂY --- */
+    .shared-avatar {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important; /* Quan trọng: chống méo */
+        border-radius: 50% !important;
+        object-fit: cover !important;
+        border: 1px solid #e0e0e0;
+        background-color: #ffffff; /* Quan trọng: tạo nền trắng cho avatar */
+        display: block;
+    }
+    /* ------------------------------ */
+
+    .shared-info {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+        overflow: hidden;
+    }
+
+    .shared-username {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1c1e21;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .shared-time {
+        font-size: 11px;
+        color: #65676b;
+    }
+
+    .shared-content-area {
+        position: relative;
+    }
+
+    .shared-post-background {
+        height: 140px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 15px;
+        color: #fff;
+        font-weight: bold;
+        font-size: 16px;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .background-text {
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: break-word;
+    }
+
+    .shared-media {
+        height: 150px;
+        background-size: cover;
+        background-position: center;
+        background-color: #000;
+    }
+
+        .shared-media.video-mode {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 30px;
+        }
+
+    .shared-caption {
+        padding: 10px 12px;
+        font-size: 13px;
+        color: #1c1e21;
+        line-height: 1.4;
+        word-break: break-word;
+    }
+
+        .shared-caption.text-only {
+            font-size: 14px;
+            min-height: 40px;
+        }
+
+    .shared-footer {
+        padding: 8px 12px;
+        background-color: #f7f8fa;
+        border-top: 1px solid #f0f0f0;
+        font-size: 11px;
+        color: #65676b;
+        font-weight: 600;
+        text-align: right;
+    }
+
+    .shared-post-link:hover .shared-post-container {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+</style>

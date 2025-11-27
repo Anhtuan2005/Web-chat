@@ -291,15 +291,15 @@
             // For _BlockSettings.cshtml
             $('.unblock-user-btn').click(function () {
                 var button = $(this);
-                var blockedUserId = button.data('userid');
+                var blockedId = button.data('userid');
                 if (confirm('Bạn có chắc chắn muốn bỏ chặn người dùng này không?')) {
                     $.ajax({
                         url: '@Url.Action("UnblockUser")',
                         type: 'POST',
-                        data: { blockedUserId: blockedUserId },
+                        data: { blockedId: blockedId },
                         success: function (response) {
                             if (response.success) {
-                                $('#blocked-user-' + blockedUserId).fadeOut(300, function () { $(this).remove(); });
+                                $('#blocked-user-' + blockedId).fadeOut(300, function () { $(this).remove(); });
                             } else {
                                 alert('Lỗi: ' + response.message);
                             }

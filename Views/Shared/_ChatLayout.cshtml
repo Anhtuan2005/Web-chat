@@ -6,7 +6,7 @@
     <title>@ViewBag.Title</title>
     @Styles.Render("~/Content/css")
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     @RenderSection("styles", required: false)
     <style>
                 * {
@@ -17,7 +17,7 @@
 
                 body {
                     overflow: hidden;
-                    font-family: 'Inter', sans-serif;
+                    font-family: 'Nunito', sans-serif;
                     background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
                 }
 
@@ -704,6 +704,7 @@
     </style>
 </head>
 <body>
+    @Html.AntiForgeryToken()
     <div class="app-layout">
 
         <nav class="main-nav-bar">
@@ -798,6 +799,7 @@
     <div class="app-layout">
     </div>
 
+    @Html.Partial("~/Views/Shared/_ProfileModal.cshtml")
     <div class="modal fade" id="myProfileModal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content" style="border-radius: 20px; overflow: hidden; background: #f1f8e9;">
@@ -827,10 +829,12 @@
     @Scripts.Render("~/bundles/jquery")
     @Scripts.Render("~/bundles/popper")
     @Scripts.Render("~/bundles/bootstrap")
+    <script src="~/Scripts/site.js"></script>
 
     <audio id="notification-sound" src="~/Sounds/notification.mp3" preload="auto"></audio>
 
     <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js" type="module"></script>
+    <script src="~/Scripts/gallery.js"></script>
     @RenderSection("scripts", required: false)
 
     <script>

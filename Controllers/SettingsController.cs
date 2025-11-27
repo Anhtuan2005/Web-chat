@@ -27,8 +27,8 @@ namespace Online_chat.Controllers
             {
                 case "Block":
                     var blockedUsers = _context.BlockedUsers
-                                            .Where(bu => bu.UserId == currentUser.Id)
-                                            .Include(bu => bu.BlockedUserEntity)
+                                            .Where(bu => bu.BlockerId == currentUser.Id)
+                                            .Include(bu => bu.Blocked)
                                             .ToList();
                     ViewBag.BlockedUsers = blockedUsers;
                     break;
@@ -78,54 +78,9 @@ namespace Online_chat.Controllers
 
 
 
-        [HttpPost]
-        public JsonResult UnblockUser(int blockedUserId)
-        {
-            var currentUsername = User.Identity.Name;
-            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
-            var blockedUser = _context.BlockedUsers.FirstOrDefault(bu => bu.BlockedUserId == blockedUserId && bu.UserId == currentUser.Id);
 
-            if (blockedUser != null)
-            {
-                _context.BlockedUsers.Remove(blockedUser);
-                _context.SaveChanges();
-                return Json(new { success = true });
-            }
 
-            return Json(new { success = false, message = "Không tìm thấy người dùng này trong danh sách chặn." });
-        }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public JsonResult BlockUser(int friendId)
-        {
-            var currentUsername = User.Identity.Name;
-            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
-
-            if (currentUser == null)
-            {
-                return Json(new { success = false, message = "User not found." });
-            }
-
-            // Check if already blocked
-            var isAlreadyBlocked = _context.BlockedUsers.Any(bu => bu.UserId == currentUser.Id && bu.BlockedUserId == friendId);
-
-            if (isAlreadyBlocked)
-            {
-                return Json(new { success = false, message = "Bạn đã chặn người này rồi." });
-            }
-
-            var blockedUser = new BlockedUser
-            {
-                UserId = currentUser.Id,
-                BlockedUserId = friendId
-            };
-
-            _context.BlockedUsers.Add(blockedUser);
-            _context.SaveChanges();
-
-            return Json(new { success = true, message = "Đã chặn người dùng." });
-        }
 
         protected override void Dispose(bool disposing)
         {

@@ -82,6 +82,51 @@ $(function () {
         console.log(message); // Log for now, can be a toast notification
     };
 
+    chatHub.client.onUserBlocked = function (targetUsername) {
+        if (currentChat.partnerUsername === targetUsername) {
+            updateBlockUI('YouBlocked');
+        }
+    };
+
+    chatHub.client.onUserBlockedBy = function (blockerUsername) {
+        if (currentChat.partnerUsername === blockerUsername) {
+            updateBlockUI('TheyBlocked');
+        }
+    };
+
+    chatHub.client.onUserUnblocked = function (targetUsername) {
+        if (currentChat.partnerUsername === targetUsername) {
+            updateBlockUI('None');
+        }
+    };
+
+    chatHub.client.onUserUnblockedBy = function (unblockerUsername) {
+        if (currentChat.partnerUsername === unblockerUsername) {
+            updateBlockUI('None');
+        }
+    };
+
+    function updateBlockUI(status) {
+        const $inputArea = $('.input-area');
+        const $youBlockedBanner = $('#you-blocked-banner');
+        const $theyBlockedBanner = $('#they-blocked-banner');
+
+        $inputArea.removeClass('hidden');
+        $youBlockedBanner.hide();
+        $theyBlockedBanner.hide();
+
+        if (status === 'YouBlocked') {
+            $youBlockedBanner.find('p').text(`Bạn đã chặn tin nhắn và cuộc gọi từ tài khoản ${config.blockedUserDisplayName}.`);
+            $youBlockedBanner.show();
+            $inputArea.addClass('hidden');
+        } else if (status === 'TheyBlocked') {
+            $theyBlockedBanner.show();
+            $inputArea.addClass('hidden');
+        }
+    }
+	
+
+
     window.currentChat = {
         mode: 'ai',
         partnerUsername: null,
@@ -243,138 +288,144 @@ $(function () {
     }
 
     function loadConversations(filter = 'all') {
-        console.log(`🔄 Loading conversations with filter: ${filter}...`);
+        return new Promise((resolve, reject) => {
+            console.log(`🔄 Loading conversations with filter: ${filter}...`);
 
-        function formatLastMessage(message) {
-            try {
-                const parsed = JSON.parse(message);
-                if (parsed && typeof parsed === 'object' && parsed.type) {
-                    switch (parsed.type) {
-                        case 'text': return parsed.content;
-                        case 'image': return '<i class="fas fa-image"></i> Hình ảnh';
-                        case 'video': return '<i class="fas fa-video"></i> Video';
-                        case 'file': return `<i class="fas fa-file-alt"></i> ${parsed.fileName || 'Tệp'}`;
-                        case 'voice': return '<i class="fas fa-microphone"></i> Tin nhắn thoại';
-                        case 'call_log':
-                            if (parsed.status === 'missed') return '<i class="fas fa-phone-slash text-danger"></i> Cuộc gọi nhỡ';
-                            if (parsed.status === 'completed') return `<i class="fas fa-phone-alt text-success"></i> Cuộc gọi ${parsed.callType === 'video' ? 'video' : 'thoại'}`;
-                            return '<i class="fas fa-phone-alt"></i> Cuộc gọi';
-                        default: return message;
-                    }
-                }
-            } catch (e) {
-                // Not a JSON string, or invalid JSON
-            }
-            return message;
-        }
-
-        $.ajax({
-            url: urls.getConversations,
-            type: 'GET',
-            data: { filter: filter },
-            dataType: 'json',
-            cache: false, // Prevent browser from caching this GET request
-            success: function (response) {
-                console.log('✅ Conversations loaded:', response);
-
-                if (response && response.length > 0) {
-                    const $conversationList = $('#conversation-list-ul');
-                    $conversationList.find('.list-group-item:not(#ai-chat-btn)').remove();
-
-                    response.forEach(conv => {
-                        const displayName = conv.DisplayName || conv.Name || conv.Username;
-                        const isOnline = conv.Type === 'Private' ? isUserOnline(conv.Username) : false;
-                        const statusClass = isOnline ? 'online' : 'offline';
-                        const lastMessageText = formatLastMessage(conv.LastMessage || (conv.Type === 'Group' ? 'Chưa có tin nhắn nhóm' : 'Chưa có tin nhắn'));
-
-                        const unreadBadge = conv.UnreadCount > 0
-                            ? `<span class="unread-badge">${conv.UnreadCount}</span>`
-                            : '';
-
-                        const pinIcon = conv.IsPinned ? 'fa-thumbtack' : 'fa-thumbtack';
-                        const pinText = conv.IsPinned ? 'Bỏ ghim' : 'Ghim';
-                        
-                        const isGroup = conv.Type === 'Group';
-
-                        let avatarHtml;
-                        // Check for composite avatar feature
-                        if (isGroup && conv.MemberAvatarUrls && conv.MemberAvatarUrls.length > 0) {
-                            const count = conv.MemberAvatarUrls.length;
-                            const memberAvatarsHtml = conv.MemberAvatarUrls.map((url, index) =>
-                                `<img src="${url}" class="member-avatar member-avatar-${index + 1}" onerror="this.src='/Content/default-avatar.png';" />`
-                            ).join('');
-                            avatarHtml = `<div class="composite-avatar count-${count}">${memberAvatarsHtml}</div>`;
-                        } else {
-                            const avatarUrl = conv.AvatarUrl || '/Content/default-avatar.png';
-                            avatarHtml = `<img src="${avatarUrl}" alt="${displayName}" class="conv-avatar-img" onerror="this.src='/Content/default-avatar.png';" />`;
+            function formatLastMessage(message) {
+                try {
+                    const parsed = JSON.parse(message);
+                    if (parsed && typeof parsed === 'object' && parsed.type) {
+                        switch (parsed.type) {
+                            case 'text': return parsed.content;
+                            case 'image': return '<i class="fas fa-image"></i> Hình ảnh';
+                            case 'video': return '<i class="fas fa-video"></i> Video';
+                            case 'file': return `<i class="fas fa-file-alt"></i> ${parsed.fileName || 'Tệp'}`;
+                            case 'voice': return '<i class="fas fa-microphone"></i> Tin nhắn thoại';
+                            case 'call_log':
+                                if (parsed.status === 'missed') return '<i class="fas fa-phone-slash text-danger"></i> Cuộc gọi nhỡ';
+                                if (parsed.status === 'completed') return `<i class="fas fa-phone-alt text-success"></i> Cuộc gọi ${parsed.callType === 'video' ? 'video' : 'thoại'}`;
+                                return '<i class="fas fa-phone-alt"></i> Cuộc gọi';
+                            case 'shared_post':
+                                return '<i class="fas fa-share-square"></i> Đã chia sẻ một bài viết';
+                            default: return message;
                         }
-
-                        const deleteOrLeaveButton = isGroup
-                            ? `<a href="#" class="conv-menu-item conv-leave-group-btn" data-id="${conv.Id}" data-name="${displayName}">
-                                   <i class="fas fa-sign-out-alt"></i> Rời nhóm
-                               </a>`
-                            : `<a href="#" class="conv-menu-item conv-delete-btn" data-username="${conv.Username || ''}" data-type="${conv.Type}">
-                                   <i class="fas fa-trash-alt"></i> Xóa hội thoại
-                               </a>`;
-
-                        const conversationHtml = `
-                            <div class="list-group-item list-group-item-action ${isGroup ? 'group-item' : 'friend-item'}"
-                               data-chat-mode="${conv.Type.toLowerCase()}"
-                               data-id="${conv.Id}"
-                               data-username="${conv.Username || ''}"
-                               data-avatar-url="${conv.AvatarUrl}"
-                               style="position: relative;">
-                                <div class="conversation-content-wrapper">
-                                    <div class="d-flex align-items-center">
-                                        <div class="conv-avatar-wrapper">
-                                            ${avatarHtml}
-                                            ${!isGroup ? `<span class="status-indicator ${statusClass}" data-username="${conv.Username}"></span>` : ''}
-                                        </div>
-                                        <div>
-                                            <strong style="display: block; margin-bottom: 2px;">${displayName}</strong>
-                                            <small style="color: #6c757d; font-size: 0.85rem;">
-                                                ${lastMessageText}
-                                            </small>
-                                        </div>
-                                    </div>
-                                    ${unreadBadge}
-                                </div>
-                                <button class="conversation-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
-                                <div class="conversation-menu">
-                                    <a href="#" class="conv-menu-item conv-pin-btn" data-id="${conv.Id}" data-type="${conv.Type}">
-                                        <i class="fas fa-thumbtack"></i> ${pinText}
-                                    </a>
-                                    <a href="#" class="conv-menu-item conv-mark-unread-btn" data-id="${conv.Id}">
-                                        <i class="fas fa-envelope-open"></i> Đánh dấu chưa đọc
-                                    </a>
-                                    <a href="#" class="conv-menu-item conv-hide-btn" data-id="${conv.Id}">
-                                        <i class="fas fa-eye-slash"></i> Ẩn trò chuyện
-                                    </a>
-                                     <div class="conv-menu-divider"></div>
-                                    <a href="#" class="conv-menu-item conv-mute-btn" data-id="${conv.Id}">
-                                        <i class="fas fa-bell-slash"></i> Tắt thông báo
-                                    </a>
-                                    ${!isGroup ? `
-                                    <a href="#" class="conv-menu-item conv-report-btn" data-username="${conv.Username || ''}">
-                                        <i class="fas fa-flag"></i> Báo xấu
-                                    </a>` : ''}
-                                    <div class="conv-menu-divider"></div>
-                                    ${deleteOrLeaveButton}
-                                </div>
-                            </div>`;
-                        $conversationList.append(conversationHtml);
-                    });
-                    console.log(`✅ Loaded ${response.length} conversations`);
-                } else {
-                    const $conversationList = $('#conversation-list-ul');
-                    $conversationList.find('.list-group-item:not(#ai-chat-btn)').remove();
-                    $conversationList.append('<li class="list-group-item text-center text-muted">Chưa có cuộc trò chuyện nào.</li>');
+                    }
+                } catch (e) {
+                    // Not a JSON string, or invalid JSON
                 }
-            },
-            error: function (xhr, status, error) {
-                console.error('❌ Error loading conversations:', error);
-                $('#conversation-list-ul').html('<li class="list-group-item text-center text-danger">Lỗi khi tải cuộc trò chuyện.</li>');
+                return message;
             }
+
+            $.ajax({
+                url: urls.getConversations,
+                type: 'GET',
+                data: { filter: filter },
+                dataType: 'json',
+                cache: false, // Prevent browser from caching this GET request
+                success: function (response) {
+                    console.log('✅ Conversations loaded:', response);
+
+                    if (response && response.length > 0) {
+                        const $conversationList = $('#conversation-list-ul');
+                        $conversationList.find('.list-group-item:not(#ai-chat-btn)').remove();
+
+                        response.forEach(conv => {
+                            const displayName = conv.DisplayName || conv.Name || conv.Username;
+                            const isOnline = conv.Type === 'Private' ? isUserOnline(conv.Username) : false;
+                            const statusClass = isOnline ? 'online' : 'offline';
+                            const lastMessageText = formatLastMessage(conv.LastMessage || (conv.Type === 'Group' ? 'Chưa có tin nhắn nhóm' : 'Chưa có tin nhắn'));
+
+                            const unreadBadge = conv.UnreadCount > 0
+                                ? `<span class="unread-badge">${conv.UnreadCount}</span>`
+                                : '';
+
+                            const pinIcon = conv.IsPinned ? 'fa-thumbtack' : 'fa-thumbtack';
+                            const pinText = conv.IsPinned ? 'Bỏ ghim' : 'Ghim';
+                            
+                            const isGroup = conv.Type === 'Group';
+
+                            let avatarHtml;
+                            // Check for composite avatar feature
+                            if (isGroup && conv.MemberAvatarUrls && conv.MemberAvatarUrls.length > 0) {
+                                const count = conv.MemberAvatarUrls.length;
+                                const memberAvatarsHtml = conv.MemberAvatarUrls.map((url, index) =>
+                                    `<img src="${url}" class="member-avatar member-avatar-${index + 1}" onerror="this.src='/Content/default-avatar.png';" />`
+                                ).join('');
+                                avatarHtml = `<div class="composite-avatar count-${count}">${memberAvatarsHtml}</div>`;
+                            } else {
+                                const avatarUrl = conv.AvatarUrl || '/Content/default-avatar.png';
+                                avatarHtml = `<img src="${avatarUrl}" alt="${displayName}" class="conv-avatar-img" onerror="this.src='/Content/default-avatar.png';" />`;
+                            }
+
+                            const deleteOrLeaveButton = isGroup
+                                ? `<a href="#" class="conv-menu-item conv-leave-group-btn" data-id="${conv.Id}" data-name="${displayName}">
+                                       <i class="fas fa-sign-out-alt"></i> Rời nhóm
+                                   </a>`
+                                : `<a href="#" class="conv-menu-item conv-delete-btn" data-username="${conv.Username || ''}" data-type="${conv.Type}">
+                                       <i class="fas fa-trash-alt"></i> Xóa hội thoại
+                                   </a>`;
+
+                            const conversationHtml = `
+                                <div class="list-group-item list-group-item-action ${isGroup ? 'group-item' : 'friend-item'}"
+                                   data-chat-mode="${conv.Type.toLowerCase()}"
+                                   data-id="${conv.Id}"
+                                   data-username="${conv.Username || ''}"
+                                   data-avatar-url="${conv.AvatarUrl}"
+                                   style="position: relative;">
+                                    <div class="conversation-content-wrapper">
+                                        <div class="d-flex align-items-center">
+                                            <div class="conv-avatar-wrapper">
+                                                ${avatarHtml}
+                                                ${!isGroup ? `<span class="status-indicator ${statusClass}" data-username="${conv.Username}"></span>` : ''}
+                                            </div>
+                                            <div>
+                                                <strong style="display: block; margin-bottom: 2px;">${displayName}</strong>
+                                                <small style="color: #6c757d; font-size: 0.85rem;">
+                                                    ${lastMessageText}
+                                                </small>
+                                            </div>
+                                        </div>
+                                        ${unreadBadge}
+                                    </div>
+                                    <button class="conversation-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+                                    <div class="conversation-menu">
+                                        <a href="#" class="conv-menu-item conv-pin-btn" data-id="${conv.Id}" data-type="${conv.Type}">
+                                            <i class="fas fa-thumbtack"></i> ${pinText}
+                                        </a>
+                                        <a href="#" class="conv-menu-item conv-mark-unread-btn" data-id="${conv.Id}">
+                                            <i class="fas fa-envelope-open"></i> Đánh dấu chưa đọc
+                                        </a>
+                                        <a href="#" class="conv-menu-item conv-hide-btn" data-id="${conv.Id}">
+                                            <i class="fas fa-eye-slash"></i> Ẩn trò chuyện
+                                        </a>
+                                         <div class="conv-menu-divider"></div>
+                                        <a href="#" class="conv-menu-item conv-mute-btn" data-id="${conv.Id}">
+                                            <i class="fas fa-bell-slash"></i> Tắt thông báo
+                                        </a>
+                                        ${!isGroup ? `
+                                        <a href="#" class="conv-menu-item conv-report-btn" data-username="${conv.Username || ''}">
+                                            <i class="fas fa-flag"></i> Báo xấu
+                                        </a>` : ''}
+                                        <div class="conv-menu-divider"></div>
+                                        ${deleteOrLeaveButton}
+                                    </div>
+                                </div>`;
+                            $conversationList.append(conversationHtml);
+                        });
+                        console.log(`✅ Loaded ${response.length} conversations`);
+                    } else {
+                        const $conversationList = $('#conversation-list-ul');
+                        $conversationList.find('.list-group-item:not(#ai-chat-btn)').remove();
+                        $conversationList.append('<li class="list-group-item text-center text-muted">Chưa có cuộc trò chuyện nào.</li>');
+                    }
+                    resolve();
+                },
+                error: function (xhr, status, error) {
+                    console.error('❌ Error loading conversations:', error);
+                    $('#conversation-list-ul').html('<li class="list-group-item text-center text-danger">Lỗi khi tải cuộc trò chuyện.</li>');
+                    reject(error);
+                }
+            });
         });
     }
 
@@ -684,6 +735,8 @@ $(function () {
         const displayName = getNickname(msgData.senderUsername, conversationId) || msgData.senderUsername;
 
         let bubbleContentHtml = '';
+        let $bubble; // Define bubble here to be accessible later
+
         switch (contentObj.type) {
             case 'image':
                 bubbleContentHtml = `<img src="${contentObj.content}" class="img-fluid rounded" style="max-width: 250px; cursor: pointer;" onclick="openImageLightbox('${contentObj.content}');" />`;
@@ -707,9 +760,14 @@ $(function () {
             case 'voice':
                 bubbleContentHtml = `<audio controls src="${contentObj.content}" style="width: 250px;"></audio>`;
                 break;
+            case 'shared_post':
+                bubbleContentHtml = '<div class="loading-shared-post"><i class="fas fa-spinner fa-spin"></i> Đang tải bài viết...</div>';
+                // We'll make the AJAX call after the message is appended to the DOM
+                break;
             default:
                 const escaped = $('<div/>').text(contentObj.content).html();
                 bubbleContentHtml = `<span>${escaped}</span>`;
+                break;
         }
 
         let replyHtml = '';
@@ -739,7 +797,10 @@ $(function () {
         let avatarHtml = '';
         if (!isSelf) {
             const avatarUrl = msgData.senderAvatar || $(`.friend-item[data-username="${msgData.senderUsername}"]`).data('avatar-url') || '/Content/default-avatar.png';
-            avatarHtml = `<img src="${avatarUrl}" class="avatar" alt="${displayName}">`;
+            avatarHtml = `
+                <div class="user-avatar-trigger" data-userid="${msgData.senderId}" style="cursor: pointer;">
+                    <img src="${avatarUrl}" class="avatar" alt="${displayName}">
+                </div>`;
         }
 
         let nicknameHtml = !isSelf && currentChat.mode === 'group' ? `<div class="message-nickname">${displayName}</div>` : '';
@@ -822,6 +883,17 @@ $(function () {
             </div>
         </div>`;
         $('#messagesList').append(messageHtml);
+
+        if (contentObj.type === 'shared_post') {
+            const $newMessage = $(`#messagesList .chat-message[data-message-id="${messageId}"]`);
+            const $bubble = $newMessage.find('.chat-bubble');
+            $.get(urls.getSharedPost, { postId: contentObj.postId }, function (data) {
+                $bubble.find('.loading-shared-post').replaceWith(data);
+            }).fail(function () {
+                $bubble.find('.loading-shared-post').text('Không thể tải bài viết.');
+            });
+        }
+
         $('#messagesList').scrollTop($('#messagesList')[0].scrollHeight);
         return messageId;
     }
@@ -994,82 +1066,82 @@ $(function () {
 
     $('body').on('click', '.react-message-btn', function (e) {
         e.preventDefault();
-        e.stopPropagation(); // Stop propagation to prevent immediate closing by the document click handler
+        e.stopPropagation();
 
         const $button = $(this);
         const $message = $button.closest('.chat-message');
         const messageId = $message.data('message-id');
 
-        // Close other popups
+        // Đóng tất cả menu và picker khác
         $('.message-options-menu').removeClass('show');
-        $('.emoji-picker-popup').not($message.find('.emoji-picker-popup')).removeClass('show');
+        $('.emoji-picker-popup').remove(); 
 
-        // Create or toggle the associated emoji picker
-        let $picker = $message.find('.emoji-picker-popup');
-        if ($picker.length === 0) {
-            const pickerHtml = `
-            <div class="emoji-picker-popup">
-                ${QUICK_EMOJIS.map(emoji =>
-                `<span class="emoji-option" data-emoji="${emoji}">${emoji}</span>`
-            ).join('')}
-            </div>
-        `;
-            $message.find('.message-container').append(pickerHtml);
-            $picker = $message.find('.emoji-picker-popup');
+        // Tạo picker mới
+        const pickerHtml = `
+        <div class="emoji-picker-popup show">
+            ${QUICK_EMOJIS.map(emoji =>
+            `<span class="emoji-option" data-emoji="${emoji}" data-message-id="${messageId}">${emoji}</span>`
+        ).join('')}
+        </div>
+    `;
+
+        $('body').append(pickerHtml);
+
+        const $picker = $('.emoji-picker-popup');
+
+        const buttonRect = $button[0].getBoundingClientRect();
+        const pickerWidth = $picker.outerWidth();
+        const pickerHeight = $picker.outerHeight();
+
+        let top = buttonRect.top - pickerHeight - 10;
+        let left = buttonRect.left;
+
+        if (top < 10) {
+            top = buttonRect.bottom + 10;
         }
 
-        $picker.toggleClass('show');
-        $picker.data('message-id', messageId);
-
-        // NEW: Adjust picker position if it's being shown
-        if ($picker.hasClass('show')) {
-            const $anchor = $message.find('.message-options-btn'); // Position relative to the main options button
-            const pickerWidth = $picker.outerWidth();
-            const pickerHeight = $picker.outerHeight();
-            const anchorRect = $anchor[0].getBoundingClientRect();
-            const windowHeight = $(window).height();
-
-            // Default position is above the button, centered
-            let top = anchorRect.top - pickerHeight - 8; // 8px spacing
-            let left = anchorRect.left + (anchorRect.width / 2) - (pickerWidth / 2);
-
-            // If it goes off the top of the screen, show it below
-            if (top < 10) {
-                top = anchorRect.bottom + 8;
-            }
-
-            // Basic horizontal boundary checks
-            if (left < 10) left = 10;
-            if (left + pickerWidth > $(window).width() - 10) {
-                left = $(window).width() - pickerWidth - 10;
-            }
-
-            $picker.css({
-                position: 'fixed',
-                top: top + 'px',
-                left: left + 'px',
-                right: 'auto',
-                bottom: 'auto',
-                margin: 0,
-                'z-index': 10000 
-            });
+        if (left + pickerWidth > $(window).width() - 10) {
+            left = $(window).width() - pickerWidth - 10;
         }
+
+        $picker.css({
+            top: top + 'px',
+            left: left + 'px'
+        });
     });
 
-    $('body').on('click', '.emoji-option', function (e) {
-        e.stopPropagation();
-        const emoji = $(this).data('emoji');
-        const $picker = $(this).closest('.emoji-picker-popup');
-        const messageId = $picker.data('message-id');
 
-        if (messageId) {
+    $('body').on('click', '.emoji-option', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const $this = $(this);
+        const emoji = $this.data('emoji');
+        const messageId = $this.data('message-id');
+
+        console.log('🎯 Emoji clicked:', emoji, 'for message:', messageId); // Debug
+
+        if (messageId && emoji) {
             chatHub.server.reactToMessage(messageId, emoji, false)
+                .done(function () {
+                    console.log('✅ Reaction sent successfully:', emoji);
+                })
                 .fail(function (err) {
-                    console.error('Error reacting to message:', err);
+                    console.error('❌ Error reacting to message:', err);
+                    alert('Không thể thả cảm xúc. Vui lòng thử lại.');
                 });
+        } else {
+            console.error('❌ Missing data - emoji:', emoji, 'messageId:', messageId);
         }
 
-        $picker.removeClass('show');
+        $('.emoji-picker-popup').remove();
+    });
+
+    $(document).on('click', function (e) {
+        if (!$(e.target).closest('.message-options, .emoji-picker-popup, .message-options-btn').length) {
+            $('.message-options-menu').removeClass('show');
+            $('.emoji-picker-popup').remove();
+        }
     });
 
     $('body').on('click', '.reaction-item.user-reacted', function (e) {
@@ -2122,7 +2194,9 @@ $(function () {
             // Populate avatar
             const avatarSrc = $('#chat-header-avatar').attr('src');
             // Ensure wrapper contains a simple img tag for private chat
-            $('#info-sidebar-avatar-wrapper').html(`<img id="info-sidebar-avatar" src="${avatarSrc}" />`);
+            $('#info-sidebar-avatar-wrapper')
+                .html(`<img id="info-sidebar-avatar" src="${avatarSrc}" />`)
+                .attr('data-userid', currentChat.partnerId); 
             $('#info-sidebar-displayname').text($('#chat-header-displayname').text());
 
             // Fetch media
@@ -2432,44 +2506,21 @@ $(function () {
         }
     });
 
-    // ========== BLOCK USER (NEW) ========== 
+    // ========== BLOCK USER (NEW & FIXED) ========== 
     $('body').on('click', '#info-action-block-user', function (e) {
         e.preventDefault();
-
-        if (currentChat.mode !== 'private' || !currentChat.partnerId) {
-            alert("Chức năng này chỉ khả dụng trong cuộc trò chuyện riêng tư.");
-            return;
-        }
-
-        const partnerName = $('#chat-header-displayname').text();
-        if (!confirm(`Bạn có chắc chắn muốn chặn ${partnerName} không?`)) {
-            return;
-        }
-
-        $.ajax({
-            url: urls.blockUser,
-            type: 'POST',
-            data: {
-                __RequestVerificationToken: antiForgeryToken,
-                friendId: currentChat.partnerId
-            },
-            success: function (response) {
-                if (response.success) {
-                    alert(response.message || `Đã chặn ${partnerName}.`);
-                    
-                    // Close the chat window for the blocked user
-                    $('#ai-chat-btn').click(); 
-
-                    // Refresh the conversation list to remove the blocked user
-                    loadConversations('all');
-                } else {
-                    alert('Lỗi: ' + (response.message || 'Không thể chặn người dùng này.'));
-                }
-            },
-            error: function () {
-                alert('Đã có lỗi kết nối xảy ra. Vui lòng thử lại.');
+        if (currentChat.mode === 'private' && currentChat.partnerUsername) {
+            if (confirm('Bạn có chắc chắn muốn chặn người dùng này không?')) {
+                chatHub.server.blockUser(currentChat.partnerUsername);
             }
-        });
+        }
+    });
+
+    $('body').on('click', '#unblock-user-btn', function (e) {
+        e.preventDefault();
+        if (currentChat.mode === 'private' && currentChat.partnerUsername) {
+            chatHub.server.unblockUser(currentChat.partnerUsername);
+        }
     });
 
     $('#info-action-block').on('click', function (e) {
@@ -2779,6 +2830,85 @@ $(function () {
         }
     });
 
+
+    // ==========================================
+    // XỬ LÝ NÚT BẬT/TẮT CAMERA VÀ MIC 
+    // ==========================================
+
+    // 1. Xử lý nút Camera (#toggle-video-btn)
+    $('body').on('click', '#toggle-video-btn', async function () {
+        // Kiểm tra xem có stream nội bộ chưa
+        if (!localStream) return;
+
+        // Lấy track video hiện tại (nếu có)
+        let videoTrack = localStream.getVideoTracks()[0];
+
+        if (videoTrack) {
+            // TRƯỜNG HỢP 1: Đã có video track (Gọi Video từ đầu) -> Chỉ cần bật/tắt (Enabled)
+            videoTrack.enabled = !videoTrack.enabled;
+
+            // Đổi màu nút và icon để hiển thị trạng thái
+            $(this).toggleClass('btn-danger btn-light'); // Đổi màu đỏ/trắng
+            $(this).find('i').toggleClass('fa-video fa-video-slash'); // Đổi icon
+        }
+        else {
+            // TRƯỜNG HỢP 2: Chưa có video track (Gọi Thoại -> Muốn bật Camera)
+            try {
+                // Xin quyền truy cập Camera
+                const videoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                const newVideoTrack = videoStream.getVideoTracks()[0];
+
+                // Thêm track vào stream nội bộ để mình nhìn thấy mình
+                localStream.addTrack(newVideoTrack);
+                const localVideo = document.getElementById('localVideo');
+                if (localVideo) {
+                    localVideo.srcObject = localStream;
+                }
+
+                // Gửi track video sang cho đối phương
+                if (peerConnection) {
+                    // Thay thế track hoặc thêm track mới vào kết nối
+                    const senders = peerConnection.getSenders();
+                    const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+
+                    if (videoSender) {
+                        videoSender.replaceTrack(newVideoTrack);
+                    } else {
+                        peerConnection.addTrack(newVideoTrack, localStream);
+
+                        // LƯU Ý: Việc thêm track mới giữa chừng thường yêu cầu đàm phán lại (Renegotiation).
+                        // Nếu code server chưa xử lý renegotiation, đối phương có thể sẽ không thấy hình ngay.
+                        // Cách đơn giản nhất: Tạo lại Offer để gửi sang bên kia cập nhật SDP.
+                        const offer = await peerConnection.createOffer();
+                        await peerConnection.setLocalDescription(offer);
+                        chatHub.server.sendCallOffer(currentCallPartner, JSON.stringify(offer), 'video');
+                    }
+                }
+
+                // Cập nhật UI
+                $(this).removeClass('btn-light').addClass('btn-danger'); // Có thể tùy chỉnh style
+                $(this).find('i').removeClass('fa-video').addClass('fa-video'); // Cập nhật icon phù hợp
+
+            } catch (err) {
+                console.error("Không thể bật camera:", err);
+                alert("Không thể truy cập Camera hoặc bạn đã chặn quyền truy cập.");
+            }
+        }
+    });
+
+    // 2. Xử lý nút Mic (#toggle-mic-btn) - Luôn tiện thêm cái này cho đủ bộ
+    $('body').on('click', '#toggle-mic-btn', function () {
+        if (!localStream) return;
+
+        const audioTrack = localStream.getAudioTracks()[0];
+        if (audioTrack) {
+            audioTrack.enabled = !audioTrack.enabled; // Bật/tắt mic
+
+            // Đổi màu nút và icon
+            $(this).toggleClass('btn-danger btn-light');
+            $(this).find('i').toggleClass('fa-microphone fa-microphone-slash');
+        }
+    });
     // ========== FILE & IMAGE UPLOAD ==========
 
     // ========== FILE UPLOAD - FIXED VERSION ========== 
@@ -3180,6 +3310,7 @@ function switchChat(target) {
         const partnerNickname = getNickname(currentChat.partnerUsername, conversationId);
         $('#chat-header-displayname').text(partnerNickname || displayName);
         $('#chat-header-avatar').attr('src', avatarSrc);
+        $('#chat-header-avatar-wrapper').attr('data-userid', currentChat.partnerId);
 
         const isOnline = isUserOnline(currentChat.partnerUsername);
         $('#chat-header-status').text(getLastSeenText(currentChat.partnerUsername))
@@ -3194,6 +3325,12 @@ function switchChat(target) {
 
         // Mark messages as read for the selected partner
         markMessagesAsRead(currentChat.partnerUsername);
+
+        // Get and apply block status
+        $.getJSON(urls.getBlockStatus, { partnerUsername: currentChat.partnerUsername }, function (response) {
+            config.blockedUserDisplayName = response.blockedUserDisplayName;
+            updateBlockUI(response.status);
+        });
     } else if (currentChat.mode === 'group') {
         // Set current chat context
         currentChat.groupId = $(target).data('id');
@@ -3295,19 +3432,16 @@ function switchChat(target) {
         const messageInput = document.querySelector('#messageInput');
 
         if (button && messageInput) {
-            // Tạo emoji picker
             const picker = document.createElement('emoji-picker');
             picker.style.cssText = 'position:absolute; bottom:60px; left:15px; display:none; z-index:1000;';
             document.querySelector('.input-area').appendChild(picker);
 
-            // Toggle picker
             button.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
             });
 
-            // Chọn emoji
             picker.addEventListener('emoji-click', (event) => {
                 const emoji = event.detail.unicode;
                 const start = messageInput.selectionStart;
@@ -3319,7 +3453,6 @@ function switchChat(target) {
                 messageInput.focus();
             });
 
-            // Đóng picker khi click ngoài
             $(document).on('click', function (e) {
                 if (!$(e.target).closest('#emoji-button, emoji-picker').length) {
                     picker.style.display = 'none';
@@ -3329,9 +3462,9 @@ function switchChat(target) {
             console.log('✅ Emoji Picker initialized');
         }
     });
+
     $('body').on('click', '.ai-suggest-btn', function () {
         const text = $(this).text().trim();
-
         if (!text) return;
 
         $('#ai-welcome-screen').hide();
@@ -3357,11 +3490,9 @@ function switchChat(target) {
         const promptText = $(this).data('prompt');
         if (!promptText) return;
 
-        // Hide welcome screen and show message area
         $('#ai-welcome-screen').hide();
         $('.message-area').show();
 
-        // Render the user's message immediately
         renderMessage({
             senderUsername: currentUsername,
             content: JSON.stringify({ type: 'text', content: promptText }),
@@ -3371,19 +3502,13 @@ function switchChat(target) {
             messageId: `temp_${Date.now()}`
         });
 
-        // Send the prompt to the AI via SignalR
         if (chatHub.server.sendMessageToAI) {
             chatHub.server.sendMessageToAI(promptText);
         }
 
-        // Show typing indicator for the AI
         showTypingIndicator('AI Assistant', '/Content/default-avatar.png');
     });
 
-    // ========== PARTNER PROFILE MODAL - CODE THAY THẾ ========== 
-    // Paste code này vào chat-client.js, thay thế hàm cũ
-
-    // Click vào AVATAR hoặc TÊN để mở profile (không click vào toàn bộ header)
     $('body').on('click', '#chat-header-avatar, #chat-header-displayname', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -3393,11 +3518,9 @@ function switchChat(target) {
         }
     });
 
-    // Hàm mở profile modal
     function openPartnerProfileModal(partnerUsername) {
         console.log('🔍 Opening profile for:', partnerUsername);
 
-        // Reset modal về trạng thái loading
         $('#partner-modal-display-name').text('Đang tải...');
         $('#partner-modal-username').text(`@${partnerUsername}`);
         $('#partner-modal-avatar').attr('src', '/Content/default-avatar.png');
@@ -3409,10 +3532,8 @@ function switchChat(target) {
         $('#partner-modal-qrcode').attr('src', '');
         $('#partner-unfriend-form').hide();
 
-        // Hiển thị modal
         $('#partnerProfileModal').modal('show');
 
-        // Gọi API lấy thông tin
         $.ajax({
             url: '/Profile/GetUserPublicProfile',
             type: 'GET',
@@ -3424,15 +3545,12 @@ function switchChat(target) {
                 if (response.success && response.user) {
                     const user = response.user;
 
-                    // Cập nhật thông tin cơ bản
                     $('#partner-modal-display-name').text(user.DisplayName || partnerUsername);
                     $('#partner-modal-username').text(`@${user.Username}`);
 
-                    // Cập nhật avatar
                     const avatarUrl = user.AvatarUrl || '/Content/default-avatar.png';
                     $('#partner-modal-avatar').attr('src', avatarUrl);
 
-                    // Cập nhật cover photo
                     if (user.CoverUrl) {
                         $('#partner-modal-cover').css('background-image', `url(${user.CoverUrl})`);
                     }
@@ -3441,13 +3559,12 @@ function switchChat(target) {
                     } else {
                         $('#partner-modal-qrcode').hide();
                     }
-                    // Cập nhật các thông tin khác
+
                     $('#partner-modal-gender').text(user.Gender || 'Chưa cập nhật');
                     $('#partner-modal-phone').text(user.PhoneNumber || 'Chưa cập nhật');
                     $('#partner-modal-email').text(user.Email || 'Chưa cập nhật');
                     $('#partner-modal-bio').text(user.Bio || 'Không có tiểu sử.');
 
-                    // Format ngày sinh
                     if (user.DateOfBirth) {
                         try {
                             const dob = new Date(user.DateOfBirth);
@@ -3467,7 +3584,6 @@ function switchChat(target) {
                         $('#partner-modal-dob').text('Chưa cập nhật');
                     }
 
-                    // Hiện nút unfriend nếu có friendshipId
                     if (user.FriendshipId) {
                         $('#partner-unfriend-id').val(user.FriendshipId);
                         $('#partner-unfriend-form').show();
@@ -3500,30 +3616,93 @@ function switchChat(target) {
     $.connection.hub.start().done(function () {
         console.log('✅ SignalR Connected. Connection ID:', $.connection.hub.id);
 
-        // Load ALL conversations (friends and groups) after SignalR is connected
-        loadConversations('all');
+        loadConversations('all').then(() => {
+            if (config.selectedFriendUsername) {
+                const $selectedFriend = $(`.friend-item[data-username="${config.selectedFriendUsername}"]`);
 
-        // Nếu có selectedFriendUsername từ server, mở chat đó
-        if (config.selectedFriendUsername) {
-            const $selectedFriend = $(`.friend-item[data-username="${config.selectedFriendUsername}"]`);
-            if ($selectedFriend.length) {
-                setTimeout(() => {
+                if ($selectedFriend.length) {
+                    console.log('✅ Found friend item, clicking...');
                     $selectedFriend.click();
-                }, 500);
+                } else {
+                    console.warn('⚠️ Friend item not found:', config.selectedFriendUsername);
+                    openChatWithUser(config.selectedFriendUsername);
+                }
             }
-        }
-    })
-    .fail(function (error) {
+        });
+    }).fail(function (error) {
         console.error('❌ SignalR connection failed:', error);
         alert('Không thể kết nối đến server. Vui lòng tải lại trang.');
     });
+
+    function openChatWithUser(username) {
+        console.log(`Attempting to open chat with ${username}`);
+
+        const $existingFriend = $(`.friend-item[data-username="${username}"]`);
+        if ($existingFriend.length) {
+            $existingFriend.click();
+            return;
+        }
+
+        $.ajax({
+            url: '/Profile/GetUserPublicProfile',
+            type: 'GET',
+            data: { username: username },
+            success: function (response) {
+                if (response.success && response.user) {
+                    const user = response.user;
+                    const avatarUrl = user.AvatarUrl || '/Content/default-avatar.png';
+                    const displayName = user.DisplayName || user.Username;
+
+                    const newFriendHtml = `
+                        <a href="#"
+                           class="list-group-item list-group-item-action friend-item"
+                           data-chat-mode="private"
+                           data-username="${user.Username}"
+                           data-id="${user.Id}"
+                           data-avatar-url="${avatarUrl}">
+                            <div class="d-flex align-items-center justify-content-between w-100">
+                                <div class="d-flex align-items-center">
+                                    <div class="conv-avatar-wrapper">
+                                        <img src="${avatarUrl}"
+                                             alt="${displayName}"
+                                             class="conv-avatar-img"
+                                             onerror="this.src='/Content/default-avatar.png';" />
+                                        <span class="status-indicator offline"
+                                              data-username="${user.Username}"></span>
+                                    </div>
+                                    <div>
+                                        <strong style="display: block; margin-bottom: 2px;">${displayName}</strong>
+                                        <small style="color: #6c757d; font-size: 0.85rem;">
+                                            Bắt đầu cuộc trò chuyện mới
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>`;
+
+                    $('#conversation-list-ul').prepend(newFriendHtml);
+                    const $newFriendItem = $(`.friend-item[data-username="${username}"]`);
+                    if ($newFriendItem.length) {
+                        $newFriendItem.click();
+                    }
+                } else {
+                    alert('Không thể tìm thấy người dùng này.');
+                }
+            },
+            error: function () {
+                alert('Đã xảy ra lỗi khi tìm thông tin người dùng.');
+            }
+        });
+    }
+
     $(document).ready(function () {
         $('.conversation-list').show().css('display', 'flex');
         console.log('✅ Conversation list forced to display');
     });
-    window.openPartnerProfileModal = openPartnerProfileModal;
 
+    window.openPartnerProfileModal = openPartnerProfileModal;
     console.log('✅ Partner Profile Modal initialized');
+    console.log('✅ Enhanced message actions initialized');
 
     // ========== JUMP TO SEARCHED MESSAGE ==========
     // Add CSS for highlight effect
@@ -3542,26 +3721,49 @@ function switchChat(target) {
         .appendTo('head');
 
     // Add click handler for search results
-    $('body').on('click', '.search-result-item', function() {
+
+    $('body').on('click', '.search-result-item', function () {
+
         const messageId = $(this).data('message-id');
+
         if (!messageId) return;
 
+
+
         const $message = $(`.chat-message[data-message-id="${messageId}"]`);
+
         const $messagesList = $('#messagesList');
 
+
+
         if ($message.length) {
+
             // Scroll message into view (centered)
+
             $messagesList.animate({
+
                 scrollTop: $messagesList.scrollTop() + $message.position().top - ($messagesList.height() / 2) + ($message.height() / 2)
+
             }, 300);
 
+
+
             // Add highlight class and remove after animation
+
             $message.addClass('highlight');
+
             setTimeout(() => {
+
                 $message.removeClass('highlight');
+
             }, 1500); // Animation is 1.5s
+
         } else {
+
             alert('Không thể tìm thấy tin nhắn trong các tin đã tải. Vui lòng cuộn lên để tải thêm tin nhắn cũ và thử lại.');
+
         }
+
     });
+
 });

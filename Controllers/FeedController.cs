@@ -1,11 +1,14 @@
 using Online_chat.Models;
+using System.Collections.Generic;
 using System.Web.Mvc;
 using System.Linq;
 using System.Data.Entity;
-using Microsoft.AspNet.Identity; // Added for GetUserId
-using System.Web; // Added for HttpPostedFileBase
-using System.IO; // Added for Path operations
-using System; // Added for Guid
+using Microsoft.AspNet.Identity; 
+using System.Web; 
+using System.IO; 
+using System;
+
+
 
 namespace Online_chat.Controllers
 {
@@ -22,14 +25,64 @@ namespace Online_chat.Controllers
             ViewBag.CurrentUserId = user?.Id ?? 0;
             ViewBag.CurrentUserAvatar = user?.AvatarUrl ?? "/Content/default-avatar.png";
 
+            var storiesExist = db.Posts.Any(p => p.PostType == "story");
+            if (!storiesExist)
+            {
+                var randomPost = db.Posts
+                    .Include(p => p.User)
+                    .Where(p => p.PostType == "post" && p.Privacy == "Public")
+                    .OrderBy(p => Guid.NewGuid()) 
+                    .FirstOrDefault();
+
+                if (randomPost != null)
+                {
+                    ViewBag.FirstPostUrl = Url.Action("Details", "Feed", new { id = randomPost.Id });
+                    ViewBag.FirstPostAvatar = randomPost.User.AvatarUrl;
+                }
+            }
+
             var posts = db.Posts
                 .Include(p => p.User)
                 .Include(p => p.Likes)
-                .Include(p => p.Comments.Select(c => c.User)) // Eager load comments and their users
+                .Include(p => p.Comments.Select(c => c.User))
+                .Include(p => p.PostImages)
+                .Where(p => p.PostType == "post") 
                 .OrderByDescending(p => p.CreatedAt)
-                .Take(10) // Take the first page of posts
+                .Take(10)
                 .ToList();
+
             return View(posts);
+        }
+
+
+        // GET: Feed/Details/5
+        public ActionResult Details(int id)
+        {
+            var username = User.Identity.Name;
+            var user = db.Users.FirstOrDefault(u => u.Username == username && !u.IsDeleted);
+            ViewBag.CurrentUserId = user?.Id ?? 0;
+            ViewBag.CurrentUserAvatar = user?.AvatarUrl ?? "/Content/default-avatar.png";
+
+            var post = db.Posts
+                .AsNoTracking() 
+                .Include(p => p.User)
+                .Include(p => p.Likes)
+                .Include(p => p.Comments.Select(c => c.User))
+                .Include(p => p.PostImages)
+                .FirstOrDefault(p => p.Id == id);
+
+            if (post == null)
+            {
+                return HttpNotFound();
+            }
+
+            if (post.Privacy == "Private" && post.UserId != user.Id)
+            {
+                return new HttpStatusCodeResult(System.Net.HttpStatusCode.Forbidden, "Bạn không có quyền xem bài viết này.");
+            }
+
+            var posts = new List<Post> { post };
+            return View("Index", posts);
         }
 
         public ActionResult GetPosts(int page = 2)
@@ -44,7 +97,8 @@ namespace Online_chat.Controllers
                 .Include(p => p.User)
                 .Include(p => p.Likes)
                 .Include(p => p.Comments.Select(c => c.User))
-                .Where(p => p.PostType == "post") // Only get regular posts
+                .Include(p => p.PostImages)
+                .Where(p => p.PostType == "post") 
                 .OrderByDescending(p => p.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -52,30 +106,58 @@ namespace Online_chat.Controllers
 
             if (!posts.Any())
             {
-                return Content(""); // No more posts
+                return Content("");
             }
 
             return PartialView("_PostListPartial", posts);
         }
 
+        [HttpGet]
         public ActionResult GetStories()
         {
             try
             {
+                var username = User.Identity.Name;
+                var user = db.Users.FirstOrDefault(u => u.Username == username && !u.IsDeleted);
+
+                if (user == null)
+                {
+                    return Content("");
+                }
+
+                ViewBag.CurrentUserId = user.Id;
+                ViewBag.CurrentUserAvatar = user.AvatarUrl ?? "/Content/default-avatar.png";
+                var timeLimit = DateTime.Now.AddHours(-24);
+
                 var stories = db.Posts
                     .Include(p => p.User)
-                    .Where(p => p.PostType == "story")
-                    .OrderByDescending(p => p.CreatedAt)
+                    .Include(p => p.PostImages)
+                    .Where(p => p.PostType == "story" && p.CreatedAt >= timeLimit)
+                    .OrderByDescending(p => p.CreatedAt) 
                     .ToList();
 
-                return PartialView("_StoryListPartial", stories);
+                System.Diagnostics.Debug.WriteLine($"[GetStories] Tìm thấy {stories.Count} stories");
+
+                var groupedStories = stories
+                    .GroupBy(p => p.User)
+                    .Select(g => new StoryViewModel
+                    {
+                        User = g.Key,
+                        Stories = g.OrderBy(s => s.CreatedAt).ToList() 
+                    })
+                    .ToList();
+
+                System.Diagnostics.Debug.WriteLine($"[GetStories] Grouped thành {groupedStories.Count} groups");
+
+                return PartialView("_StoryListPartial", groupedStories);
             }
             catch (Exception ex)
             {
-                return new HttpStatusCodeResult(System.Net.HttpStatusCode.InternalServerError, "Lỗi khi tải tin: " + ex.Message);
+                System.Diagnostics.Debug.WriteLine($"[GetStories] Lỗi: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[GetStories] Stack: {ex.StackTrace}");
+                return Content("");
             }
         }
-
         // GET: Feed/Create
         public ActionResult Create()
         {
@@ -102,68 +184,55 @@ namespace Online_chat.Controllers
                     UserId = currentUser.Id,
                     CreatedAt = DateTime.Now,
                     Privacy = Request.Form["privacy"] ?? "Public",
-                    PostType = Request.Form["postType"] ?? "post"
+                    PostType = "post",
+                    Content = Request.Form["content"],
+                    PostBackground = Request.Form["postBackground"] ?? "default",
+                    PostImages = new List<PostImage>()
                 };
 
-                if (post.PostType == "story")
+                if (string.IsNullOrWhiteSpace(post.Content) && Request.Files.Count == 0)
                 {
-                    post.Content = Request.Form["storyContent"];
-                    post.MediaUrl = Request.Form["storyBackground"];
-                    post.MediaType = "StoryBackground";
-                }
-                else if (post.PostType == "event")
-                {
-                    var eventName = Request.Form["eventName"];
-                    var eventLocation = Request.Form["eventLocation"];
-                    var eventStartDate = Request.Form["eventStartDate"];
-                    var eventEndDate = Request.Form["eventEndDate"];
-                    var eventDescription = Request.Form["eventDescription"];
-
-                    post.Content = $"Sự kiện: {eventName}\n" +
-                                   $"Địa điểm: {eventLocation}\n" +
-                                   $"Bắt đầu: {eventStartDate}\n" +
-                                   $"Kết thúc: {eventEndDate}\n\n" +
-                                   $"{eventDescription}";
-                }
-                else if (post.PostType == "feeling")
-                {
-                    post.Content = Request.Form["feelingContent"];
-                }
-                else // Default to "post"
-                {
-                    post.Content = Request.Form["content"];
+                    return Json(new { success = false, message = "Bài viết phải có nội dung hoặc ảnh." });
                 }
 
-                HttpPostedFileBase mediaFile = Request.Files.Count > 0 ? Request.Files[0] : null;
-
-                if (mediaFile != null && mediaFile.ContentLength > 0)
+                if (Request.Files.Count > 0)
                 {
-                    var fileName = Path.GetFileName(mediaFile.FileName);
-                    var fileExtension = Path.GetExtension(fileName).ToLower();
-                    var uniqueFileName = Guid.NewGuid().ToString() + fileExtension;
-                    var path = Path.Combine(Server.MapPath("~/Uploads/Posts/"), uniqueFileName);
+                    string[] supportedImageTypes = { ".jpg", ".jpeg", ".png", ".gif" };
+                    var uploadPath = Server.MapPath("~/Uploads/Posts/");
+                    Directory.CreateDirectory(uploadPath);
 
-                    Directory.CreateDirectory(Server.MapPath("~/Uploads/Posts/"));
-                    mediaFile.SaveAs(path);
-
-                    post.MediaUrl = "/Uploads/Posts/" + uniqueFileName;
-
-                    if (fileExtension == ".jpg" || fileExtension == ".jpeg" || fileExtension == ".png" || fileExtension == ".gif")
+                    for (int i = 0; i < Request.Files.Count; i++)
                     {
-                        post.MediaType = "Image";
+                        HttpPostedFileBase file = Request.Files[i]; 
+
+                        if (file != null && file.ContentLength > 0)
+                        {
+                            var fileName = Path.GetFileName(file.FileName);
+                            var fileExtension = Path.GetExtension(fileName).ToLower();
+
+                            if (!supportedImageTypes.Contains(fileExtension))
+                            {
+                                continue;
+                            }
+
+                            var uniqueFileName = Guid.NewGuid().ToString() + fileExtension;
+                            var path = Path.Combine(uploadPath, uniqueFileName);
+                            file.SaveAs(path);
+
+                            var postImage = new PostImage
+                            {
+                                ImageUrl = "/Uploads/Posts/" + uniqueFileName,
+                            };
+
+                            if (string.IsNullOrEmpty(post.MediaUrl))
+                            {
+                                post.MediaUrl = postImage.ImageUrl;
+                                post.MediaType = "Image";
+                            }
+
+                            post.PostImages.Add(postImage);
+                        }
                     }
-                    else if (fileExtension == ".mp4" || fileExtension == ".webm" || fileExtension == ".ogg")
-                    {
-                        post.MediaType = "Video";
-                    }
-                    else
-                    {
-                        return Json(new { success = false, message = "Loại tệp không được hỗ trợ." });
-                    }
-                }
-                else if (string.IsNullOrWhiteSpace(post.Content) && string.IsNullOrWhiteSpace(post.MediaUrl))
-                {
-                    return Json(new { success = false, message = "Bài đăng phải có nội dung hoặc tệp phương tiện." });
                 }
 
                 db.Posts.Add(post);
@@ -173,7 +242,7 @@ namespace Online_chat.Controllers
             }
             catch (Exception ex)
             {
-                // Log the exception
+                // System.Diagnostics.Debug.WriteLine(ex.ToString());
                 return Json(new { success = false, message = "Đã xảy ra lỗi không mong muốn." });
             }
         }
@@ -182,7 +251,7 @@ namespace Online_chat.Controllers
         {
             return View();
         }
-        public ActionResult SelectStoryType()
+        public ActionResult CreateStoryPage()
         {
             return View();
         }
@@ -192,6 +261,18 @@ namespace Online_chat.Controllers
             ViewBag.StoryType = type ?? "text";
             return View();
         }
+
+        [HttpGet]
+        public ActionResult GetSharedPost(int postId)
+        {
+            var post = db.Posts.Include(p => p.User).FirstOrDefault(p => p.Id == postId);
+            if (post == null)
+            {
+                return HttpNotFound();
+            }
+            return PartialView("~/Views/Shared/_SharedPost.cshtml", post);
+        }
+
 
         protected override void Dispose(bool disposing)
         {
@@ -218,12 +299,10 @@ namespace Online_chat.Controllers
 
             if (existingLike != null)
             {
-                // User has already liked the post, so unlike it
                 db.Likes.Remove(existingLike);
             }
             else
             {
-                // User has not liked the post, so like it
                 var newLike = new Like
                 {
                     PostId = postId,
@@ -269,7 +348,6 @@ namespace Online_chat.Controllers
             db.Comments.Add(comment);
             db.SaveChanges();
 
-            // We need to pass the full comment object with the user to the partial view
             var newComment = db.Comments.Include(c => c.User).FirstOrDefault(c => c.Id == comment.Id);
 
             return PartialView("_CommentPartial", newComment);
@@ -329,7 +407,6 @@ namespace Online_chat.Controllers
                 return new HttpStatusCodeResult(System.Net.HttpStatusCode.Forbidden, "Bạn không có quyền xóa bài viết này.");
             }
 
-            // Likes and Comments will be cascade deleted because of the model configuration
             db.Posts.Remove(post);
             db.SaveChanges();
 
@@ -410,70 +487,104 @@ namespace Online_chat.Controllers
             return Json(new { success = true });
         }
 
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult CreateStory(FormCollection form)
         {
             try
             {
+                System.Diagnostics.Debug.WriteLine("[CreateStory] Bắt đầu tạo story");
+
                 string username = User.Identity.Name;
                 var currentUser = db.Users.FirstOrDefault(u => u.Username == username && !u.IsDeleted);
 
                 if (currentUser == null)
                 {
-                    return Json(new { success = false, message = "Không thể xác thực người dùng. Vui lòng đăng nhập lại." });
+                    System.Diagnostics.Debug.WriteLine("[CreateStory] Không tìm thấy user");
+                    return Json(new { success = false, message = "Vui lòng đăng nhập lại." });
                 }
 
+                System.Diagnostics.Debug.WriteLine($"[CreateStory] User: {currentUser.Username}");
+
                 string storyType = form["storyType"];
+                System.Diagnostics.Debug.WriteLine($"[CreateStory] Story Type: {storyType}");
+
                 var post = new Post
                 {
                     UserId = currentUser.Id,
                     CreatedAt = DateTime.Now,
-                    Privacy = "Public", // Stories are always public
-                    PostType = "story"
+                    Privacy = "Public",
+                    PostType = "story", // QUAN TRỌNG: Đảm bảo PostType = "story"
+                    PostImages = new List<PostImage>()
                 };
 
                 if (storyType == "text")
                 {
                     post.Content = form["storyText"];
-                    post.MediaUrl = form["background"]; // This is the background gradient/color
-                    post.MediaType = "StoryBackground"; 
+                    post.PostBackground = form["background"] ?? "linear-gradient(135deg, #667eea, #764ba2)";
+
+                    System.Diagnostics.Debug.WriteLine($"[CreateStory] Text story - Content length: {post.Content?.Length ?? 0}");
+                    System.Diagnostics.Debug.WriteLine($"[CreateStory] Background: {post.PostBackground}");
+
+                    if (string.IsNullOrWhiteSpace(post.Content))
+                    {
+                        return Json(new { success = false, message = "Vui lòng nhập nội dung cho story." });
+                    }
                 }
                 else if (storyType == "image")
                 {
-                    HttpPostedFileBase mediaFile = Request.Files.Count > 0 ? Request.Files["imageInput"] : null;
-                    if (mediaFile != null && mediaFile.ContentLength > 0)
+                    System.Diagnostics.Debug.WriteLine($"[CreateStory] Image story - Files count: {Request.Files.Count}");
+
+                    if (Request.Files.Count > 0 && Request.Files["imageInput"] != null)
                     {
-                        var fileName = Path.GetFileName(mediaFile.FileName);
-                        var fileExtension = Path.GetExtension(fileName).ToLower();
-                        var uniqueFileName = Guid.NewGuid().ToString() + fileExtension;
-                        var path = Path.Combine(Server.MapPath("~/Uploads/Stories/"), uniqueFileName);
+                        var mediaFile = Request.Files["imageInput"];
+                        System.Diagnostics.Debug.WriteLine($"[CreateStory] File size: {mediaFile.ContentLength}");
 
-                        Directory.CreateDirectory(Server.MapPath("~/Uploads/Stories/"));
-                        mediaFile.SaveAs(path);
+                        if (mediaFile.ContentLength > 0)
+                        {
+                            var fileName = Path.GetFileName(mediaFile.FileName);
+                            var fileExtension = Path.GetExtension(fileName).ToLower();
+                            var uniqueFileName = Guid.NewGuid().ToString() + fileExtension;
 
-                        post.MediaUrl = "/Uploads/Stories/" + uniqueFileName;
-                        post.MediaType = "Image";
+                            var pathDir = Server.MapPath("~/Uploads/Stories/");
+                            if (!Directory.Exists(pathDir))
+                            {
+                                Directory.CreateDirectory(pathDir);
+                                System.Diagnostics.Debug.WriteLine($"[CreateStory] Created directory: {pathDir}");
+                            }
+
+                            var path = Path.Combine(pathDir, uniqueFileName);
+                            mediaFile.SaveAs(path);
+
+                            var imageUrl = "/Uploads/Stories/" + uniqueFileName;
+                            post.MediaUrl = imageUrl;
+                            post.MediaType = "Image";
+                            post.PostImages.Add(new PostImage { ImageUrl = imageUrl });
+
+                            System.Diagnostics.Debug.WriteLine($"[CreateStory] Image saved: {imageUrl}");
+                        }
                     }
                     else
                     {
-                        return Json(new { success = false, message = "Vui lòng chọn một tệp ảnh." });
+                        System.Diagnostics.Debug.WriteLine("[CreateStory] No image file found");
+                        return Json(new { success = false, message = "Vui lòng chọn ảnh." });
                     }
                 }
-                else
-                {
-                     return Json(new { success = false, message = "Loại tin không hợp lệ." });
-                }
-                
+
                 db.Posts.Add(post);
                 db.SaveChanges();
+
+                System.Diagnostics.Debug.WriteLine($"[CreateStory] Story created successfully with ID: {post.Id}");
+                System.Diagnostics.Debug.WriteLine($"[CreateStory] PostType: {post.PostType}");
 
                 return Json(new { success = true });
             }
             catch (Exception ex)
             {
-                // Log the exception (implementation needed)
-                return Json(new { success = false, message = "Đã xảy ra lỗi không mong muốn khi tạo tin." });
+                System.Diagnostics.Debug.WriteLine($"[CreateStory] ERROR: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[CreateStory] Stack: {ex.StackTrace}");
+                return Json(new { success = false, message = "Lỗi server: " + ex.Message });
             }
         }
     }

@@ -180,6 +180,16 @@ namespace Online_chat.Hubs
 
                 if (sender != null && receiver != null)
                 {
+                    var isBlocked = dbContext.BlockedUsers.Any(b =>
+                        (b.BlockerId == sender.Id && b.BlockedId == receiver.Id) ||
+                        (b.BlockerId == receiver.Id && b.BlockedId == sender.Id));
+
+                    if (isBlocked)
+                    {
+                        Clients.Caller.showError("Bạn không thể gửi tin nhắn cho người này vì bạn đã chặn họ hoặc bị họ chặn.");
+                        return;
+                    }
+
                     var newMessage = new PrivateMessage
                     {
                         SenderId = sender.Id,
@@ -239,6 +249,7 @@ namespace Online_chat.Hubs
             }
         }
 
+
         // ========================================================
         // CHAT AI
         // ========================================================
@@ -254,12 +265,12 @@ namespace Online_chat.Hubs
             conversation.Add(new { role = "user", content = messageContent });
 
             string apiKey = ConfigurationManager.AppSettings["OpenAIApiKey"];
-            if (string.IsNullOrEmpty(apiKey))
+            if (string.IsNullOrEmpty(apiKey) || apiKey == "YOUR_KEY_HERE")
             {
                 Clients.Caller.receiveAIMessage(
                     "AI Assistant",
                     "/Content/default-avatar.png",
-                    JsonConvert.SerializeObject(new { type = "text", content = "Xin lỗi, API AI chưa được cấu hình." }),
+                    JsonConvert.SerializeObject(new { type = "text", content = "Chức năng AI chưa được định cấu hình. Vui lòng cung cấp khóa API OpenAI hợp lệ trong cài đặt ứng dụng để bật tính năng này." }),
                     DateTime.UtcNow.ToString("o"),
                     null
                 );
@@ -432,6 +443,72 @@ namespace Online_chat.Hubs
                 ? $"private_{userId1}_{userId2}"
                 : $"private_{userId2}_{userId1}";
         }
+
+        // ========================================================
+        // BLOCK/UNBLOCK USER
+        // ========================================================
+
+        public void BlockUser(string targetUsername)
+        {
+            var currentUsername = Context.User.Identity.Name;
+            using (var dbContext = new ApplicationDbContext())
+            {
+                var currentUser = dbContext.Users.FirstOrDefault(u => u.Username == currentUsername);
+                var targetUser = dbContext.Users.FirstOrDefault(u => u.Username == targetUsername);
+
+                if (currentUser == null || targetUser == null)
+                {
+                    Clients.Caller.showError("Không tìm thấy người dùng.");
+                    return;
+                }
+
+                var existingBlock = dbContext.BlockedUsers.FirstOrDefault(b => b.BlockerId == currentUser.Id && b.BlockedId == targetUser.Id);
+                if (existingBlock == null)
+                {
+                    var newBlock = new BlockedUser { BlockerId = currentUser.Id, BlockedId = targetUser.Id };
+                    dbContext.BlockedUsers.Add(newBlock);
+                    dbContext.SaveChanges();
+                }
+
+                // Notify both users
+                Clients.Caller.onUserBlocked(targetUsername);
+                if (UserHandler.UsernameToConnectionId.TryGetValue(targetUsername, out string targetConnectionId))
+                {
+                    Clients.Client(targetConnectionId).onUserBlockedBy(currentUsername);
+                }
+            }
+        }
+
+        public void UnblockUser(string targetUsername)
+        {
+            var currentUsername = Context.User.Identity.Name;
+            using (var dbContext = new ApplicationDbContext())
+            {
+                var currentUser = dbContext.Users.FirstOrDefault(u => u.Username == currentUsername);
+                var targetUser = dbContext.Users.FirstOrDefault(u => u.Username == targetUsername);
+
+                if (currentUser == null || targetUser == null)
+                {
+                    Clients.Caller.showError("Không tìm thấy người dùng.");
+                    return;
+                }
+
+                var existingBlock = dbContext.BlockedUsers.FirstOrDefault(b => b.BlockerId == currentUser.Id && b.BlockedId == targetUser.Id);
+                if (existingBlock != null)
+                {
+                    dbContext.BlockedUsers.Remove(existingBlock);
+                    dbContext.SaveChanges();
+                }
+
+                // Notify both users
+                Clients.Caller.onUserUnblocked(targetUsername);
+                if (UserHandler.UsernameToConnectionId.TryGetValue(targetUsername, out string targetConnectionId))
+                {
+                    Clients.Client(targetConnectionId).onUserUnblockedBy(currentUsername);
+                }
+            }
+        }
+
 
         // ========================================================
         // VOICE/VIDEO CALLS

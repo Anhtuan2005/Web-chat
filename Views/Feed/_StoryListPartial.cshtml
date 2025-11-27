@@ -1,34 +1,687 @@
-@model List<Online_chat.Models.Post>
+@using Newtonsoft.Json
+@model List<Online_chat.Models.StoryViewModel>
 
+@{
+    var currentUserId = ViewBag.CurrentUserId as int?;
+
+    var storiesData = Model != null ? Model.Select(m => (object)new
+    {
+        userId = m.User.Id,
+        username = m.User.Username,
+        avatar = m.User.AvatarUrl ?? "/Content/default-avatar.png",
+        items = m.Stories.Select(s => new
+        {
+            id = s.Id,
+            type = (s.PostImages != null && s.PostImages.Any()) ? "image" : "text",
+            content = s.Content,
+            mediaUrl = (s.PostImages != null && s.PostImages.Any()) ? s.PostImages.First().ImageUrl : null,
+            background = s.PostBackground,
+            time = s.CreatedAt.ToString("HH:mm"),
+            privacy = s.Privacy
+        }).ToList()
+    }).ToList() : new List<object>(); 
+
+    var storiesJson = JsonConvert.SerializeObject(storiesData);
+}
+
+
+
+@* --- PHẦN 2: DANH SÁCH STORY --- *@
 @if (Model != null && Model.Any())
 {
-    foreach (var story in Model)
+    for (int i = 0; i < Model.Count; i++)
     {
-        <div class="story-item">
-            <div class="story-avatar" style="background: @story.MediaUrl;">
-                @if (story.MediaType != "StoryBackground" && !string.IsNullOrEmpty(story.MediaUrl))
-                {
-                    <img src="@story.MediaUrl" alt="Story">
-                }
-                <div class="story-ring">
-                    <img src="@(story.User.AvatarUrl ?? "/Content/default-avatar.png")" alt="Avatar">
-                </div>
+        var group = Model[i];
+        var hasMyStory = group.User.Id == currentUserId;
+
+        <div class="story-item" onclick="openStoryViewer(@i)">
+            <div class="story-avatar-wrapper @(hasMyStory ? "mine" : "others")">
+                <img src="@(group.User.AvatarUrl ?? "/Content/default-avatar.png")" class="story-avatar" alt="@group.User.Username">
             </div>
-            <div class="story-name">@(story.User.Username ?? "Người dùng")</div>
+            <div class="story-name">@group.User.Username</div>
         </div>
     }
 }
-else
-{
-    <div class="story-item create-story">
-        <a href="@Url.Action("SelectStoryType", "Feed")" style="text-decoration: none; color: inherit;">
-            <div class="story-avatar">
-                <div class="create-story-icon">
-                    <i class="fas fa-plus"></i>
+
+@* --- PHẦN 3: MODAL XEM STORY (ẨN MẶC ĐỊNH) --- *@
+<div id="storyViewerModal" class="story-viewer">
+    <button class="nav-btn prev" onclick="prevStory()">
+        <i class="fas fa-chevron-left"></i>
+    </button>
+
+    <div class="story-viewer-content">
+        <div class="story-progress-container" id="storyProgressBar"></div>
+
+        <div class="story-viewer-header">
+            <div class="header-left-info">
+                <img id="viewerAvatar" src="" alt="">
+                <div class="header-text">
+                    <strong id="viewerName">User Name</strong>
+                    <span id="viewerTime">Time</span>
                 </div>
-                <span style="color: #43a047; font-weight: 600; font-size: 13px;">Hãy là người đăng tin đầu tiên</span>
             </div>
-            <div class="story-name">Tạo tin</div>
-        </a>
+
+            <div class="header-right-actions">
+                <button id="storyPauseBtn" class="action-btn" onclick="togglePause()" title="Tạm dừng">
+                    <i class="fas fa-pause"></i>
+                </button>
+
+                <div class="menu-container-wrapper">
+                    <button id="storyMenuBtn" class="action-btn" onclick="toggleStoryMenu(event)">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                    <div id="storyMenu" class="story-menu-dropdown">
+                        <a href="javascript:void(0);" onclick="setStoryPrivacy('Public')">
+                            <i class="fas fa-globe-americas"></i> Công khai
+                        </a>
+                        <a href="javascript:void(0);" onclick="setStoryPrivacy('Private')">
+                            <i class="fas fa-lock"></i> Riêng tư
+                        </a>
+                        <hr style="margin: 5px 0; border-color: #444;">
+                        <a href="javascript:void(0);" onclick="deleteStory()" style="color: #ff4d4f;">
+                            <i class="fas fa-trash"></i> Xóa tin
+                        </a>
+                    </div>
+                </div>
+
+                <button class="action-btn close-btn" onclick="closeStoryViewer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="story-display-area" id="storyDisplayArea"></div>
     </div>
-}
+
+    <button class="nav-btn next" onclick="nextStory()">
+        <i class="fas fa-chevron-right"></i>
+    </button>
+</div>
+
+<style>
+    /* --- CSS LIST STORY TRÒN --- */
+    .stories-wrapper {
+        display: flex;
+        gap: 15px;
+        overflow-x: auto;
+        padding: 15px 0;
+        scrollbar-width: none; /* Firefox */
+    }
+
+        .stories-wrapper::-webkit-scrollbar {
+            display: none; /* Chrome */
+        }
+
+    .story-item {
+        cursor: pointer;
+        text-align: center;
+        min-width: 70px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .story-avatar-wrapper {
+        width: 65px;
+        height: 65px;
+        border-radius: 50%;
+        padding: 3px;
+        position: relative;
+    }
+
+        .story-avatar-wrapper.mine {
+            border: 2px solid #ddd;
+        }
+
+        .story-avatar-wrapper.others {
+            border: 2px solid #2e89ff;
+        }
+
+    .story-avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #fff;
+    }
+
+    .story-plus-icon {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        background: #2e89ff;
+        color: white;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid white;
+        font-size: 11px;
+    }
+
+    .story-name {
+        font-size: 12px;
+        margin-top: 5px;
+        max-width: 70px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* --- CSS VIEWER (MODAL) --- */
+    .story-viewer {
+        display: none; /* Mặc định ẩn */
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.95); /* Nền tối */
+        align-items: center;
+        justify-content: center;
+    }
+
+    .story-viewer-content {
+        width: 100%;
+        max-width: 420px; /* Kích thước mobile */
+        height: 90vh;
+        background: #000;
+        border-radius: 10px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 0 20px rgba(255,255,255,0.1);
+    }
+
+    /* HEADER */
+    .story-viewer-header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        padding: 15px 10px;
+        display: flex;
+        justify-content: space-between; /* Căn 2 đầu trái phải */
+        align-items: flex-start;
+        z-index: 50;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%);
+    }
+
+    /* Header Trái: Avatar + Info */
+    .header-left-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .header-left-info img {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.7);
+        }
+
+    .header-text {
+        display: flex;
+        flex-direction: column;
+        color: white;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    }
+
+        .header-text strong {
+            font-size: 14px;
+        }
+
+        .header-text span {
+            font-size: 11px;
+            opacity: 0.9;
+        }
+
+    /* Header Phải: Các nút bấm */
+    .header-right-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px; /* Khoảng cách giữa các nút */
+    }
+
+    .action-btn {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 18px;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.2s;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+
+        .action-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+    .close-btn {
+        font-size: 24px; /* Nút X to hơn 1 chút */
+    }
+
+    /* Menu Dropdown */
+    .menu-container-wrapper {
+        position: relative;
+    }
+
+    .story-menu-dropdown {
+        display: none;
+        position: absolute;
+        top: 45px;
+        right: 0;
+        background-color: #242526;
+        min-width: 170px;
+        border-radius: 8px;
+        padding: 8px 0;
+        z-index: 200;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
+        /* Mũi tên tam giác chỉ lên */
+        .story-menu-dropdown::after {
+            content: "";
+            position: absolute;
+            top: -6px;
+            right: 12px;
+            border-width: 0 6px 6px 6px;
+            border-style: solid;
+            border-color: transparent transparent #242526 transparent;
+        }
+
+        .story-menu-dropdown a {
+            display: block;
+            padding: 10px 15px;
+            color: #e4e6eb;
+            text-decoration: none;
+            font-size: 14px;
+            text-align: left;
+        }
+
+            .story-menu-dropdown a:hover {
+                background-color: #3a3b3c;
+            }
+
+    /* DISPLAY AREA */
+    .story-display-area {
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #000;
+    }
+
+        .story-display-area img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+    .text-story-wrapper {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px;
+        text-align: center;
+        color: white;
+        font-weight: bold;
+        font-size: 24px;
+        white-space: pre-wrap;
+    }
+
+    /* NAV BUTTONS (NEXT/PREV) */
+    .nav-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255,255,255,0.15);
+        color: white;
+        border: none;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        font-size: 22px;
+        cursor: pointer;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+    }
+
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.4);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .nav-btn.prev {
+            left: 20px;
+        }
+
+        .nav-btn.next {
+            right: 20px;
+        }
+
+    /* PROGRESS BAR */
+    .story-progress-container {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        right: 8px;
+        display: flex;
+        gap: 5px;
+        z-index: 40;
+    }
+
+    .progress-bar-item {
+        flex: 1;
+        height: 2px;
+        background: rgba(255,255,255,0.3);
+        border-radius: 2px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: white;
+        width: 0%;
+        transition: width 0.1s linear;
+    }
+
+    /* Responsive Mobile */
+    @@media (max-width: 600px) {
+        .story-viewer-content {
+            max-width: 100%;
+            height: 100%;
+            border-radius: 0;
+        }
+
+        .nav-btn {
+            display: none; /* Ẩn nút next/prev trên điện thoại */
+        }
+    }
+</style>
+
+<script>
+    // Dữ liệu Story
+    var allStoryGroups = @Html.Raw(storiesJson);
+    var currentGroupIndex = 0;
+    var currentStoryIndex = 0;
+    var storyTimer;
+
+    // Biến quản lý trạng thái Tạm dừng
+    var isPaused = false;
+
+    // ID User hiện tại
+    var currentUserId = parseInt('@(ViewBag.CurrentUserId ?? 0)');
+
+    // Hàm lấy Token
+    function getAntiForgeryToken() {
+        return document.querySelector('#storyActionForm input[name="__RequestVerificationToken"]').value;
+    }
+
+    // Toggle Menu ...
+    function toggleStoryMenu(event) {
+        event.stopPropagation();
+        var menu = document.getElementById('storyMenu');
+        if (menu.style.display === 'block') {
+            menu.style.display = 'none';
+        } else {
+            menu.style.display = 'block';
+        }
+    }
+
+    // Toggle Pause/Play
+    function togglePause() {
+        var btnIcon = document.querySelector('#storyPauseBtn i');
+
+        if (isPaused) {
+            // Đang dừng -> Chạy tiếp (Play)
+            isPaused = false;
+            btnIcon.className = "fas fa-pause"; // Đổi icon thành Pause
+
+            // Tiếp tục đếm thời gian
+            nextStory();
+        } else {
+            // Đang chạy -> Dừng lại (Pause)
+            isPaused = true;
+            btnIcon.className = "fas fa-play"; // Đổi icon thành Play
+
+            clearTimeout(storyTimer); // Ngắt timer chuyển trang
+        }
+    }
+
+    // Đổi quyền riêng tư
+    function setStoryPrivacy(privacy) {
+        var group = allStoryGroups[currentGroupIndex];
+        var story = group.items[currentStoryIndex];
+
+        // Đóng menu trước
+        document.getElementById('storyMenu').style.display = 'none';
+
+        // Gọi Ajax
+        fetch('/Feed/SetPostPrivacy', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({
+                '__RequestVerificationToken': getAntiForgeryToken(),
+                'postId': story.id,
+                'privacy': privacy
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                story.privacy = privacy;
+                alert('Đã thay đổi thành công!');
+            }
+        });
+    }
+
+    // Xóa Story
+    function deleteStory() {
+        if (!confirm('Bạn có chắc chắn muốn xóa tin này không?')) return;
+
+        var story = allStoryGroups[currentGroupIndex].items[currentStoryIndex];
+
+        fetch('/Feed/DeletePost', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({
+                '__RequestVerificationToken': getAntiForgeryToken(),
+                'postId': story.id
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Load lại trang
+            }
+        });
+    }
+
+    // Mở Viewer
+    function openStoryViewer(groupIndex) {
+        currentGroupIndex = groupIndex;
+        currentStoryIndex = 0;
+
+        // Reset trạng thái Pause khi mở mới
+        isPaused = false;
+        document.querySelector('#storyPauseBtn i').className = "fas fa-pause";
+
+        document.getElementById('storyViewerModal').style.display = 'flex';
+        renderCurrentStory();
+    }
+
+    // Đóng Viewer
+    function closeStoryViewer() {
+        document.getElementById('storyViewerModal').style.display = 'none';
+        document.getElementById('storyMenu').style.display = 'none';
+        document.getElementById('storyDisplayArea').innerHTML = ''; // Xóa nội dung
+        clearTimeout(storyTimer);
+    }
+
+    // Render Nội dung chính
+    function renderCurrentStory() {
+        if (!allStoryGroups || !allStoryGroups[currentGroupIndex]) return;
+
+        var group = allStoryGroups[currentGroupIndex];
+        var story = group.items[currentStoryIndex];
+
+        // 1. Cập nhật Header
+        document.getElementById('viewerAvatar').src = group.avatar;
+        document.getElementById('viewerName').textContent = group.username;
+        document.getElementById('viewerTime').textContent = story.time;
+
+        // Lưu ý: Menu giờ luôn hiện, không cần check UserId nữa (theo yêu cầu của bạn)
+        document.getElementById('storyMenu').style.display = 'none';
+
+        // 2. Cập nhật Nội dung (Ảnh/Text)
+        var displayArea = document.getElementById('storyDisplayArea');
+        displayArea.innerHTML = '';
+
+        if (story.type === 'image') {
+            var img = document.createElement('img');
+            img.src = story.mediaUrl;
+            displayArea.appendChild(img);
+        } else {
+            var div = document.createElement('div');
+            div.className = 'text-story-wrapper';
+            div.style.background = story.background || 'linear-gradient(45deg, #333, #999)';
+            div.textContent = story.content;
+            displayArea.appendChild(div);
+        }
+
+        // 3. Thanh tiến trình
+        renderProgressBar(group.items.length, currentStoryIndex);
+
+        // 4. Timer Logic
+        clearTimeout(storyTimer);
+        // Chỉ đặt hẹn giờ nếu KHÔNG bị tạm dừng
+        if (!isPaused) {
+            storyTimer = setTimeout(nextStory, 5000); // 5 giây
+        }
+    }
+
+    // Vẽ thanh tiến trình
+    function renderProgressBar(total, current) {
+        var container = document.getElementById('storyProgressBar');
+        container.innerHTML = '';
+
+        for (var i = 0; i < total; i++) {
+            var bar = document.createElement('div');
+            bar.className = 'progress-bar-item';
+
+            var fill = document.createElement('div');
+            fill.className = 'progress-fill';
+
+            if (i < current) {
+                // Đã xem qua
+                fill.style.width = '100%';
+            } else if (i === current) {
+                // Đang xem
+                if (isPaused) {
+                    fill.style.width = '0%'; // Nếu pause thì thanh không chạy
+                } else {
+                    fill.style.width = '0%';
+                    // Kích hoạt animation chạy từ 0 -> 100%
+                    setTimeout(() => { fill.style.width = '100%'; }, 10);
+                    fill.style.transition = 'width 5s linear';
+                }
+            } else {
+                // Chưa xem
+                fill.style.width = '0%';
+            }
+
+            bar.appendChild(fill);
+            container.appendChild(bar);
+        }
+    }
+
+    // Chuyển Story kế tiếp
+    function nextStory() {
+        // Ẩn menu nếu đang mở
+        document.getElementById('storyMenu').style.display = 'none';
+
+        var group = allStoryGroups[currentGroupIndex];
+
+        // Nếu còn story của người này
+        if (currentStoryIndex < group.items.length - 1) {
+            currentStoryIndex++;
+            renderCurrentStory();
+        }
+        // Hết story của người này -> Sang người tiếp theo
+        else {
+            if (currentGroupIndex < allStoryGroups.length - 1) {
+                currentGroupIndex++;
+                currentStoryIndex = 0;
+                renderCurrentStory();
+            } else {
+                // Hết tất cả story
+                closeStoryViewer();
+            }
+        }
+    }
+
+    // Quay lại Story trước
+    function prevStory() {
+        document.getElementById('storyMenu').style.display = 'none';
+
+        // Lùi trong cùng user
+        if (currentStoryIndex > 0) {
+            currentStoryIndex--;
+            renderCurrentStory();
+        }
+        // Lùi về user trước
+        else {
+            if (currentGroupIndex > 0) {
+                currentGroupIndex--;
+                currentStoryIndex = allStoryGroups[currentGroupIndex].items.length - 1;
+                renderCurrentStory();
+            }
+        }
+    }
+
+    // Sự kiện bàn phím
+    document.addEventListener('keydown', function(e) {
+        if (document.getElementById('storyViewerModal').style.display === 'flex') {
+            if (e.key === "ArrowRight") nextStory();
+            if (e.key === "ArrowLeft") prevStory();
+            if (e.key === "Escape") closeStoryViewer();
+            if (e.key === " ") togglePause(); // Phím Space để tạm dừng
+        }
+    });
+
+    // Click ra ngoài để đóng menu
+    document.addEventListener('click', function(event) {
+        var menu = document.getElementById('storyMenu');
+        var menuBtn = document.getElementById('storyMenuBtn');
+
+        if (menu && menu.style.display === 'block') {
+            if (!menu.contains(event.target) && !menuBtn.contains(event.target)) {
+                menu.style.display = 'none';
+            }
+        }
+    });
+</script>

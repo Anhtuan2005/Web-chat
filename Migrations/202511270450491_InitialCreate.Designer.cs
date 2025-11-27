@@ -7,13 +7,13 @@ namespace WebChat_Online_MVC.Migrations
     using System.Resources;
     
     [GeneratedCode("EntityFramework.Migrations", "6.5.1")]
-    public sealed partial class AddCreatedByIdToGroup : IMigrationMetadata
+    public sealed partial class InitialCreate : IMigrationMetadata
     {
-        private readonly ResourceManager Resources = new ResourceManager(typeof(AddCreatedByIdToGroup));
+        private readonly ResourceManager Resources = new ResourceManager(typeof(InitialCreate));
         
         string IMigrationMetadata.Id
         {
-            get { return "202511150531280_AddCreatedByIdToGroup"; }
+            get { return "202511270450491_InitialCreate"; }
         }
         
         string IMigrationMetadata.Source

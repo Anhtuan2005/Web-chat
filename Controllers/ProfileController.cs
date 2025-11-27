@@ -178,6 +178,7 @@ namespace Online_chat.Controllers
 
                 var publicProfile = new
                 {
+                    Id = user.Id,
                     Username = user.Username,
                     DisplayName = user.DisplayName,
                     AvatarUrl = user.AvatarUrl,

@@ -1,5 +1,4 @@
-﻿// Controllers/BaseController.cs
-using Online_chat.Models;
+﻿using Online_chat.Models;
 using System.Web.Mvc;
 
 namespace Online_chat.Controllers

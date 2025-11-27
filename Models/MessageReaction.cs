@@ -19,7 +19,6 @@ namespace Online_chat.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-        // Navigation properties
         [ForeignKey("MessageId")]
         public virtual PrivateMessage Message { get; set; }
 

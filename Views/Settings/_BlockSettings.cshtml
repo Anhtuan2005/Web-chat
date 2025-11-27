@@ -9,19 +9,19 @@
         Quản lý danh sách chặn
     </div>
     <div class="settings-body">
-        <p>Đây là những người bạn đã chặn. Họ không thể gửi tin nhắn cho bạn.</p>
+        <p style="color: black;">Đây là những người bạn đã chặn. Họ không thể gửi tin nhắn cho bạn.</p>
         <hr />
         <div id="blocked-users-list">
             @if (Model.Any())
             {
                 foreach (var blockedUser in Model)
                 {
-                    <div class="settings-item" id="blocked-user-@blockedUser.BlockedUserId">
-                        <div class="settings-item-label">
-                            <strong>@blockedUser.BlockedUserEntity.FullName</strong>
-                            <span>(@blockedUser.BlockedUserEntity.Username)</span>
+                    <div class="settings-item" id="blocked-user-@blockedUser.BlockedId">
+                        <div class="settings-item-label" style="color: black;">
+                            <strong>@blockedUser.Blocked.FullName</strong>
+                            <span>(@blockedUser.Blocked.Username)</span>
                         </div>
-                        <button class="btn btn-sm btn-outline-danger unblock-user-btn" data-userid="@blockedUser.BlockedUserId">Bỏ chặn</button>
+                        <button class="btn btn-sm btn-outline-danger unblock-user-btn" data-userid="@blockedUser.BlockedId">Bỏ chặn</button>
                     </div>
                 }
             }

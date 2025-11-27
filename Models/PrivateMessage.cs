@@ -37,6 +37,11 @@ namespace Online_chat.Models
         public virtual ICollection<PrivateMessage> Replies { get; set; }
         public virtual ICollection<MessageReaction> Reactions { get; set; }
 
+        public PrivateMessage()
+        {
+            Reactions = new HashSet<MessageReaction>();
+        }
+
         public int? ForwardedFromId { get; set; }
         public virtual User ForwardedFrom { get; set; }
 
@@ -47,6 +52,7 @@ namespace Online_chat.Models
         [ForeignKey("ReceiverId")]
         public virtual User Receiver { get; set; }
     }
+
 
     public enum MessageStatus
     {

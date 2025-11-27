@@ -1,6 +1,0 @@
-﻿@model IEnumerable<Online_chat.Models.Post>
-
-@foreach (var post in Model)
-{
-    @Html.Partial("_PostPartial", post, new ViewDataDictionary { { "CurrentUserId", ViewBag.CurrentUserId }, { "CurrentUserAvatar", ViewBag.CurrentUserAvatar } })
-}

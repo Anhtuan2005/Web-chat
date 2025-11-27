@@ -1,4 +1,5 @@
-﻿@Styles.Render("~/Content/chat-styles.css?v=" + DateTime.Now.Ticks)
+﻿@model Online_chat.Controllers.ChatController.ChatViewModel
+@Styles.Render("~/Content/chat-styles.css?v=" + DateTime.Now.Ticks)
 
 @{
     ViewBag.Title = "Chat";
@@ -13,7 +14,7 @@
             <!-- Private Header -->
             <div id="private-chat-header" class="chat-header" style="display: none;">
                 <div id="user-chat-header" class="chat-header-info d-flex align-items-center">
-                    <div class="chat-header-avatar-wrapper" style="cursor: pointer;">
+                    <div class="chat-header-avatar-wrapper user-avatar-trigger" style="cursor: pointer;">
                         <img id="chat-header-avatar" src="" alt="Avatar" class="chat-header-avatar me-2" />
                         <span class="status-indicator" id="header-status-indicator"></span>
                     </div>
@@ -75,6 +76,16 @@
 
         <!-- Message Area -->
         <div class="message-area" id="messagesList"></div>
+		
+		<div id="you-blocked-banner" class="blocked-banner" style="display: none;">
+			<p>Bạn đã chặn tin nhắn và cuộc gọi từ tài khoản này.</p>
+			<button id="unblock-user-btn" class="btn btn-primary">Bỏ chặn</button>
+		</div>
+
+		<div id="they-blocked-banner" class="blocked-banner" style="display: none;">
+			<p>Bạn không thể trả lời cuộc trò chuyện này.</p>
+		</div>
+
 
         <!-- Typing Indicator -->
         <div id="typing-indicator" style="display: none; padding: 10px 20px; margin-bottom: 10px;">
@@ -137,7 +148,7 @@
         <div class="info-sidebar-body">
             <!-- User info -->
             <div class="info-sidebar-user">
-                <div id="info-sidebar-avatar-wrapper" class="position-relative">
+                <div id="info-sidebar-avatar-wrapper" class="position-relative user-avatar-trigger">
                     <img id="info-sidebar-avatar" src="/Content/default-avatar.png" />
                     <button id="change-group-avatar-btn" class="btn btn-sm btn-light" style="display: none; position: absolute; bottom: 5px; right: 5px; border-radius: 50%;">
                         <i class="fas fa-camera"></i>
@@ -606,7 +617,7 @@
     <script>
         window.chatConfig = {
             currentUsername: @Html.Raw(Json.Encode(User.Identity.Name)),
-            selectedFriendUsername: @Html.Raw(Json.Encode(ViewBag.SelectedFriendUsername)),
+            selectedFriendUsername: @Html.Raw(Json.Encode(Model.SelectedFriendUsername)),
             antiForgeryToken: $('input[name="__RequestVerificationToken"]').first().val(),
             urls: {
                 getChatHistory: '@Url.Action("GetChatHistory", "Chat")',
@@ -620,7 +631,10 @@
                 searchMessages: '@Url.Action("SearchMessages", "Chat")',
                 getGroupChatHistory: '@Url.Action("GetGroupChatHistory", "Chat")',
                 changeGroupAvatar: '@Url.Action("ChangeGroupAvatar", "Chat")',
-                blockUser: '@Url.Action("BlockUser", "Settings")'
+                blockUser: '@Url.Action("BlockUser", "Friend")',
+                unblockUser: '@Url.Action("UnblockUser", "Friend")',
+                getBlockStatus: '@Url.Action("GetBlockStatus", "Chat")',
+                getSharedPost: '@Url.Action("GetSharedPost", "Feed")'
             }
         };
 

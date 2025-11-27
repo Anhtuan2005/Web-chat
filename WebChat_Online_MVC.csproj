@@ -2,7 +2,6 @@
 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\EntityFramework.6.5.1\build\EntityFramework.props" Condition="Exists('..\packages\EntityFramework.6.5.1\build\EntityFramework.props')" />
   <Import Project="..\packages\Microsoft.TypeScript.MSBuild.5.9.3\build\Microsoft.TypeScript.MSBuild.props" Condition="Exists('..\packages\Microsoft.TypeScript.MSBuild.5.9.3\build\Microsoft.TypeScript.MSBuild.props')" />
-  <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -275,25 +274,13 @@
     </Compile>
     <Compile Include="Hubs\Chathub.cs" />
     <Compile Include="Hubs\UserHandler.cs" />
-    <Compile Include="Migrations\202511121452357_InitialCreate.cs" />
-    <Compile Include="Migrations\202511121452357_InitialCreate.Designer.cs">
-      <DependentUpon>202511121452357_InitialCreate.cs</DependentUpon>
+    <Compile Include="Migrations\202511270450491_InitialCreate.cs" />
+    <Compile Include="Migrations\202511270450491_InitialCreate.Designer.cs">
+      <DependentUpon>202511270450491_InitialCreate.cs</DependentUpon>
     </Compile>
-    <Compile Include="Migrations\202511150531280_AddCreatedByIdToGroup.cs" />
-    <Compile Include="Migrations\202511150531280_AddCreatedByIdToGroup.Designer.cs">
-      <DependentUpon>202511150531280_AddCreatedByIdToGroup.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Migrations\202511150733030_AddPostEntity.cs" />
-    <Compile Include="Migrations\202511150733030_AddPostEntity.Designer.cs">
-      <DependentUpon>202511150733030_AddPostEntity.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Migrations\202511151625303_AddLikeTable.cs" />
-    <Compile Include="Migrations\202511151625303_AddLikeTable.Designer.cs">
-      <DependentUpon>202511151625303_AddLikeTable.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Migrations\202511151633126_AddCommentTable.cs" />
-    <Compile Include="Migrations\202511151633126_AddCommentTable.Designer.cs">
-      <DependentUpon>202511151633126_AddCommentTable.cs</DependentUpon>
+    <Compile Include="Migrations\202511270834038_AddPostImages.cs" />
+    <Compile Include="Migrations\202511270834038_AddPostImages.Designer.cs">
+      <DependentUpon>202511270834038_AddPostImages.cs</DependentUpon>
     </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\ApplicationDbContext.cs" />
@@ -318,6 +305,7 @@
     <Compile Include="Models\Report.cs" />
     <Compile Include="Models\SearchResultViewModel.cs" />
     <Compile Include="Models\Setting.cs" />
+    <Compile Include="Models\StoryViewModel.cs" />
     <Compile Include="Models\TopSenderViewModel.cs" />
     <Compile Include="Models\UserActivityViewModel.cs" />
     <Compile Include="Models\User.cs" />
@@ -326,6 +314,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\ChatGPTService.cs" />
     <Compile Include="Startup.cs" />
+    <None Include="Views\Feed\_PostPartial.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\bootstrap-grid.css" />
@@ -464,6 +453,18 @@
     <Content Include="Scripts\umd\popper.js" />
     <Content Include="Scripts\umd\popper.min.js" />
     <Content Include="Sounds\notification.mp3" />
+    <Content Include="Uploads\Posts\029799b1-fb94-438f-98fc-ee19c57feb09.jpg" />
+    <Content Include="Uploads\Posts\07b468d4-3cb8-4f33-b912-b30433c46ab4.png" />
+    <Content Include="Uploads\Posts\0eb19329-449c-4240-a744-c97b4b451d94.png" />
+    <Content Include="Uploads\Posts\13d8aa5a-049e-41d5-aeae-e0c1a49545ae.png" />
+    <Content Include="Uploads\Posts\44913616-89d7-48c3-b9e4-35419b4eaae8.png" />
+    <Content Include="Uploads\Posts\b1eeb82f-c990-49ee-bd81-6fb0c149be77.jpg" />
+    <Content Include="Uploads\Posts\bba2fbf6-38d0-4979-b7f0-eee0f2d5a658.jpg" />
+    <Content Include="Uploads\Posts\c766a9e4-3c1f-4198-9e13-6d1be2ca3284.png" />
+    <Content Include="Uploads\Posts\e1ef4e7c-4d8d-47f8-aa8c-a26c049e55cd.png" />
+    <Content Include="Uploads\Posts\e7928f4e-f546-478f-8862-53b39f27b19e.png" />
+    <Content Include="Uploads\Posts\f5e9bcec-9d90-46fd-9846-8f78344db544.png" />
+    <Content Include="Uploads\Posts\fa628459-2818-4bc6-a3c2-d7d4902c257b.jpg" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
@@ -504,12 +505,23 @@
     <Content Include="Views\Feed\Create.cshtml" />
     <Content Include="Views\Feed\Index.cshtml" />
     <Content Include="Views\Feed\_CommentPartial.cshtml" />
-    <Content Include="Views\Feed\_PostListPartial.cshtml" />
-    <Content Include="Views\Feed\_PostPartial.cshtml" />
     <Content Include="Views\Feed\_StoryListPartial.cshtml" />
     <Content Include="Views\Shared\_AdminHeaderNotifications.cshtml" />
-    <Content Include="Views\Feed\SelectStoryType.cshtml" />
     <Content Include="Views\Feed\CreateStory.cshtml" />
+    <Content Include="Views\Feed\_PostListDisplayPartial.cshtml" />
+    <Content Include="Views\Settings\_AccountActivitySettings.cshtml" />
+    <Content Include="Views\Settings\_AppearanceSettings.cshtml" />
+    <Content Include="Views\Settings\_BlockSettings.cshtml" />
+    <Content Include="Views\Settings\_LanguageSettings.cshtml" />
+    <Content Include="Views\Settings\_NotificationSettings.cshtml" />
+    <Content Include="Views\Settings\_PrivacySettings.cshtml" />
+    <Content Include="Views\Settings\_SecuritySettings.cshtml" />
+    <Content Include="Views\Home\Privacy.cshtml" />
+    <Content Include="Views\Home\Terms.cshtml" />
+    <Content Include="Views\Admin\ConversationDetails.cshtml" />
+    <Content Include="Views\Shared\_SharePostModal.cshtml" />
+    <Content Include="Views\Shared\_SharedPost.cshtml" />
+    <Content Include="Views\Shared\_ProfileModal.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
@@ -557,20 +569,11 @@
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Migrations\202511121452357_InitialCreate.resx">
-      <DependentUpon>202511121452357_InitialCreate.cs</DependentUpon>
+    <EmbeddedResource Include="Migrations\202511270450491_InitialCreate.resx">
+      <DependentUpon>202511270450491_InitialCreate.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202511150531280_AddCreatedByIdToGroup.resx">
-      <DependentUpon>202511150531280_AddCreatedByIdToGroup.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202511150733030_AddPostEntity.resx">
-      <DependentUpon>202511150733030_AddPostEntity.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202511151625303_AddLikeTable.resx">
-      <DependentUpon>202511151625303_AddLikeTable.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202511151633126_AddCommentTable.resx">
-      <DependentUpon>202511151633126_AddCommentTable.cs</DependentUpon>
+    <EmbeddedResource Include="Migrations\202511270834038_AddPostImages.resx">
+      <DependentUpon>202511270834038_AddPostImages.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>
@@ -578,7 +581,6 @@
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" Condition="false" />
   <Target Name="MvcBuildViews" AfterTargets="AfterBuild" Condition="'$(MvcBuildViews)'=='true'">
     <AspNetCompiler VirtualPath="temp" PhysicalPath="$(WebProjectOutputDir)" />

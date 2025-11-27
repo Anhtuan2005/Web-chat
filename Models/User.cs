@@ -49,6 +49,9 @@ namespace Online_chat.Models
         public string UserCode { get; set; }
         public string FullName { get; set; }
 
+        public string PasswordResetToken { get; set; }
+        public DateTime? ResetTokenExpiration { get; set; }
+
 
         // Navigation properties
         public virtual UserPrivacySettings PrivacySettings { get; set; }

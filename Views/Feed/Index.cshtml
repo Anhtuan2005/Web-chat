@@ -1,3 +1,4 @@
+
 @model List<Online_chat.Models.Post>
 
 @{
@@ -9,809 +10,684 @@
 
 @section styles {
     <style>
-        /* ========== GLOBAL STYLES ========== */
-        body {
-            background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e9 100%);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        :root {
+            --primary-color: #4CAF50;
+            --primary-color-dark: #388E3C;
+            --primary-color-light: #C8E6C9;
+            --background-color: #f7f9f7;
+            --surface-color: #ffffff;
+            --text-color-primary: #1c1e21;
+            --text-color-secondary: #65676b;
+            --border-color: #e4e6eb;
+            --border-radius-large: 16px;
+            --border-radius-medium: 12px;
+            --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.07);
+            --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.1);
         }
 
-        /* ========== FEED CONTAINER ========== */
+        body {
+            background-color: var(--background-color) !important;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-color-primary);
+        }
+
         .feed-container {
             max-width: 680px;
             margin: 0 auto;
-            padding: 24px 16px;
-            animation: fadeIn 0.6s ease;
+            padding: 20px 15px;
         }
 
-        @@keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* ========== HEADER CARD ========== */
+        /*--- Header ---*/
         .feed-header {
-            background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
-            border-radius: 16px;
-            padding: 28px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-color-dark));
+            border-radius: var(--border-radius-large);
+            padding: 24px;
             margin-bottom: 24px;
-            box-shadow: 0 8px 24px rgba(76, 175, 80, 0.25);
+            box-shadow: var(--shadow-medium);
             text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .feed-header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: rotate 20s linear infinite;
-        }
-
-        @@keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .feed-header h2 {
-            margin: 0;
-            font-weight: 700;
             color: white;
-            font-size: 28px;
-            letter-spacing: -0.5px;
             position: relative;
-            z-index: 1;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
-        /* ========== STORIES SECTION ========== */
+            .feed-header h2 {
+                margin: 0;
+                font-weight: 700;
+                font-size: 26px;
+                text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            }
+
+        /*--- Story ---*/
         .stories-container {
-            background: white;
-            border-radius: 16px;
+            background: var(--surface-color);
+            border-radius: var(--border-radius-large);
             padding: 16px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-light);
         }
 
         .stories-wrapper {
             display: flex;
             gap: 12px;
             overflow-x: auto;
-            padding: 4px;
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
+            padding-bottom: 10px;
         }
 
-        .stories-wrapper::-webkit-scrollbar {
-            height: 6px;
-        }
+            .stories-wrapper::-webkit-scrollbar {
+                height: 5px;
+            }
 
-        .stories-wrapper::-webkit-scrollbar-track {
-            background: #f0f2f5;
-            border-radius: 10px;
-        }
+            .stories-wrapper::-webkit-scrollbar-track {
+                background: #f1f1f1;
+            }
 
-        .stories-wrapper::-webkit-scrollbar-thumb {
-            background: #4caf50;
-            border-radius: 10px;
-        }
+            .stories-wrapper::-webkit-scrollbar-thumb {
+                background: var(--primary-color-light);
+                border-radius: 5px;
+            }
+
+                .stories-wrapper::-webkit-scrollbar-thumb:hover {
+                    background: var(--primary-color);
+                }
 
         .story-item {
-            flex: 0 0 auto;
-            width: 120px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex: 0 0 90px;
             text-align: center;
+            cursor: pointer;
         }
 
-        .story-item:hover {
-            transform: translateY(-4px);
-        }
+            .story-item .story-avatar-wrapper {
+                width: 70px;
+                height: 70px;
+                border-radius: 50%;
+                padding: 3px;
+                border: 2px solid var(--primary-color);
+                margin: 0 auto 8px;
+                transition: transform 0.2s ease;
+                position: relative;
+            }
 
-        .story-avatar-wrapper {
-            position: relative;
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 12px;
-        }
+            .story-item:hover .story-avatar-wrapper {
+                transform: scale(1.05);
+            }
 
-        .story-ring {
-            position: absolute;
-            top: -4px;
-            left: -4px;
-            right: -4px;
-            bottom: -4px;
-            border-radius: 50%;
-            padding: 4px;
-            background: linear-gradient(135deg, #4caf50 0%, #66bb6a 50%, #81c784 100%);
-            animation: pulse 2s ease-in-out infinite;
-        }
+            .story-item .story-avatar {
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                object-fit: cover;
+                border: 2px solid var(--surface-color);
+            }
 
-        @@keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
+            .story-item .story-name {
+                font-size: 13px;
+                font-weight: 500;
+                color: var(--text-color-primary);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
 
-        .story-avatar {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 4px solid white;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
+            .story-item.create-story .story-create-avatar {
+                border: 2px solid var(--border-color);
+            }
 
-        .story-item.create-story .story-avatar-wrapper {
-            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 3px dashed #4caf50;
-        }
+            .story-item.create-story .story-avatar {
+                opacity: 1;
+            }
 
-        .create-story-icon {
-            font-size: 32px;
-            color: #4caf50;
-        }
+            .story-item.create-story .story-plus-icon {
+                position: absolute;
+                bottom: -2px;
+                right: -2px;
+                width: 28px;
+                height: 28px;
+                background: var(--primary-color);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 3px solid var(--surface-color);
+                color: white;
+                font-size: 14px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
 
-        .story-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: #1c1e21;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
+            .story-item.create-story .story-name {
+                color: var(--text-color-primary);
+                font-weight: 600;
+            }
 
-        .story-item.create-story .story-name {
-            color: #4caf50;
-        }
-
-        /* ========== CREATE POST CARD ========== */
+        /*--- Create Post ---*/
         .create-post-card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            margin-bottom: 20px;
-            padding: 20px;
-            transition: box-shadow 0.3s ease;
-        }
-
-        .create-post-card:hover {
-            box-shadow: 0 4px 20px rgba(76, 175, 80, 0.15);
+            background: var(--surface-color);
+            border-radius: var(--border-radius-large);
+            padding: 16px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-light);
         }
 
         .create-post-top {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 16px;
         }
 
         .create-post-avatar {
-            width: 48px;
-            height: 48px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid #4caf50;
-            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
         }
 
         .create-post-input {
-            flex: 1;
-            background: #f0f9f0;
-            border: 2px solid #e8f5e9;
-            border-radius: 30px;
-            padding: 14px 20px;
-            color: #65676b;
+            flex-grow: 1;
+            background-color: var(--background-color);
+            border: 1px solid var(--border-color);
+            border-radius: 22px;
+            padding: 10px 18px;
+            color: var(--text-color-secondary);
             cursor: pointer;
-            transition: all 0.3s ease;
             text-decoration: none;
-            display: block;
-            font-size: 16px;
-            font-weight: 500;
+            transition: background-color 0.2s ease;
         }
 
-        .create-post-input:hover {
-            background: #e8f5e9;
-            border-color: #4caf50;
-            color: #2e7d32;
-            transform: translateX(4px);
-        }
-
-        .create-post-divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, #e0e0e0, transparent);
-            margin: 16px 0;
-        }
+            .create-post-input:hover {
+                background-color: #e9ebee;
+                text-decoration: none;
+            }
 
         .create-post-actions {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
-        }
-
-        .create-action-btn {
-            padding: 12px 16px;
-            border: none;
-            background: #f8f9fa;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            color: #65676b;
-            font-weight: 600;
-            font-size: 15px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .create-action-btn:hover {
-            background: #e8f5e9;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .create-action-btn i {
-            font-size: 22px;
-        }
-
-        .create-action-btn.event i {
-            color: #ff9800;
-        }
-
-        .create-action-btn.photo i {
-            color: #4caf50;
-        }
-
-        .create-action-btn.feeling i {
-            color: #ffc107;
-        }
-
-        /* ========== POST CARD ========== */
-        .post-card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            margin-bottom: 20px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .post-card:hover {
-            box-shadow: 0 8px 24px rgba(76, 175, 80, 0.2);
-            transform: translateY(-2px);
-        }
-
-        /* ========== POST HEADER ========== */
-        .post-card .card-header {
-            display: flex;
-            align-items: center;
-            padding: 20px;
-            border-bottom: none;
-            background: white;
-            position: relative;
-        }
-
-        .post-card .card-header img {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-right: 12px;
-            border: 3px solid #4caf50;
-            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
-        }
-
-        .post-card .user-info {
-            flex: 1;
-        }
-
-        .post-card .user-info strong {
-            color: #1c1e21;
-            font-weight: 700;
-            font-size: 16px;
-            display: block;
-            margin-bottom: 4px;
-        }
-
-        .post-card .user-info small {
-            color: #65676b;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        /* ========== POST BODY ========== */
-        .post-card .card-body {
-            padding: 0 20px 20px 20px;
-            background: white;
-        }
-
-        .post-card .card-text {
-            color: #1c1e21;
-            font-size: 16px;
-            line-height: 1.6;
-            margin-bottom: 16px;
-            word-wrap: break-word;
-        }
-
-        .post-card img.img-fluid,
-        .post-card video {
-            border-radius: 12px;
-            margin-top: 16px;
-            width: 100%;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .post-card img.img-fluid:hover {
-            transform: scale(1.02);
-        }
-
-        /* ========== POST ACTIONS ========== */
-        .like-info {
-            color: #65676b;
-            font-size: 15px;
-            font-weight: 500;
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .like-info i {
-            color: #e74c3c;
-        }
-
-        .post-actions {
-            padding: 8px 12px;
-            border-top: 1px solid #e4e6eb;
-            border-bottom: 1px solid #e4e6eb;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            background: white;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
             margin-top: 12px;
         }
 
-        .post-actions .btn {
-            flex: 1;
-            color: #65676b;
-            font-weight: 600;
-            border-radius: 10px;
-            padding: 10px 12px;
-            transition: all 0.3s ease;
-            border: none;
-            background: transparent;
-            font-size: 15px;
+        .create-action-btn {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            padding: 8px;
+            border-radius: var(--border-radius-medium);
+            font-weight: 600;
+            color: var(--text-color-secondary);
+            transition: background-color 0.2s ease;
+            text-decoration: none;
         }
 
-        .post-actions .btn:hover {
-            background-color: #f0f9f0;
+            .create-action-btn:hover {
+                background-color: var(--background-color);
+                text-decoration: none;
+            }
+
+            .create-action-btn i {
+                font-size: 20px;
+            }
+
+            .create-action-btn .event {
+                color: #f7b928;
+            }
+
+            .create-action-btn .photo {
+                color: #45bd62;
+            }
+
+            .create-action-btn .feeling {
+                color: #f8c848;
+            }
+
+        /*--- Post Card ---*/
+        .post-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-large);
+            box-shadow: var(--shadow-light);
+            margin-bottom: 24px;
         }
 
-        .post-actions .btn i {
-            font-size: 18px;
+        .post-header {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            gap: 10px;
         }
 
-        .post-actions .btn.liked {
-            color: #e74c3c;
+        .post-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            object-fit: cover;
         }
 
-        .post-actions .btn.liked i {
-            animation: heartBeat 0.5s ease;
+        .post-user-info {
+            flex-grow: 1;
         }
 
-        @@keyframes heartBeat {
-            0%, 100% { transform: scale(1); }
-            25% { transform: scale(1.3); }
-            50% { transform: scale(1.1); }
-            75% { transform: scale(1.2); }
+            .post-user-info strong {
+                font-size: 15px;
+                font-weight: 600;
+                color: var(--text-color-primary);
+            }
+
+            .post-user-info small {
+                font-size: 13px;
+                color: var(--text-color-secondary);
+            }
+
+        .post-menu .dropdown-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-color-secondary);
+            padding: 5px;
         }
 
-        /* ========== COMMENTS SECTION ========== */
+            .post-menu .dropdown-toggle::after {
+                display: none;
+            }
+
+        .post-body {
+            padding: 0 16px 12px 16px;
+        }
+
+        .post-content-text {
+            color: var(--text-color-primary);
+            line-height: 1.6;
+            margin-bottom: 12px;
+            word-wrap: break-word;
+        }
+
+        .post-media {
+            border-radius: var(--border-radius-medium);
+            max-width: 100%;
+            display: block;
+            margin-top: 12px;
+        }
+
+        .post-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            color: var(--text-color-secondary);
+            font-size: 14px;
+        }
+
+            .post-stats .likes-count i {
+                color: #e74c3c;
+                margin-right: 4px;
+            }
+
+        .post-actions {
+            display: flex;
+            justify-content: space-around;
+            padding: 4px 8px;
+            border-top: 1px solid var(--border-color);
+        }
+
+            .post-actions .btn {
+                flex: 1;
+                gap: 6px;
+                font-weight: 600;
+                color: var(--text-color-secondary);
+                border-radius: var(--border-radius-medium);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+                .post-actions .btn:hover {
+                    background-color: var(--background-color);
+                }
+
+                .post-actions .btn.liked {
+                    color: #e74c3c;
+                }
+
+        /*--- Comments ---*/
         .post-comments {
-            padding: 16px 20px;
-            background: #f8f9fa;
+            padding: 8px 16px 16px;
+            background-color: #f7f9f7;
+            border-bottom-left-radius: var(--border-radius-large);
+            border-bottom-right-radius: var(--border-radius-large);
             display: none;
         }
 
-        .post-comments.active {
-            display: block;
-        }
+            .post-comments.active {
+                display: block;
+            }
 
         .comment-list {
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .comment-item {
             display: flex;
-            padding: 12px 0;
+            gap: 10px;
+            margin-top: 12px;
             position: relative;
-            animation: slideIn 0.3s ease;
         }
 
-        @@keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .comment-item:hover .delete-comment-btn {
-            display: flex;
-        }
-
-        .comment-item img {
-            width: 36px;
-            height: 36px;
+        .comment-avatar {
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             object-fit: cover;
-            margin-right: 10px;
-            border: 2px solid #4caf50;
         }
 
         .comment-content {
-            background: white;
+            background: #e9ebee;
             border-radius: 18px;
-            padding: 10px 14px;
-            font-size: 15px;
-            flex-grow: 1;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        .comment-content strong {
-            color: #1c1e21;
-            font-weight: 700;
+            padding: 8px 12px;
             font-size: 14px;
-            display: block;
-            margin-bottom: 4px;
+            flex-grow: 1;
         }
 
-        .comment-text {
-            color: #1c1e21;
-            line-height: 1.5;
-        }
+            .comment-content strong {
+                font-size: 13px;
+                font-weight: 600;
+                display: block;
+            }
 
         .delete-comment-btn {
-            position: absolute;
-            top: 12px;
-            right: 8px;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
             display: none;
-            z-index: 10;
-            background: #ffebee;
-            color: #f44336;
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #f0f2f5;
+            border-radius: 50%;
             border: none;
-            transition: all 0.3s ease;
-            align-items: center;
-            justify-content: center;
+            width: 28px;
+            height: 28px;
+            color: var(--text-color-secondary);
             cursor: pointer;
         }
 
-        .delete-comment-btn:hover {
-            background: #f44336;
-            color: white;
-            transform: rotate(90deg);
-        }
-
-        /* ========== COMMENT ADD FORM ========== */
-        .comment-add-form {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .comment-add-form img {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #4caf50;
-        }
-
-        .comment-add-form .form-control {
-            flex: 1;
-            border-radius: 20px;
-            background-color: white;
-            border: 2px solid #e8f5e9;
-            color: #1c1e21;
-            padding: 10px 16px;
-            transition: all 0.3s ease;
-            font-size: 15px;
-        }
-
-        .comment-add-form .form-control:focus {
-            background-color: white;
-            border-color: #4caf50;
-            box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.1);
-            outline: none;
-        }
-
-        .comment-add-form .form-control::placeholder {
-            color: #8e8e8e;
-        }
-
-        /* ========== POST MENU ========== */
-        .post-menu {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-        }
-
-        .post-menu .dropdown-toggle {
-            background: #f0f9f0;
-            border: none;
-            color: #4caf50;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
+        .comment-item:hover .delete-comment-btn {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 0;
-            transition: all 0.3s ease;
-            font-size: 18px;
         }
 
-        .post-menu .dropdown-toggle:hover {
-            background: #4caf50;
-            color: white;
-            transform: rotate(90deg);
+        .comment-add-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
         }
 
-        .post-menu .dropdown-toggle::after {
-            display: none;
-        }
+            .comment-add-form .comment-avatar {
+                width: 32px;
+                height: 32px;
+            }
 
-        .post-menu .dropdown-menu {
-            border-radius: 12px;
-            border: none;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-            padding: 8px;
-            min-width: 240px;
-        }
+            .comment-add-form .form-control {
+                flex-grow: 1;
+                border: 1px solid #ced4da;
+                border-radius: 18px;
+                height: 36px;
+            }
 
-        .post-menu .dropdown-item {
-            padding: 12px 16px;
-            color: #1c1e21;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            font-size: 15px;
-            border-radius: 8px;
-            margin-bottom: 2px;
-        }
+                .comment-add-form .form-control:focus {
+                    border-color: var(--primary-color);
+                    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+                }
 
-        .post-menu .dropdown-item:hover {
-            background: #f0f9f0;
-            color: #4caf50;
-            transform: translateX(4px);
-        }
-
-        .post-menu .dropdown-item i {
-            margin-right: 12px;
-            width: 20px;
+        /*--- General/Utility ---*/
+        .alert-info {
+            background-color: var(--surface-color);
+            border-radius: var(--border-radius-large);
+            padding: 24px;
             text-align: center;
+            color: var(--text-color-secondary);
+            border: 1px dashed var(--border-color);
         }
 
-        /* ========== SHARE MODAL ========== */
-        .share-modal {
+        #loading-more {
+            text-align: center;
+            padding: 16px;
+            color: var(--primary-color);
+        }
+
+            #loading-more i {
+                animation: spin 1s linear infinite;
+            }
+
+        @@keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .gallery-modal {
             display: none;
             position: fixed;
-            z-index: 9999;
+            z-index: 9999; /* Luôn nằm trên cùng */
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            animation: fadeIn 0.3s ease;
-        }
-
-        .share-modal-content {
-            background-color: white;
-            margin: 10% auto;
-            padding: 0;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            animation: slideDown 0.3s ease;
-        }
-
-        @@keyframes slideDown {
-            from {
-                transform: translateY(-50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .share-modal-header {
-            padding: 20px;
-            border-bottom: 1px solid #e4e6eb;
-            display: flex;
-            justify-content: space-between;
+            overflow: hidden;
+            background-color: rgba(0, 0, 0, 0.92); /* Màu đen thẫm như FB */
             align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        /* Ảnh trong Lightbox */
+        .gallery-content {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 90vh;
+            border-radius: 4px;
+            transition: opacity 0.2s;
+            object-fit: contain;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
-        .share-modal-header h3 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 700;
-            color: #1c1e21;
-        }
-
-        .share-modal-close {
-            background: #f0f2f5;
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
+        /* Nút Close (X) */
+        .close-gallery {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
             cursor: pointer;
+            z-index: 10001;
+        }
+
+            .close-gallery:hover {
+                color: #bbb;
+            }
+
+        /* Nút Next/Prev */
+        .prev-btn, .next-btn {
+            cursor: pointer;
+            position: absolute;
+            top: 50%;
+            width: auto;
+            padding: 16px;
+            margin-top: -50px;
+            color: white;
+            font-weight: bold;
+            font-size: 30px;
+            transition: 0.3s;
+            border-radius: 0 3px 3px 0;
+            user-select: none;
+            background-color: rgba(255, 255, 255, 0.1); /* Nền mờ nhẹ */
+            z-index: 10000;
+        }
+
+        /* Vị trí nút */
+        .next-btn {
+            right: 0;
+            border-radius: 3px 0 0 3px;
+        }
+
+        .prev-btn {
+            left: 0;
+            border-radius: 3px 0 0 3px;
+        }
+
+            .prev-btn:hover, .next-btn:hover {
+                background-color: rgba(255, 255, 255, 0.3);
+            }
+
+        /* Caption (Số thứ tự) */
+        #galleryCaption {
+            margin-top: 10px;
+            color: #ccc;
+            font-size: 14px;
+            font-family: sans-serif;
+        }
+
+        /* Animation zoom nhẹ khi mở */
+        .gallery-content {
+            animation-name: zoom;
+            animation-duration: 0.3s;
+        }
+
+        @@keyframes zoom {
+            from {
+                transform: scale(0.8);
+                opacity: 0
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1
+            }
+        }
+
+        .photo-grid {
+            display: grid;
+            gap: 2px;
+            width: 100%;
+            margin-top: 12px;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            background: #f0f2f5;
+            background: #000000;
+        }
+
+        .grid-1 {
+            display: block;
+            max-height: 500px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+            .grid-1 .grid-item {
+                width: 100%;
+                height: 100%;
+            }
+
+            .grid-1 img {
+                width: 100%;
+                height: 100%;
+                max-height: 500px;
+                object-fit: cover;
+            }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            height: 350px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            height: 400px;
+        }
+
+            .grid-3 .grid-item:first-child {
+                grid-row: 1 / 3;
+            }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            height: 400px;
+        }
+
+            .grid-4 .grid-item:first-child {
+                grid-row: 1 / 4;
+            }
+
+        .grid-item {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+            .grid-item img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+                transition: transform 0.3s ease;
+            }
+
+            .grid-item:hover img {
+                transform: scale(1.05);
+            }
+
+        .more-photos-overlay {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.4);
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s ease;
-            font-size: 20px;
-            color: #65676b;
+            font-size: 28px;
+            font-weight: bold;
+            backdrop-filter: blur(2px);
         }
 
-        .share-modal-close:hover {
-            background: #e4e6eb;
-            transform: rotate(90deg);
+        .dropdown-submenu {
+            position: relative;
         }
 
-        .share-modal-body {
-            padding: 20px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .chat-user-item {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 8px;
-        }
-
-        .chat-user-item:hover {
-            background: #f0f9f0;
-        }
-
-        .chat-user-item img {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-right: 12px;
-            border: 2px solid #4caf50;
-        }
-
-        .chat-user-info {
-            flex: 1;
-        }
-
-        .chat-user-name {
-            font-weight: 600;
-            color: #1c1e21;
-            font-size: 15px;
-        }
-
-        .chat-user-status {
-            font-size: 13px;
-            color: #65676b;
-        }
-
-        /* ========== LOADING ========== */
-        #loading-more {
-            text-align: center;
-            padding: 24px;
-            color: #4caf50;
-            font-weight: 600;
-            font-size: 16px;
-        }
-
-        #loading-more i {
-            margin-right: 8px;
-            animation: spin 1s linear infinite;
-        }
-
-        @@keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        /* ========== ALERT ========== */
-        .alert-info {
-            background: white;
-            border: 2px solid #4caf50;
-            border-radius: 16px;
-            color: #2e7d32;
-            padding: 32px;
-            font-weight: 600;
-            box-shadow: 0 4px 16px rgba(76, 175, 80, 0.15);
-            text-align: center;
-            font-size: 16px;
-        }
-
-        .alert-info i {
-            font-size: 48px;
-            color: #4caf50;
-            margin-bottom: 16px;
-            display: block;
-        }
-
-        /* ========== RESPONSIVE ========== */
-        @@media (max-width: 768px) {
-            .feed-container {
-                padding: 16px 8px;
+            .dropdown-submenu > .dropdown-menu {
+                top: 0;
+                left: 100%;
+                margin-top: -6px;
+                margin-left: -1px;
+                border-radius: 0 6px 6px 6px;
             }
 
-            .feed-header {
-                padding: 20px;
-                margin-bottom: 16px;
+            .dropdown-submenu:hover > .dropdown-menu {
+                display: block;
             }
 
-            .feed-header h2 {
-                font-size: 22px;
+            .dropdown-submenu > a:after {
+                display: block;
+                content: " ";
+                float: right;
+                width: 0;
+                height: 0;
+                border-color: transparent;
+                border-style: solid;
+                border-width: 5px 0 5px 5px;
+                border-left-color: #ccc;
+                margin-top: 5px;
+                margin-right: -10px;
             }
 
-            .create-post-actions {
-                grid-template-columns: 1fr;
+            .dropdown-submenu:hover > a:after {
+                border-left-color: #fff;
             }
-
-            .create-action-btn {
-                justify-content: flex-start;
-            }
-
-            .post-card .card-header,
-            .post-card .card-body {
-                padding: 16px;
-            }
-
-            .story-item {
-                width: 100px;
-            }
-
-            .story-avatar-wrapper {
-                width: 70px;
-                height: 70px;
-            }
-
-            .share-modal-content {
-                width: 95%;
-                margin: 20% auto;
-            }
-        }
     </style>
 }
 
@@ -823,54 +699,54 @@
         <h2>🌿 Bảng tin</h2>
     </div>
 
+    <!-- Stories -->
     <div class="stories-container">
         <div class="stories-wrapper" id="stories-wrapper">
-            <div class="story-item create-story" onclick="window.location.href='@Url.Action("SelectStoryType", "Feed")'">
-                <div class="story-avatar-wrapper">
-                    <span class="create-story-icon">
-                        <i class="fas fa-plus"></i>
-                    </span>
+            <div class="story-item create-story" onclick="window.location.href='@Url.Action("CreateStory", "Feed")'">
+                <div class="story-avatar-wrapper story-create-avatar">
+                    <img src="@(string.IsNullOrEmpty(currentUserAvatar) ? "/Content/default-avatar.png" : currentUserAvatar)" alt="Avatar" class="story-avatar">
+                    <span class="story-plus-icon"><i class="fas fa-plus"></i></span>
                 </div>
                 <div class="story-name">Tạo tin</div>
             </div>
+            <!-- Stories will be loaded here by AJAX -->
         </div>
     </div>
 
-    <!-- Create Post Card -->
+    <!-- Create Post -->
     <div class="create-post-card">
         <div class="create-post-top">
-            <img src="@(string.IsNullOrEmpty(currentUserAvatar) ? "/Content/default-avatar.png" : currentUserAvatar)"
-                 alt="Avatar"
-                 class="create-post-avatar">
-            <a href="@Url.Action("Create", "Feed", new { type = "story" })" class="create-post-input">
+            <img src="@(string.IsNullOrEmpty(currentUserAvatar) ? "/Content/default-avatar.png" : currentUserAvatar)" alt="Avatar" class="create-post-avatar user-avatar-trigger" data-userid="@currentUserId">
+            <a href="@Url.Action("Create", "Feed")" class="create-post-input">
                 Bạn đang nghĩ gì?
             </a>
         </div>
-        <div class="create-post-divider"></div>
         <div class="create-post-actions">
-            <a href="@Url.Action("Create", "Feed", new { type = "event" })" class="create-action-btn event">
-                <i class="fas fa-calendar-alt"></i>
+            <a href="@Url.Action("Create", "Feed", new { type = "post" })" class="create-action-btn">
+                <i class="fas fa-images photo"></i>
+                <span>Ảnh/Video</span>
+            </a>
+            <a href="@Url.Action("Create", "Feed", new { type = "event" })" class="create-action-btn">
+                <i class="fas fa-calendar-alt event"></i>
                 <span>Sự kiện</span>
             </a>
-            <a href="@Url.Action("Create", "Feed", new { type = "post" })" class="create-action-btn photo">
-                <i class="fas fa-images"></i>
-                <span>Ảnh/video</span>
-            </a>
-            <a href="@Url.Action("Create", "Feed", new { type = "feeling" })" class="create-action-btn feeling">
-                <i class="fas fa-smile"></i>
-                <span>Cảm xúc</span>
+            <a href="@Url.Action("Create", "Feed", new { type = "status" })" class="create-action-btn">
+                <i class="fas fa-smile status"></i>
+                <span>Trạng thái</span>
             </a>
         </div>
     </div>
+
+
 
     <!-- Posts List -->
     @if (Model != null && Model.Any())
     {
         <div id="post-list-container">
-            @Html.Partial("_PostListPartial", Model)
+            @Html.Partial("_PostListDisplayPartial", Model)
         </div>
         <div id="loading-more" style="display: none;">
-            <i class="fas fa-spinner"></i> Đang tải thêm bài viết...
+            <i class="fas fa-spinner"></i> Đang tải thêm...
         </div>
     }
     else
@@ -882,127 +758,90 @@
     }
 </div>
 
-<!-- Share Modal -->
-<div id="shareModal" class="share-modal">
-    <div class="share-modal-content">
-        <div class="share-modal-header">
-            <h3>Chia sẻ bài viết</h3>
-            <button class="share-modal-close">&times;</button>
-        </div>
-        <div class="share-modal-body" id="chatUserList">
-            <div style="text-align: center; padding: 20px; color: #65676b;">
-                <i class="fas fa-spinner fa-spin"></i> Đang tải danh sách...
-            </div>
-        </div>
-    </div>
+<div id="galleryModal" class="gallery-modal">
+    <span class="close-gallery" onclick="closeGallery()">&times;</span>
+    <a class="prev-btn" onclick="changeImage(-1)">&#10094;</a>
+    <a class="next-btn" onclick="changeImage(1)">&#10095;</a>
+    <img class="gallery-content" id="galleryImage">
+    <div id="galleryCaption"></div>
 </div>
 
 @section scripts {
+    @Html.Partial("~/Views/Shared/_SharePostModal.cshtml")
+
+    <script src="~/Scripts/jquery.signalR-2.4.3.min.js"></script>
+    <script src="~/signalr/hubs"></script>
+
     <script>
-    $(document).ready(function () {
-        $('main.chat-area').addClass('feed-mode');
+    $(document).ready(function() {
+        var chatHub = null;
 
-        function getAntiForgeryToken() {
+        if ($.connection) {
+            chatHub = $.connection.chatHub;
+            $.connection.hub.start().done(function() {}).fail(function() {});
+        }
+
+        window.getAntiForgeryToken = function() {
             return $('input[name="__RequestVerificationToken"]').val();
-        }
+        };
 
-        var page = 1;
-        var isLoading = false;
-        var hasMorePosts = true;
-        var currentPostToShare = null;
-
-        // Infinite scroll
-        $('.chat-area').scroll(function () {
-            var chatArea = $(this);
-            if (chatArea.scrollTop() + chatArea.height() >= $('#post-list-container').height() - 200 && !isLoading && hasMorePosts) {
-                loadMorePosts();
-            }
-        });
-
-        function loadMorePosts() {
-            isLoading = true;
-            $('#loading-more').show();
-            page++;
-
-            $.ajax({
-                url: '@Url.Action("GetPosts", "Feed")',
-                type: 'GET',
-                data: { page: page },
-                success: function (data) {
-                    if (data.trim().length > 0) {
-                        $('#post-list-container').append(data);
-                    } else {
-                        hasMorePosts = false;
-                    }
-                },
-                error: function () {
-                    console.error("Failed to load more posts.");
-                },
-                complete: function () {
-                    isLoading = false;
-                    $('#loading-more').hide();
-                }
-            });
-        }
-
-        // Like functionality
-        $(document).on('click', '.feed-container .like-btn', function () {
+        $(document).on('click', '.like-btn', function () {
             var button = $(this);
             var postId = button.data('post-id');
 
-            if (!postId) {
-                console.error("Like failed: post-id attribute is missing.");
-                return;
-            }
+            if (!postId) return;
 
             $.ajax({
                 url: '@Url.Action("ToggleLike", "Feed")',
                 type: 'POST',
                 data: {
-                    __RequestVerificationToken: getAntiForgeryToken(),
+                    "__RequestVerificationToken": getAntiForgeryToken(),
                     postId: postId
                 },
                 success: function (response) {
                     if (response.success) {
                         var postCard = $('.post-card[data-post-id="' + postId + '"]');
-                        var likeCountSpan = postCard.find('.like-count');
-                        var heartIcon = button.find('.fa-heart');
-                        var likeInfo = postCard.find('.like-info');
+                        var statsContainer = postCard.find('.post-stats');
+                        var likeCountSpan = statsContainer.find('.likes-count .like-count');
 
-                        if (response.likeCount > 0) {
-                            if (likeInfo.length === 0) {
-                                postCard.find('.post-actions').before('<div class="like-info"><i class="fas fa-heart"></i> <span class="like-count">' + response.likeCount + '</span> lượt thích</div>');
-                            } else {
+                        if(response.likeCount > 0) {
+                            if (statsContainer.length === 0) {
+                                 postCard.find('.post-body').after('<div class="post-stats"><div class="likes-count"><i class="fas fa-heart"></i> <span class="like-count">' + response.likeCount + '</span></div></div>');
+                            } else if (likeCountSpan.length > 0) {
                                 likeCountSpan.text(response.likeCount);
+                            } else {
+                                statsContainer.prepend('<div class="likes-count"><i class="fas fa-heart"></i> <span class="like-count">' + response.likeCount + '</span></div>');
                             }
                         } else {
-                            likeInfo.remove();
+                            statsContainer.find('.likes-count').remove();
+                            if(statsContainer.children().length === 0) statsContainer.remove();
                         }
 
                         if (response.userHasLiked) {
                             button.addClass('liked');
-                            heartIcon.removeClass('far').addClass('fas');
+                            button.find('.fa-heart').removeClass('far').addClass('fas');
                         } else {
                             button.removeClass('liked');
-                            heartIcon.removeClass('fas').addClass('far');
+                            button.find('.fa-heart').removeClass('fas').addClass('far');
                         }
                     }
-                },
-                error: function (xhr) {
-                    alert("Lỗi khi thích bài viết. Vui lòng thử lại.");
                 }
             });
         });
 
-        // Comment button - toggle comments section
         $(document).on('click', '.comment-btn', function() {
             var postCard = $(this).closest('.post-card');
             var commentsSection = postCard.find('.post-comments');
             commentsSection.toggleClass('active');
+
+            if(commentsSection.hasClass('active')) {
+                setTimeout(function() {
+                    commentsSection.find('.comment-input').focus();
+                }, 100);
+            }
         });
 
-        // Privacy toggle
-        $(document).on('click', '.feed-container .privacy-toggle-btn', function (e) {
+        $(document).on('click', '.privacy-toggle-btn', function (e) {
             e.preventDefault();
             var link = $(this);
             var postId = link.data('post-id');
@@ -1013,7 +852,7 @@
                 url: '@Url.Action("SetPostPrivacy", "Feed")',
                 type: 'POST',
                 data: {
-                    __RequestVerificationToken: getAntiForgeryToken(),
+                    "__RequestVerificationToken": getAntiForgeryToken(),
                     postId: postId,
                     privacy: newPrivacy
                 },
@@ -1024,24 +863,18 @@
                         var postCard = link.closest('.post-card');
                         postCard.find('.privacy-indicator').remove();
                         if (response.newPrivacy === "Private") {
-                            postCard.find('.user-info').append(' <i class="fas fa-lock privacy-indicator" title="Riêng tư" style="color: #65676b; font-size: 12px; margin-left: 4px;"></i>');
+                            postCard.find('.post-user-info div').first().append(' <i class="fas fa-lock privacy-indicator" title="Riêng tư" style="color: #65676b; font-size: 12px; margin-left: 4px;"></i>');
                         }
                     } else {
                         alert(response.message || "Không thể thay đổi quyền riêng tư.");
                     }
-                },
-                error: function (xhr) {
-                    alert("Lỗi kết nối. Vui lòng thử lại.");
                 }
             });
         });
 
-        // Delete post
         $(document).on('click', '.delete-post-btn', function (e) {
             e.preventDefault();
-            if (!confirm("Bạn có chắc chắn muốn xóa bài viết này không?")) {
-                return;
-            }
+            if (!confirm("Bạn có chắc chắn muốn xóa bài viết này không?")) return;
 
             var link = $(this);
             var postCard = link.closest('.post-card');
@@ -1051,7 +884,7 @@
                 url: '@Url.Action("DeletePost", "Feed")',
                 type: 'POST',
                 data: {
-                    __RequestVerificationToken: getAntiForgeryToken(),
+                    "__RequestVerificationToken": getAntiForgeryToken(),
                     postId: postId
                 },
                 success: function (response) {
@@ -1062,21 +895,16 @@
                     } else {
                         alert(response.message || "Không thể xóa bài viết.");
                     }
-                },
-                error: function (xhr) {
-                    alert("Lỗi khi xóa bài viết. Vui lòng thử lại.");
                 }
             });
         });
 
-        // Hide post
-        $(document).on('click', '.feed-container .hide-post-btn', function (e) {
+        $(document).on('click', '.hide-post-btn', function (e) {
             e.preventDefault();
             $(this).closest('.post-card').fadeOut(400);
         });
 
-        // Report post
-        $(document).on('click', '.feed-container .report-post-btn', function (e) {
+        $(document).on('click', '.report-post-btn', function (e) {
             e.preventDefault();
             var link = $(this);
             var postCard = link.closest('.post-card');
@@ -1089,7 +917,7 @@
                     url: '@Url.Action("ReportPost", "Feed")',
                     type: 'POST',
                     data: {
-                        __RequestVerificationToken: getAntiForgeryToken(),
+                        "__RequestVerificationToken": getAntiForgeryToken(),
                         postId: postId,
                         reason: reason
                     },
@@ -1099,41 +927,35 @@
                         } else {
                             alert(response.message || "Không thể gửi báo cáo.");
                         }
-                    },
-                    error: function (xhr) {
-                        alert("Lỗi kết nối. Vui lòng thử lại.");
                     }
                 });
             }
         });
 
-        // Share post - Open modal
-        $(document).on('click', '.feed-container .share-btn', function(e) {
+        $(document).on('click', '.share-btn', function(e) {
             e.preventDefault();
             var postCard = $(this).closest('.post-card');
             var postId = postCard.data('post-id');
             var postUrl = postCard.data('post-url');
-            
-            currentPostToShare = {
+
+            window.currentPostToShare = {
                 id: postId,
                 url: postUrl,
-                content: postCard.find('.card-text').text().substring(0, 100) + '...'
+                author: postCard.find('.post-user-info strong').text(),
+                content: postCard.find('.post-content-text').text(),
+                mediaUrl: postCard.find('.post-media').attr('src') || ''
             };
 
-            // Load chat users
             loadChatUsers();
-            
             $('#shareModal').fadeIn(300);
         });
 
-        // Close share modal
         $('.share-modal-close, .share-modal').click(function(e) {
             if (e.target === this) {
                 $('#shareModal').fadeOut(300);
             }
         });
 
-        // Load chat users for sharing
         function loadChatUsers() {
             $.ajax({
                 url: '@Url.Action("GetChatUsers", "Chat")',
@@ -1142,13 +964,12 @@
                     if (data && data.length > 0) {
                         var html = '';
                         data.forEach(function(user) {
-                            html += '<div class="chat-user-item" data-user-id="' + user.Id + '">';
+                            html += '<div class="chat-user-item" data-username="' + user.Username + '">';
                             html += '<img src="' + (user.AvatarUrl || '/Content/default-avatar.png') + '" alt="' + user.Username + '">';
                             html += '<div class="chat-user-info">';
                             html += '<div class="chat-user-name">' + user.Username + '</div>';
                             html += '<div class="chat-user-status">Nhấn để chia sẻ</div>';
-                            html += '</div>';
-                            html += '</div>';
+                            html += '</div></div>';
                         });
                         $('#chatUserList').html(html);
                     } else {
@@ -1161,39 +982,33 @@
             });
         }
 
-        // Share to specific user
         $(document).on('click', '.chat-user-item', function() {
-            var userId = $(this).data('user-id');
-            var username = $(this).find('.chat-user-name').text();
-            
-            if (!currentPostToShare) return;
+            var targetUsername = $(this).data('username');
 
-            var shareMessage = '🔗 Chia sẻ bài viết: ' + currentPostToShare.content + '\n' + 
-                              window.location.origin + currentPostToShare.url;
+            if (!window.currentPostToShare) return;
 
-            $.ajax({
-                url: '@Url.Action("SendMessage", "Chat")',
-                type: 'POST',
-                data: {
-                    __RequestVerificationToken: getAntiForgeryToken(),
-                    receiverId: userId,
-                    message: shareMessage
-                },
-                success: function(response) {
-                    if (response.success) {
-                        alert('Đã chia sẻ bài viết đến ' + username);
+            var shareData = {
+                type: 'shared_post',
+                postId: window.currentPostToShare.id,
+                content: "Đã chia sẻ một bài viết của " + window.currentPostToShare.author
+            };
+            var msgJson = JSON.stringify(shareData);
+            var tempId = 'temp_' + Date.now();
+
+            if (chatHub && $.connection.hub.state === $.signalR.connectionState.connected) {
+                chatHub.server.sendPrivateMessage(targetUsername, msgJson, tempId, null)
+                    .done(function() {
+                        alert('Đã chia sẻ bài viết đến ' + targetUsername);
                         $('#shareModal').fadeOut(300);
-                    } else {
-                        alert('Không thể chia sẻ bài viết');
-                    }
-                },
-                error: function() {
-                    alert('Lỗi khi chia sẻ bài viết');
-                }
-            });
+                    })
+                    .fail(function(e) {
+                        alert('Không thể gửi tin nhắn qua SignalR');
+                    });
+            } else {
+                alert("Lỗi kết nối chat server. Vui lòng tải lại trang.");
+            }
         });
 
-        // Add Comment - FIX: Change commentText to content
         $(document).on('submit', '.comment-add-form', function (e) {
             e.preventDefault();
             var form = $(this);
@@ -1201,44 +1016,36 @@
             var postId = form.data('post-id');
             var commentText = input.val();
 
-            if (commentText.trim() === "") {
-                return;
-            }
+            if (commentText.trim() === "") return;
 
             $.ajax({
                 url: '@Url.Action("AddComment", "Feed")',
                 type: 'POST',
                 data: {
-                    __RequestVerificationToken: getAntiForgeryToken(),
+                    "__RequestVerificationToken": getAntiForgeryToken(),
                     postId: postId,
-                    content: commentText  // CHANGED FROM commentText to content
+                    content: commentText
                 },
                 success: function (data) {
-                    var commentList = form.closest('.post-comments').find('.comment-list');
+                    var commentsSection = form.closest('.post-comments');
+                    var commentList = commentsSection.find('.comment-list');
                     commentList.append(data);
                     input.val('');
-                },
-                error: function (xhr, status, error) {
-                    console.error("Lỗi khi thêm bình luận:", error);
-                    alert("Đã xảy ra lỗi. Vui lòng thử lại.");
                 }
             });
         });
 
-        // Delete Comment
         $(document).on('click', '.delete-comment-btn', function () {
             var button = $(this);
             var commentId = button.data('comment-id');
 
-            if (!confirm("Bạn có chắc chắn muốn xóa bình luận này không?")) {
-                return;
-            }
+            if (!confirm("Bạn có chắc chắn muốn xóa bình luận này không?")) return;
 
             $.ajax({
                 url: '@Url.Action("DeleteComment", "Feed")',
                 type: 'POST',
                 data: {
-                    __RequestVerificationToken: getAntiForgeryToken(),
+                    "__RequestVerificationToken": getAntiForgeryToken(),
                     commentId: commentId
                 },
                 success: function (response) {
@@ -1249,28 +1056,101 @@
                     } else {
                         alert(response.message || "Không thể xóa bình luận.");
                     }
-                },
-                error: function (xhr) {
-                    alert("Lỗi khi xóa bình luận. Vui lòng thử lại.");
                 }
             });
         });
 
-        // Load stories
-        loadStories();
-    });
+        $(document).on('click', '.privacy-option', function (e) {
+            e.preventDefault();
+            var postId = $(this).data('post-id');
+            var privacy = $(this).data('privacy');
+            updatePostPrivacy(postId, privacy);
+        });
 
+        // ============================================
+        // LOAD STORIES - ĐÚNG CÚ PHÁP
+        // ============================================
+        loadStories();
+    }); // End $(document).ready
+
+    // ============================================
+    // FUNCTION BÊN NGOÀI document.ready
+    // ============================================
+    function updatePostPrivacy(postId, privacyType) {
+        var token = $('input[name="__RequestVerificationToken"]').val();
+
+        $.ajax({
+            url: '/Feed/SetPostPrivacy',
+            type: 'POST',
+            data: {
+                __RequestVerificationToken: token,
+                postId: postId,
+                privacy: privacyType
+            },
+            success: function (response) {
+                if (response.success) {
+                    var iconClass = "fa-globe-americas";
+                    var titleText = "Công khai";
+
+                    if (privacyType === "Private") {
+                        iconClass = "fa-lock";
+                        titleText = "Chỉ mình tôi";
+                    } else if (privacyType === "Friends") {
+                        iconClass = "fa-user-friends";
+                        titleText = "Bạn bè";
+                    }
+
+                    var iconElement = $("#privacy-icon-" + postId);
+                    iconElement.removeClass("fa-globe-americas fa-lock fa-user-friends");
+                    iconElement.addClass(iconClass);
+                    iconElement.closest('.privacy-indicator').attr('title', titleText);
+                    $('body').trigger('click');
+
+                    console.log("Đã đổi quyền riêng tư thành: " + privacyType);
+                } else {
+                    alert(response.message || "Có lỗi xảy ra khi cập nhật.");
+                }
+            },
+            error: function () {
+                alert("Không thể kết nối đến server.");
+            }
+        });
+    }
+
+    // ============================================
+    // FUNCTION LOAD STORIES - ĐÚNG VỊ TRÍ
+    // ============================================
     function loadStories() {
+        console.log('[Index] Loading stories...');
+
         $.ajax({
             url: '@Url.Action("GetStories", "Feed")',
             type: 'GET',
             success: function (data) {
-                $('#stories-wrapper').html(data);
+                console.log('[Index] Stories loaded successfully');
+                console.log('[Index] Response length:', data.length);
+
+                var storiesWrapper = $('#stories-wrapper');
+
+                storiesWrapper.find('.story-item:not(.create-story)').remove();
+
+                $('#storyViewerModal').remove();
+
+                if (data && data.trim() !== '') {
+                    storiesWrapper.append(data);
+                    console.log('[Index] Stories appended to DOM');
+                } else {
+                    console.log('[Index] No stories returned from server');
+                }
             },
-            error: function () {
-                console.error("Error loading stories.");
+            error: function(xhr, status, error) {
+                console.error('[Index] Error loading stories:', error);
+                console.error('[Index] Status:', status);
+                console.error('[Index] Response:', xhr.responseText);
             }
         });
     }
+
+    setInterval(loadStories, 30000);
     </script>
 }

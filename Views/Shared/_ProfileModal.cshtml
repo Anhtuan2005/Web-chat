@@ -1,0 +1,148 @@
+@* File: WebChat_Online_MVC/Views/Shared/_ProfileModal.cshtml *@
+
+<style>
+    #userProfileModal .modal-content {
+        border-radius: 16px;
+        overflow: hidden;
+        border: none;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        background-color: #f7f9f7; /* Light green-white background */
+    }
+
+    #userProfileModal .profile-cover {
+        height: 180px;
+        background-color: #e8f5e9; /* Fallback color */
+        background-size: cover;
+        background-position: center;
+        position: relative;
+    }
+
+    #userProfileModal .profile-header {
+        position: relative;
+        text-align: center;
+        margin-top: -80px; /* Pulls the avatar up */
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e8f5e9;
+    }
+    
+    #userProfileModal .profile-avatar {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        border: 5px solid white;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        object-fit: cover;
+        background-color: #fff; /* Fallback for transparent images */
+    }
+    
+    #userProfileModal .profile-display-name {
+        font-weight: 700;
+        font-size: 1.8rem;
+        margin-top: 15px;
+        margin-bottom: 2px;
+        color: #2e7d32; /* Dark green */
+    }
+
+    #userProfileModal .profile-username {
+        font-weight: 500;
+        font-size: 1rem;
+        color: #66bb6a; /* Lighter green */
+    }
+
+    #userProfileModal .modal-body {
+        padding: 20px 30px 30px;
+        text-align: center;
+    }
+
+    #userProfileModal .profile-bio {
+        color: #555;
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-bottom: 24px;
+        font-style: italic;
+    }
+    
+    #userProfileModal .profile-info-section {
+        background-color: #ffffff;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: left;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    #userProfileModal .info-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        font-size: 0.95rem;
+    }
+    
+    #userProfileModal .info-item:last-child {
+        margin-bottom: 0;
+    }
+
+    #userProfileModal .info-item i {
+        color: #4CAF50;
+        font-size: 1.2rem;
+        width: 35px;
+        text-align: center;
+    }
+
+    #userProfileModal .info-item-label {
+        color: #333;
+        font-weight: 600;
+        margin-left: 10px;
+    }
+    
+    #userProfileModal .info-item-value {
+        color: #555;
+        margin-left: auto;
+        font-weight: 500;
+    }
+</style>
+
+<div class="modal fade" id="userProfileModal" tabindex="-1" aria-labelledby="userProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header p-0" style="border: none;">
+                 <div id="userProfileModalCover" class="profile-cover w-100"></div>
+                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="position: absolute; top: 15px; right: 15px;"></button>
+            </div>
+            <div class="profile-header">
+                <img id="userProfileModalAvatar" src="/Content/default-avatar.png" class="profile-avatar" />
+                <h4 id="userProfileModalLabel" class="profile-display-name">Loading...</h4>
+                <p id="userProfileModalUsername" class="profile-username"></p>
+            </div>
+
+            <div class="modal-body">
+                <p id="userProfileModalBio" class="profile-bio">Loading bio...</p>
+            
+                <div class="profile-info-section">
+                    <div class="info-item">
+                        <i class="fas fa-venus-mars"></i>
+                        <span class="info-item-label">Giới tính</span>
+                        <span id="userProfileModalGender" class="info-item-value">Loading...</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-birthday-cake"></i>
+                        <span class="info-item-label">Ngày sinh</span>
+                        <span id="userProfileModalDob" class="info-item-value">Loading...</span>
+                    </div>
+                     <div class="info-item">
+                        <i class="fas fa-envelope"></i>
+                        <span class="info-item-label">Email</span>
+                        <span id="userProfileModalEmail" class="info-item-value">Loading...</span>
+                    </div>
+                     <div class="info-item">
+                        <i class="fas fa-phone"></i>
+                        <span class="info-item-label">Điện thoại</span>
+                        <span id="userProfileModalPhone" class="info-item-value">Loading...</span>
+                    </div>
+                </div>
+                <button id="block-user-btn" class="btn btn-danger mt-3" style="width: 100%;">
+                    <i class="fas fa-ban"></i> Chặn người dùng
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
