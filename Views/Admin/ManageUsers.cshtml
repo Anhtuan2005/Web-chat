@@ -57,7 +57,7 @@
         </form>
     </div>
 
-    <!-- BẢNG -->
+    <!-- BẢNG DANH SÁCH -->
     <div class="content-card-body">
         <div class="table-responsive">
             <table class="table table-hover">
@@ -109,19 +109,20 @@
                             </td>
                             <td class="text-center">
                                 <div class="btn-group" role="group">
+                                    <!-- Nút Sửa -->
                                     <a href="@Url.Action("EditUser", new { id = user.Id })"
                                        class="btn btn-sm btn-warning"
                                        title="Chỉnh sửa">
                                         <i class="fas fa-edit"></i>
                                     </a>
 
-                                    @using (Html.BeginForm("BanUser", "Admin", new { id = user.Id }, FormMethod.Post, new { style = "display:inline;" }))
+                                    <!-- Nút Ban (Đã sửa lại để mở Modal) -->
+                                    @if (!user.IsAdmin) // Không cho phép ban Admin
                                     {
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit"
-                                                class="btn btn-sm btn-danger"
-                                                title="Khóa tài khoản"
-                                                onclick="return confirm('Bạn có chắc muốn khóa @user.Username?');">
+                                        <button class="btn btn-sm btn-danger open-ban-modal"
+                                                data-id="@user.Id"
+                                                data-username="@user.Username"
+                                                title="Khóa tài khoản">
                                             <i class="fas fa-ban"></i>
                                         </button>
                                     }
@@ -149,3 +150,106 @@
         }
     </div>
 </div>
+
+<!-- ========================================== -->
+<!-- MODAL CHỌN THỜI GIAN BAN (Đặt ở cuối file) -->
+<!-- ========================================== -->
+<div class="modal fade" id="banUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-user-lock me-2"></i>Khóa tài khoản</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Token chống giả mạo cho Ajax -->
+                @Html.AntiForgeryToken()
+
+                <p>Bạn đang khóa tài khoản: <strong id="banUsernameDisplay" class="text-danger">...</strong></p>
+                <input type="hidden" id="banUserIdVal" />
+
+                <label class="form-label fw-bold mt-2">Chọn thời gian khóa:</label>
+                <div class="d-flex flex-column gap-2">
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="banDuration" id="ban1" value="1" checked>
+                        <label class="btn btn-outline-danger" for="ban1">1 Ngày</label>
+
+                        <input type="radio" class="btn-check" name="banDuration" id="ban7" value="7">
+                        <label class="btn btn-outline-danger" for="ban7">7 Ngày</label>
+
+                        <input type="radio" class="btn-check" name="banDuration" id="ban15" value="15">
+                        <label class="btn btn-outline-danger" for="ban15">15 Ngày</label>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="banDuration" id="ban30" value="30">
+                        <label class="btn btn-outline-danger" for="ban30">30 Ngày</label>
+
+                        <input type="radio" class="btn-check" name="banDuration" id="ban90" value="90">
+                        <label class="btn btn-outline-danger" for="ban90">90 Ngày</label>
+
+                        <input type="radio" class="btn-check" name="banDuration" id="ban36500" value="36500">
+                        <label class="btn btn-outline-danger" for="ban36500">Vĩnh viễn</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" id="confirmBanBtn">
+                    <i class="fas fa-lock me-1"></i> Xác nhận khóa
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        $(document).ready(function () {
+            // 1. Sự kiện khi nhấn nút Ban (Hình tròn đỏ) trên bảng
+            $('.open-ban-modal').click(function () {
+                var userId = $(this).data('id');
+                var username = $(this).data('username');
+
+                $('#banUserIdVal').val(userId);
+                $('#banUsernameDisplay').text(username);
+
+                // Hiển thị modal
+                var myModal = new bootstrap.Modal(document.getElementById('banUserModal'));
+                myModal.show();
+            });
+
+            $('#confirmBanBtn').click(function () {
+                var userId = $('#banUserIdVal').val();
+                var days = $('input[name="banDuration"]:checked').val();
+                var token = $('input[name="__RequestVerificationToken"]').val(); // Lấy token
+
+                // Hiệu ứng loading nút bấm
+                var $btn = $(this);
+                $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Đang xử lý...');
+
+                $.ajax({
+                    url: '@Url.Action("BanUser", "Admin")', // Gọi về AdminController
+                    type: 'POST',
+                    data: {
+                        userId: userId,
+                        days: days,
+                        __RequestVerificationToken: token
+                    },
+                    success: function (res) {
+                        if (res.success) {
+                            alert(res.message);
+                            location.reload(); // Tải lại trang để cập nhật
+                        } else {
+                            alert(res.message);
+                            $btn.prop('disabled', false).html('<i class="fas fa-lock me-1"></i> Xác nhận khóa');
+                        }
+                    },
+                    error: function () {
+                        alert("Lỗi kết nối đến máy chủ.");
+                        $btn.prop('disabled', false).html('<i class="fas fa-lock me-1"></i> Xác nhận khóa');
+                    }
+                });
+            });
+        });
+    </script>
+}

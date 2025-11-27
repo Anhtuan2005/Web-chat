@@ -273,7 +273,44 @@ namespace Online_chat.Controllers
             return PartialView("~/Views/Shared/_SharedPost.cshtml", post);
         }
 
+        [HttpGet]
+        public JsonResult GetFriendsToShare()
+        {
+            try
+            {
+                var username = User.Identity.Name;
+                var currentUser = db.Users.FirstOrDefault(u => u.Username == username && !u.IsDeleted);
 
+                if (currentUser == null)
+                {
+                    return Json(new List<object>(), JsonRequestBehavior.AllowGet);
+                }
+
+                // Lấy danh sách ID của bạn bè (Status = Accepted)
+                var friendIds = db.Friendships
+                    .Where(f => f.Status == FriendshipStatus.Accepted &&
+                                (f.SenderId == currentUser.Id || f.ReceiverId == currentUser.Id))
+                    .Select(f => f.SenderId == currentUser.Id ? f.ReceiverId : f.SenderId)
+                    .ToList();
+
+                // Lấy thông tin user từ danh sách ID
+                var friends = db.Users
+                    .Where(u => friendIds.Contains(u.Id) && !u.IsDeleted)
+                    .Select(u => new
+                    {
+                        Username = u.Username,
+                        DisplayName = u.DisplayName ?? u.Username, // Ưu tiên hiển thị tên hiển thị
+                        AvatarUrl = u.AvatarUrl
+                    })
+                    .ToList();
+
+                return Json(friends, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new List<object>(), JsonRequestBehavior.AllowGet);
+            }
+        }
         protected override void Dispose(bool disposing)
         {
             if (disposing)

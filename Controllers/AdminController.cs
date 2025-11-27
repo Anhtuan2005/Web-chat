@@ -121,46 +121,51 @@ namespace Online_chat.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult BanUser(int id)
+        public JsonResult BanUser(int userId, int days)
         {
-            var user = _context.Users.Find(id);
-            if (user == null) return HttpNotFound();
-
-            if (user.Username.ToLower() == User.Identity.Name.ToLower())
+            try
             {
-                TempData["ErrorMessage"] = "Bạn không thể khóa chính mình!";
-                return RedirectToAction("ManageUsers");
+                var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+                if (user == null) return Json(new { success = false, message = "User not found" });
+
+                user.BanExpiresAt = DateTime.Now.AddDays(days);
+                _context.SaveChanges();
+
+                var hubContext = Microsoft.AspNet.SignalR.GlobalHost.ConnectionManager.GetHubContext<Hubs.ChatHub>();
+                hubContext.Clients.User(user.Username).forceLogout();
+
+                return Json(new { success = true, message = "Đã khóa tài khoản thành công." });
             }
-
-            user.IsDeleted = true;
-            _context.Entry(user).State = EntityState.Modified;
-            _context.SaveChanges();
-
-            TempData["SuccessMessage"] = $"Đã khóa tài khoản: {user.Username}";
-            return RedirectToAction("ManageUsers");
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult UnbanUser(int id)
+        public JsonResult UnbanUser(int userId)
         {
-            var user = _context.Users.Find(id);
-            if (user == null) return HttpNotFound();
-
-            user.IsDeleted = false;
-            _context.Entry(user).State = EntityState.Modified;
-            _context.SaveChanges();
-
-            TempData["SuccessMessage"] = $"Đã mở khóa tài khoản: {user.Username}";
-            return RedirectToAction("ManageUsers");
+            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+            if (user != null)
+            {
+                user.BanExpiresAt = null;
+                _context.SaveChanges();
+                return Json(new { success = true, message = "Đã mở khóa tài khoản." });
+            }
+            return Json(new { success = false, message = "Lỗi." });
         }
 
         public ActionResult BannedUsers()
         {
-            var bannedUsers = _context.Users.Where(u => u.IsDeleted).ToList();
+            var bannedUsers = _context.Users
+                .Where(u => u.BanExpiresAt != null && u.BanExpiresAt > DateTime.Now)
+                .OrderByDescending(u => u.BanExpiresAt)
+                .ToList();
+
             return View(bannedUsers);
         }
+
+
 
         // ============================================
         // QUẢN LÝ NHÓM
@@ -181,7 +186,7 @@ namespace Online_chat.Controllers
 
             _context.Groups.Remove(group);
             _context.SaveChanges();
-            TempData["SuccessMessage"] = $"Đã xóa nhóm: {group.Name}";
+            TempData["SuccessMessage"] = string.Format("Đã xóa nhóm: {0}", group.Name);
 
             return RedirectToAction("ManageGroups");
         }
@@ -324,7 +329,7 @@ namespace Online_chat.Controllers
             _context.GroupMessages.RemoveRange(messages);
             _context.SaveChanges();
 
-            TempData["SuccessMessage"] = $"Đã xóa {count} tin nhắn từ {fromDate:dd/MM/yyyy} đến {toDate:dd/MM/yyyy}";
+            TempData["SuccessMessage"] = string.Format("Đã xóa {0} tin nhắn từ {1:dd/MM/yyyy} đến {2:dd/MM/yyyy}", count, fromDate, toDate);
             return RedirectToAction("ManageMessages");
         }
 
@@ -345,83 +350,98 @@ namespace Online_chat.Controllers
             _context.GroupMessages.RemoveRange(messages);
             _context.SaveChanges();
 
-            TempData["SuccessMessage"] = $"Đã xóa {count} tin nhắn.";
+            TempData["SuccessMessage"] = string.Format("Đã xóa {0} tin nhắn.", count);
             return RedirectToAction("ManageMessages");
         }
 
         // Thống kê tin nhắn
         public ActionResult MessageStatistics()
         {
-            var stats = new
+            var stats = new MessageStatisticsViewModel
             {
-                TotalMessages = _context.GroupMessages.Count(),
+                TotalGroupMessages = _context.GroupMessages.Count(),
+                TotalPrivateMessages = _context.PrivateMessages.Count(),
                 TotalUsers = _context.Users.Count(u => !u.IsDeleted),
-                TotalGroups = _context.Groups.Count(),
-
-                TopSenders = _context.GroupMessages
-                    .GroupBy(m => m.SenderId) 
-                    .Select(g => new
-                    {
-                        SenderId = g.Key,
-                        SenderUsername = g.FirstOrDefault().Sender.Username, //  Lấy username
-                        MessageCount = g.Count()
-                    })
-                    .OrderByDescending(x => x.MessageCount)
-                    .Take(10)
-                    .ToList(),
-
-                // Top 10 nhóm có nhiều tin nhắn nhất
-                TopGroups = _context.GroupMessages
-                    .GroupBy(m => m.GroupId) // Group by GroupId (int)
-                    .Select(g => new
-                    {
-                        GroupId = g.Key,
-                        GroupName = g.FirstOrDefault().Group.Name, // Lấy group name
-                        MessageCount = g.Count()
-                    })
-                    .OrderByDescending(x => x.MessageCount)
-                    .Take(10)
-                    .ToList(),
-
-                // Tin nhắn trong 7 ngày gần nhất
-                MessagesLast7Days = _context.GroupMessages
-                    .Where(m => m.Timestamp >= DbFunctions.AddDays(DateTime.Now, -7))
-                    .GroupBy(m => DbFunctions.TruncateTime(m.Timestamp))
-                    .Select(g => new
-                    {
-                        Date = g.Key,
-                        Count = g.Count()
-                    })
-                    .OrderBy(x => x.Date)
-                    .ToList()
+                TotalGroups = _context.Groups.Count()
             };
+            stats.TotalMessages = stats.TotalGroupMessages + stats.TotalPrivateMessages;
+
+            var topGroupSendersQuery = _context.GroupMessages
+                .GroupBy(m => m.SenderId)
+                .Select(g => new { SenderId = g.Key, MessageCount = g.Count() })
+                .OrderByDescending(x => x.MessageCount)
+                .Take(10)
+                .ToList();
+
+            stats.TopGroupSenders = (from senderStat in topGroupSendersQuery
+                                     join user in _context.Users on senderStat.SenderId equals user.Id
+                                     select new TopSenderViewModel
+                                     {
+                                         SenderId = user.Id.ToString(), // ĐÃ SỬA: thêm .Id
+                                         SenderUsername = user.Username,
+                                         MessageCount = senderStat.MessageCount
+                                     }).ToList();
+
+            var topPrivateSendersQuery = _context.PrivateMessages
+                .GroupBy(m => m.SenderId)
+                .Select(g => new { SenderId = g.Key, MessageCount = g.Count() })
+                .OrderByDescending(x => x.MessageCount)
+                .Take(10)
+                .ToList();
+
+            stats.TopPrivateSenders = (from senderStat in topPrivateSendersQuery
+                                       join user in _context.Users on senderStat.SenderId equals user.Id
+                                       select new TopSenderViewModel
+                                       {
+                                           SenderId = user.Id.ToString(), // ĐÃ SỬA: thêm .Id
+                                           SenderUsername = user.Username,
+                                           MessageCount = senderStat.MessageCount
+                                       }).ToList();
+
+            // Top Groups
+            var topGroupsQuery = _context.GroupMessages
+                .GroupBy(m => m.GroupId)
+                .Select(g => new { GroupId = g.Key, MessageCount = g.Count() })
+                .OrderByDescending(x => x.MessageCount)
+                .Take(10)
+                .ToList();
+
+            stats.TopGroups = (from groupStat in topGroupsQuery
+                               join grp in _context.Groups on groupStat.GroupId equals grp.Id
+                               select new TopGroupViewModel
+                               {
+                                   GroupId = grp.Id,
+                                   GroupName = grp.Name,
+                                   MessageCount = groupStat.MessageCount
+                               }).ToList();
+
+            var sevenDaysAgo = DateTime.Now.Date.AddDays(-7);
+
+            stats.GroupMessagesLast7Days = _context.GroupMessages
+                .Where(m => m.Timestamp >= sevenDaysAgo)
+                .GroupBy(m => DbFunctions.TruncateTime(m.Timestamp))
+                .Select(g => new DailyMessageCountViewModel
+                {
+                    Date = g.Key,
+                    Count = g.Count()
+                })
+                .OrderBy(x => x.Date)
+                .ToList();
+
+            stats.PrivateMessagesLast7Days = _context.PrivateMessages
+                .Where(m => m.Timestamp >= sevenDaysAgo)
+                .GroupBy(m => DbFunctions.TruncateTime(m.Timestamp))
+                .Select(g => new DailyMessageCountViewModel
+                {
+                    Date = g.Key,
+                    Count = g.Count()
+                })
+                .OrderBy(x => x.Date)
+                .ToList();
 
             return View(stats);
         }
 
-        // Tìm tin nhắn có từ khóa nhạy cảm
-        public ActionResult SensitiveMessages(string keyword)
-        {
-            if (string.IsNullOrWhiteSpace(keyword))
-            {
-                keyword = "spam|fuck|shit|bitch"; // Từ khóa mặc định
-            }
-
-            ViewBag.Keyword = keyword;
-
-            var keywords = keyword.ToLower().Split('|');
-
-            var messages = _context.GroupMessages
-                .Include(m => m.Sender)
-                .Include(m => m.Group)
-                .AsEnumerable()
-                .Where(m => keywords.Any(k => m.Content.ToLower().Contains(k)))
-                .OrderByDescending(m => m.Timestamp)
-                .Take(100)
-                .ToList();
-
-            return View(messages);
-        }
 
         // Export tin nhắn ra CSV
         public ActionResult ExportMessages(int? groupId, DateTime? fromDate, DateTime? toDate)
@@ -431,15 +451,19 @@ namespace Online_chat.Controllers
                 .Include(m => m.Group)
                 .AsQueryable();
 
+            // Lọc theo GroupId
             if (groupId.HasValue)
                 query = query.Where(m => m.GroupId == groupId.Value);
 
+            // Lọc theo Từ ngày
             if (fromDate.HasValue)
                 query = query.Where(m => m.Timestamp >= fromDate.Value);
 
+            // Lọc theo Đến ngày (Cộng thêm 1 ngày để lấy trọn ngày cuối)
             if (toDate.HasValue)
                 query = query.Where(m => m.Timestamp <= toDate.Value.AddDays(1));
 
+            // Lấy dữ liệu
             var messages = query
                 .OrderBy(m => m.Timestamp)
                 .Select(m => new
@@ -452,17 +476,32 @@ namespace Online_chat.Controllers
                 })
                 .ToList();
 
-            // Tạo CSV
+            // Tạo nội dung CSV
             var csv = new System.Text.StringBuilder();
+
+            // Header cột
             csv.AppendLine("ID,Group,Sender,Content,Timestamp");
 
+            // Dữ liệu dòng
             foreach (var msg in messages)
             {
-                csv.AppendLine($"{msg.Id},\"{msg.Group}\",\"{msg.Sender}\",\"{msg.Content.Replace("\"", "\"\"")}\",{msg.Timestamp:yyyy-MM-dd HH:mm:ss}");
+
+
+                string line = string.Format("{0},\"{1}\",\"{2}\",\"{3}\",{4:yyyy-MM-dd HH:mm:ss}",
+                    msg.Id,
+                    msg.Group,
+                    msg.Sender,
+                    msg.Content.Replace("\"", "\"\""),
+                    msg.Timestamp);
+
+                csv.AppendLine(line);
             }
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
-            return File(bytes, "text/csv", $"messages_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+
+            string fileName = string.Format("messages_{0:yyyyMMdd_HHmmss}.csv", DateTime.Now);
+
+            return File(bytes, "text/csv", fileName);
         }
 
         [HttpPost]
@@ -481,9 +520,9 @@ namespace Online_chat.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult DeleteUserMessages(string userId) 
+        public ActionResult DeleteUserMessages(string userId)
         {
-            var user = _context.Users.Find(userId); 
+            var user = _context.Users.Find(userId);
             if (user == null)
             {
                 TempData["ErrorMessage"] = "Không tìm thấy user.";
@@ -501,9 +540,10 @@ namespace Online_chat.Controllers
             _context.PrivateMessages.RemoveRange(privateMessages);
             _context.SaveChanges();
 
-            TempData["SuccessMessage"] = $"Đã xóa {count} tin nhắn nhóm và các tin nhắn riêng của user {user.Username}.";
+            TempData["SuccessMessage"] = string.Format("Đã xóa {0} tin nhắn nhóm và các tin nhắn riêng của user {1}.", count, user.Username);
             return RedirectToAction("ManageMessages");
         }
+
 
         // ============================================
         // QUẢN LÝ TIN NHẮN RIÊNG TƯ
@@ -516,11 +556,13 @@ namespace Online_chat.Controllers
 
             var conversations = query
                 .ToList() // Fetch all messages to group in memory
-                .GroupBy(m => new {
+                .GroupBy(m => new
+                {
                     User1Id = m.SenderId < m.ReceiverId ? m.SenderId : m.ReceiverId,
                     User2Id = m.SenderId < m.ReceiverId ? m.ReceiverId : m.SenderId
                 })
-                .Select(g => {
+                .Select(g =>
+                {
                     var lastMessage = g.OrderByDescending(m => m.Timestamp).First();
                     return new AdminConversationViewModel
                     {
@@ -594,7 +636,7 @@ namespace Online_chat.Controllers
             _context.PrivateMessages.RemoveRange(messages);
             _context.SaveChanges();
 
-            TempData["SuccessMessage"] = $"Đã xóa {count} tin nhắn riêng tư.";
+            TempData["SuccessMessage"] = string.Format("Đã xóa {0} tin nhắn riêng tư.", count);
             return RedirectToAction("ManagePrivateMessages");
         }
 
@@ -610,8 +652,6 @@ namespace Online_chat.Controllers
 
             return View(message);
         }
-
-        // Export CSV
         public ActionResult ExportPrivateMessages(string search, int? senderId, int? receiverId)
         {
             var query = _context.PrivateMessages
@@ -619,18 +659,22 @@ namespace Online_chat.Controllers
                 .Include(m => m.Receiver)
                 .AsQueryable();
 
+            // Lọc theo người gửi
             if (senderId.HasValue)
                 query = query.Where(m => m.SenderId == senderId.Value);
 
+            // Lọc theo người nhận
             if (receiverId.HasValue)
                 query = query.Where(m => m.ReceiverId == receiverId.Value);
 
+            // Tìm kiếm nội dung
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.ToLower();
                 query = query.Where(m => m.Content.ToLower().Contains(search));
             }
 
+            // Lấy dữ liệu
             var messages = query
                 .OrderBy(m => m.Timestamp)
                 .Select(m => new
@@ -644,16 +688,29 @@ namespace Online_chat.Controllers
                 })
                 .ToList();
 
+            // Tạo nội dung CSV
             var csv = new System.Text.StringBuilder();
+
             csv.AppendLine("ID,Sender,Receiver,Content,IsRead,Timestamp");
 
             foreach (var msg in messages)
             {
-                csv.AppendLine($"{msg.Id},\"{msg.Sender}\",\"{msg.Receiver}\",\"{msg.Content.Replace("\"", "\"\"")}\",{msg.IsRead},{msg.Timestamp:yyyy-MM-dd HH:mm:ss}");
+                string line = string.Format("{0},\"{1}\",\"{2}\",\"{3}\",{4},{5:yyyy-MM-dd HH:mm:ss}",
+                    msg.Id,
+                    msg.Sender,
+                    msg.Receiver,
+                    msg.Content.Replace("\"", "\"\""), // Xử lý dấu ngoặc kép trong nội dung
+                    msg.IsRead,
+                    msg.Timestamp);
+
+                csv.AppendLine(line);
             }
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
-            return File(bytes, "text/csv", $"private_messages_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+
+            string fileName = string.Format("private_messages_{0:yyyyMMdd_HHmmss}.csv", DateTime.Now);
+
+            return File(bytes, "text/csv", fileName);
         }
 
         [HttpPost]
@@ -704,6 +761,60 @@ namespace Online_chat.Controllers
             return View(settings);
         }
 
+        public JsonResult GetReportedItemContent(int itemId, string itemType)
+        {
+            string content = null;
+            string message = "";
+
+            try
+            {
+                if (itemType == "Message")
+                {
+                    // TÌM GROUP MESSAGE
+                    var groupMessage = _context.GroupMessages.FirstOrDefault(m => m.Id == itemId);
+
+                    if (groupMessage != null)
+                    {
+                        content = groupMessage.Content;
+                    }
+                    else // TÌM PRIVATE MESSAGE
+                    {
+                        var privateMessage = _context.PrivateMessages.FirstOrDefault(m => m.Id == itemId);
+                        if (privateMessage != null)
+                        {
+                            content = privateMessage.Content;
+                        }
+                    }
+
+                    message = content == null ? "Không tìm thấy nội dung tin nhắn." : "Nội dung tin nhắn gốc:";
+                }
+                else if (itemType == "Post")
+                {
+                    var post = _context.Posts.FirstOrDefault(p => p.Id == itemId);
+                    if (post != null) { content = post.Content; }
+
+                    message = content == null ? "Không tìm thấy nội dung bài viết." : "Nội dung bài viết gốc:";
+                }
+                else
+                {
+                    message = "Loại mục không hợp lệ.";
+                }
+
+                if (content != null)
+                {
+                    return Json(new { success = true, content = content, message = message }, JsonRequestBehavior.AllowGet);
+                }
+
+                return Json(new { success = false, message = message }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(string.Format("Lỗi GetReportedItemContent: {0}", ex.Message));
+                return Json(new { success = false, message = "Lỗi server khi tải nội dung chi tiết." }, JsonRequestBehavior.AllowGet);
+            }
+        }
+    
+
         // ============================================
         // BÁO CÁO & THỐNG KÊ
         // ============================================
@@ -734,6 +845,7 @@ namespace Online_chat.Controllers
             TempData["SuccessMessage"] = "Đã giải quyết báo cáo.";
             return RedirectToAction("Reports");
         }
+
 
         public JsonResult GetNewUserData()
         {
@@ -831,6 +943,55 @@ namespace Online_chat.Controllers
             return PartialView("~/Views/Shared/_AdminHeaderNotifications.cshtml", model);
         }
 
-        
+        public JsonResult GetActivityChartData()
+        {
+            try
+            {
+                // Tính mốc 30 ngày trước
+                var thirtyDaysAgo = DateTime.Now.Date.AddDays(-30);
+
+                var lineData = _context.GroupMessages
+                    .Where(m => m.Timestamp >= thirtyDaysAgo)
+                    .ToList() // Kéo dữ liệu về memory trước khi dùng GroupBy/Select phức tạp (An toàn hơn cho C# 5)
+                    .GroupBy(m => m.Timestamp.Date) // Group theo ngày
+                    .Select(g => new { Date = g.Key, Count = g.Count() })
+                    .OrderBy(x => x.Date)
+                    .ToList();
+
+                // Chuyển đổi sang Array và dùng string.Format cho nhãn
+                var lineLabels = lineData.Select(d => string.Format("{0:dd/MM}", d.Date)).ToArray();
+                var lineValues = lineData.Select(d => d.Count).ToArray();
+
+                // 2. Dữ liệu Biểu đồ Tròn (Tỷ lệ Chat Nhóm vs Chat Riêng)
+                var totalGroup = _context.GroupMessages.Count();
+                var totalPrivate = _context.PrivateMessages.Count();
+                var totalMsgs = totalGroup + totalPrivate;
+
+                // Tính tỷ lệ (dùng double để tránh lỗi khi chia)
+                double groupRatio = totalMsgs > 0 ? Math.Round((double)totalGroup / totalMsgs * 100, 1) : 0;
+                double privateRatio = totalMsgs > 0 ? Math.Round((double)totalPrivate / totalMsgs * 100, 1) : 0;
+
+                return Json(new
+                {
+                    success = true,
+                    lineChart = new
+                    {
+                        labels = lineLabels,
+                        data = lineValues
+                    },
+                    ratioChart = new
+                    {
+                        group = groupRatio,
+                        @private = privateRatio 
+                    }
+                }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(string.Format("Lỗi khi tải dữ liệu biểu đồ: {0}", ex.Message));
+                return Json(new { success = false, message = "Lỗi server khi tải dữ liệu." }, JsonRequestBehavior.AllowGet);
+            }
+        }
     }
+
 }

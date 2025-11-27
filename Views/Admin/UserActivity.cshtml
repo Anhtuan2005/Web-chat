@@ -6,82 +6,93 @@
 
 <div class="page-header">
     <h1 class="page-title">Hoạt động người dùng</h1>
-    <p class="page-subtitle">Theo dõi người dùng hoạt động gần đây (30 ngày qua)</p>
+    <p class="page-subtitle">Phân tích hành vi người dùng trong 30 ngày qua</p>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="content-card h-100">
+            <div class="content-card-header">
+                <h5 class="content-card-title"><i class="fas fa-chart-area me-2"></i>Xu hướng tin nhắn</h5>
+            </div>
+            <div class="content-card-body">
+                <canvas id="activityChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="content-card h-100">
+            <div class="content-card-header">
+                <h5 class="content-card-title"><i class="fas fa-chart-pie me-2"></i>Tỷ lệ tương tác</h5>
+            </div>
+            <div class="content-card-body d-flex justify-content-center align-items-center">
+                <canvas id="ratioChart" style="max-height: 250px;"></canvas>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="content-card">
-    <div class="content-card-header">
-        <h5 class="content-card-title">
-            <i class="fas fa-chart-line me-2"></i>
-            Top 50 người dùng hoạt động nhất
+    <div class="content-card-header d-flex justify-content-between align-items-center">
+        <h5 class="content-card-title mb-0">
+            <i class="fas fa-list-ol me-2"></i> Top người dùng tích cực
         </h5>
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary btn-sm active">30 ngày</button>
+            <button class="btn btn-outline-secondary btn-sm">7 ngày</button>
+        </div>
     </div>
 
     <div class="content-card-body">
         <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
                     <tr>
-                        <th style="width: 60px;" class="text-center">Hạng</th>
+                        <th class="text-center" style="width: 60px;">#</th>
                         <th>Người dùng</th>
-                        <th style="width: 150px;" class="text-center">Số tin nhắn</th>
-                        <th style="width: 180px;" class="text-center">Lần cuối hoạt động</th>
-                        <th style="width: 100px;" class="text-center">Hành động</th>
+                        <th class="text-center">Tin nhắn</th>
+                        <th class="text-center">Lần cuối online</th>
+                        <th class="text-center">Hành động</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @{
-                        int rank = 1;
-                        foreach (var item in Model)
-                        {
-                            string badgeClass = rank == 1 ? "bg-warning" : rank == 2 ? "bg-secondary" : rank == 3 ? "bg-danger" : "bg-light text-dark";
-                            string icon = rank == 1 ? "fa-trophy" : rank == 2 ? "fa-medal" : rank == 3 ? "fa-award" : "fa-hashtag";
-
-                            <tr>
-                                <td class="text-center">
-                                    <span class="badge @badgeClass" style="font-size: 1rem;">
-                                        <i class="fas @icon me-1"></i>@rank
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <img src="@(item.User.AvatarUrl ?? "/Content/default-avatar.png")"
-                                             class="rounded-circle me-3"
-                                             style="width: 40px; height: 40px; object-fit: cover; border: 2px solid #e9ecef;">
-                                        <div>
-                                            <strong>@item.User.DisplayName</strong>
-                                            <br>
-                                            <small class="text-muted">
-                                                <i class="fas fa-at"></i>
-                                                @item.User.Username
-                                            </small>
-                                        </div>
+                    @{ int rank = 1; }
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="text-center">
+                                @if (rank == 1)
+                                {<span class="badge bg-warning"><i class="fas fa-crown"></i></span> }
+                                else if (rank == 2)
+                                { <span class="badge bg-secondary">2</span> }
+                                else if (rank == 3)
+                                { <span class="badge bg-danger">3</span> }
+                                else
+                                { <span class="text-muted fw-bold">@rank</span>}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="@(item.User.AvatarUrl ?? "/Content/default-avatar.png")"
+                                         class="rounded-circle me-3" width="40" height="40" style="object-fit:cover">
+                                    <div>
+                                        <div class="fw-bold">@item.User.DisplayName</div>
+                                        <div class="small text-muted">@@@item.User.Username</div>
                                     </div>
-                                </td>
-                                <td class="text-center">
-                                    <h5 class="mb-0">
-                                        <span class="badge bg-primary" style="font-size: 1.1rem;">
-                                            @item.MessageCount
-                                        </span>
-                                    </h5>
-                                </td>
-                                <td class="text-center">
-                                    <small class="text-muted">
-                                        <i class="fas fa-clock me-1"></i>
-                                        @item.LastActivity.ToString("dd/MM/yyyy HH:mm")
-                                    </small>
-                                </td>
-                                <td class="text-center">
-                                    <a href="@Url.Action("EditUser", new { id = item.User.Id })"
-                                       class="btn btn-sm btn-outline-primary"
-                                       title="Xem chi tiết">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                </td>
-                            </tr>
-
-                            rank++;
-                        }
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-info text-dark">@item.MessageCount</span>
+                            </td>
+                            <td class="text-center small text-muted">
+                                @item.LastActivity.ToString("dd/MM/yyyy HH:mm")
+                            </td>
+                            <td class="text-center">
+                                <a href="@Url.Action("EditUser", new { id = item.User.Id })" class="btn btn-sm btn-light text-primary">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        { rank++; }
                     }
                 </tbody>
             </table>
@@ -89,9 +100,60 @@
     </div>
 </div>
 
-<style>
-    .table tbody tr:hover {
-        background-color: rgba(0, 123, 255, 0.05);
-        transition: background-color 0.2s;
-    }
-</style>
+@section scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function loadChartData() {
+            $.ajax({
+                url: '@Url.Action("GetActivityChartData", "Admin")',
+                type: 'GET',
+                dataType: 'json',
+                success: function (response) {
+                    if (response.success) {
+                        // 1. Biểu đồ Đường (Xu hướng tin nhắn)
+                        const ctx1 = document.getElementById('activityChart').getContext('2d');
+                        new Chart(ctx1, {
+                            type: 'line',
+                            data: {
+                                labels: response.lineChart.labels, // Dữ liệu ngày thực tế
+                                datasets: [{
+                                    label: 'Số lượng tin nhắn nhóm',
+                                    data: response.lineChart.data, // Số lượng tin nhắn thực tế
+                                    borderColor: '#4e73df',
+                                    backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                                    tension: 0.3,
+                                    fill: true
+                                }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false }
+                        });
+
+                        // 2. Biểu đồ Tròn (Tỷ lệ tương tác)
+                        const ctx2 = document.getElementById('ratioChart').getContext('2d');
+                        new Chart(ctx2, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['Chat Nhóm', 'Chat Riêng'],
+                                datasets: [{
+                                    data: [response.ratioChart.group, response.ratioChart.private], // Tỷ lệ thực tế
+                                    backgroundColor: ['#1cc88a', '#36b9cc']
+                                }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false }
+                        });
+
+                    } else {
+                        console.error("Lỗi khi tải dữ liệu biểu đồ:", response.message);
+                    }
+                },
+                error: function () {
+                    console.error("Không thể kết nối đến API lấy dữ liệu biểu đồ.");
+                }
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            loadChartData();
+        });
+    </script>
+}

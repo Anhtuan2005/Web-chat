@@ -76,15 +76,15 @@
 
         <!-- Message Area -->
         <div class="message-area" id="messagesList"></div>
-		
-		<div id="you-blocked-banner" class="blocked-banner" style="display: none;">
-			<p>Bạn đã chặn tin nhắn và cuộc gọi từ tài khoản này.</p>
-			<button id="unblock-user-btn" class="btn btn-primary">Bỏ chặn</button>
-		</div>
 
-		<div id="they-blocked-banner" class="blocked-banner" style="display: none;">
-			<p>Bạn không thể trả lời cuộc trò chuyện này.</p>
-		</div>
+        <div id="you-blocked-banner" class="blocked-banner" style="display: none;">
+            <p>Bạn đã chặn tin nhắn và cuộc gọi từ tài khoản này.</p>
+            <button id="unblock-user-btn" class="btn btn-primary">Bỏ chặn</button>
+        </div>
+
+        <div id="they-blocked-banner" class="blocked-banner" style="display: none;">
+            <p>Bạn không thể trả lời cuộc trò chuyện này.</p>
+        </div>
 
 
         <!-- Typing Indicator -->
@@ -606,7 +606,53 @@
             </div>
         </div>
     </div>
+    <div class="modal fade" id="reportProblemModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold">Chọn vấn đề để báo cáo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    <p class="text-muted small mb-3">
+                        Nếu bạn nhận thấy ai đó đang gặp nguy hiểm, đừng chần chừ mà hãy tìm ngay sự giúp đỡ.
+                    </p>
+                    <input type="hidden" id="reportConversationIdVal" value="" />
 
+                    <div class="list-group list-group-flush">
+                        <button class="list-group-item list-group-item-action report-conversation-reason"
+                                data-reason="Quấy rối">
+                            Quấy rối <i class="fas fa-chevron-right float-end"></i>
+                        </button>
+                        <button class="list-group-item list-group-item-action report-conversation-reason"
+                                data-reason="Tự tử hoặc tự gây thương tích">
+                            Tự tử hoặc tự gây thương tích <i class="fas fa-chevron-right float-end"></i>
+                        </button>
+                        <button class="list-group-item list-group-item-action report-conversation-reason"
+                                data-reason="Giả mạo người khác">
+                            Giả mạo người khác <i class="fas fa-chevron-right float-end"></i>
+                        </button>
+                        <button class="list-group-item list-group-item-action report-conversation-reason"
+                                data-reason="Chia sẻ nội dung không phù hợp">
+                            Chia sẻ nội dung không phù hợp <i class="fas fa-chevron-right float-end"></i>
+                        </button>
+                        <button class="list-group-item list-group-item-action report-conversation-reason"
+                                data-reason="Ngôn từ gây thù ghét">
+                            Ngôn từ gây thù ghét <i class="fas fa-chevron-right float-end"></i>
+                        </button>
+                        <button class="list-group-item list-group-item-action report-conversation-reason"
+                                data-reason="Bán hàng trái phép">
+                            Bán hàng trái phép <i class="fas fa-chevron-right float-end"></i>
+                        </button>
+                        <button class="list-group-item list-group-item-action report-conversation-reason"
+                                data-reason="Vấn đề khác">
+                            Vấn đề khác <i class="fas fa-chevron-right float-end"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section scripts {

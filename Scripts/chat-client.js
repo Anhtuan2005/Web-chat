@@ -1885,34 +1885,20 @@ $(function () {
         }
     });
 
-    // Report Conversation
     $('body').on('click', '.conv-report-btn', function (e) {
         e.preventDefault();
         e.stopPropagation();
-        const username = $(this).data('username');
-        const reason = prompt(`Vui lòng nhập lý do báo cáo ${username}:`);
 
-        if (reason && reason.trim()) {
-            $.ajax({
-                url: urls.reportConversation,
-                type: 'POST',
-                data: {
-                    __RequestVerificationToken: antiForgeryToken,
-                    reportedUsername: username,
-                    reason: reason.trim()
-                },
-                success: function (response) {
-                    if (response.success) {
-                        alert('Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét trường hợp này.');
-                    } else {
-                        alert('Không thể gửi báo cáo: ' + (response.message || 'Lỗi không xác định.'));
-                    }
-                },
-                error: function () {
-                    alert('Lỗi kết nối khi gửi báo cáo.');
-                }
-            });
-        }
+        const reportedUsername = $(this).data('username');
+        const $conversationItem = $(this).closest('.list-group-item');
+        const reportedUserId = $conversationItem.data('id'); // Hoặc data-id, tùy cách bạn lưu trữ User ID
+
+        $('#reportProblemModal').data('reported-username', reportedUsername);
+
+        $('#reportProblemModal').modal('show');
+
+        // Đóng menu hội thoại sau khi click
+        $(this).closest('.conversation-menu').hide();
     });
 
     // ========== MESSAGE SEARCH ==========
@@ -2174,15 +2160,46 @@ $(function () {
 
         alert('Một nhóm đã cập nhật ảnh đại diện.');
     };
+    $(document).on('click', '#partner-action-block', function (e) {
+        e.preventDefault();
+        var userIdToBlock = $(this).data('userid');
+        var token = $('input[name="__RequestVerificationToken"]').val();
 
+        if (!userIdToBlock) {
+            alert("Không tìm thấy ID người dùng.");
+            return;
+        }
+
+        if (!confirm('Bạn có chắc chắn muốn chặn người dùng này?')) return;
+
+        $.ajax({
+            url: '/Friend/BlockUser',
+            type: 'POST',
+            data: {
+                blockedId: userIdToBlock,
+                __RequestVerificationToken: token // BẮT BUỘC để tránh lỗi 500 do thiếu token
+            },
+            success: function (response) {
+                if (response.success) {
+                    alert(response.message);
+                    $('#partnerProfileModal').modal('hide');
+                    location.reload(); // Tải lại trang để cập nhật danh sách
+                } else {
+                    alert("Lỗi: " + response.message);
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error(xhr.responseText);
+                alert("Đã xảy ra lỗi kết nối: " + error);
+            }
+        });
+    });
     function loadConversationInfo() {
-        // This function now handles ALL info sidebar content, including nicknames and avatar sections.
 
         if (currentChat.mode === 'private') {
             $('#nickname-section').show();
             $('#change-group-avatar-btn').hide();
 
-            // Populate nicknames
             const conversationId = getConversationId();
             const nicks = chatNicknames[conversationId] || {};
             $('#my-nickname-input').val(nicks[currentUsername] || '');
@@ -2193,7 +2210,6 @@ $(function () {
 
             // Populate avatar
             const avatarSrc = $('#chat-header-avatar').attr('src');
-            // Ensure wrapper contains a simple img tag for private chat
             $('#info-sidebar-avatar-wrapper')
                 .html(`<img id="info-sidebar-avatar" src="${avatarSrc}" />`)
                 .attr('data-userid', currentChat.partnerId); 
@@ -2822,6 +2838,12 @@ $(function () {
         });
     }
 
+    chatHub.client.forceLogout = function () {
+        alert("Tài khoản của bạn đã bị khóa bởi quản trị viên.");
+
+        window.location.href = "/Account/Logout";
+    };
+
     $('#record-voice-btn').on('click', function () {
         if (isRecording) {
             stopRecording();
@@ -2830,6 +2852,15 @@ $(function () {
         }
     });
 
+    $('#security-menu .report-abuse-btn').on('click', function () {
+        $('#security-menu').removeClass('show');
+
+        var reportedUserId = $(this).data('user-id');
+
+        $('#reportProblemModal').modal('show');
+
+        $('#reportProblemModal').data('reported-user-id', reportedUserId);
+    });
 
     // ==========================================
     // XỬ LÝ NÚT BẬT/TẮT CAMERA VÀ MIC 
@@ -2957,15 +2988,12 @@ $(function () {
     });
 
 
-    // ✅ Handle the actual image sending - FIXED VERSION
     $('#sendImageButton').off('click').on('click', function () {
-        // ✅ Kiểm tra tempFilesToSend thay vì input
         if (!tempFilesToSend || tempFilesToSend.length === 0) {
             alert('Vui lòng chọn file để gửi.');
             return;
         }
 
-        // ✅ Dùng trực tiếp tempFilesToSend
         const formData = new FormData();
         tempFilesToSend.forEach(file => {
             formData.append('files', file);
@@ -2994,7 +3022,6 @@ $(function () {
                         const messageJson = JSON.stringify(contentObj);
                         const tempId = `temp_file_${Date.now()}_${Math.random()}`;
 
-                        // Render message locally
                         renderMessage({
                             senderUsername: currentUsername,
                             content: messageJson,
@@ -3004,7 +3031,6 @@ $(function () {
                             messageId: tempId
                         });
 
-                        // Send via SignalR
                         if (currentChat.mode === 'private') {
                             chatHub.server.sendPrivateMessage(
                                 currentChat.partnerUsername,
@@ -3017,17 +3043,14 @@ $(function () {
                         }
                     });
 
-                    // Hide AI welcome screen if in AI mode
                     if (currentChat.mode === 'ai') {
                         $('#ai-welcome-screen').hide();
                         $('.message-area').show();
                     }
 
-                    // --- FIX: Refresh conversation info if sidebar is open ---
                     if ($('#conversation-info-sidebar').is(':visible')) {
                         loadConversationInfo();
                     }
-                    // --- END FIX ---
 
                 } else {
                     alert('Lỗi upload: ' + (response.message || 'Không rõ nguyên nhân'));
@@ -3038,7 +3061,6 @@ $(function () {
                 alert('Lỗi kết nối: ' + error);
             },
             complete: function () {
-                // ✅ Reset everything
                 $btn.prop('disabled', false).text('Gửi');
                 $('#imagePreviewModal').modal('hide');
                 $('#imagePreviewContainer').empty();
@@ -3694,7 +3716,6 @@ function switchChat(target) {
             }
         });
     }
-
     $(document).ready(function () {
         $('.conversation-list').show().css('display', 'flex');
         console.log('✅ Conversation list forced to display');
@@ -3704,8 +3725,49 @@ function switchChat(target) {
     console.log('✅ Partner Profile Modal initialized');
     console.log('✅ Enhanced message actions initialized');
 
-    // ========== JUMP TO SEARCHED MESSAGE ==========
-    // Add CSS for highlight effect
+    $('body').on('click', '#info-action-report', function (e) {
+        e.preventDefault();
+
+        if (currentChat.mode !== 'private' || !currentChat.partnerUsername) {
+            alert("Tính năng báo cáo chỉ hoạt động trong cuộc trò chuyện riêng tư.");
+            return;
+        }
+
+        const reportedUserId = currentChat.partnerId;
+        const reportedUsername = currentChat.partnerUsername;
+
+        $('#reportProblemModal').data('reported-username', reportedUsername);
+        $('#reportProblemModal').data('reported-user-id', reportedUserId);
+
+        $('#reportProblemModal').modal('show');
+    });
+
+    $('#reportProblemModal').on('click', '.report-submit-btn', function () {
+        const reason = $(this).data('reason');
+        const reportedUsername = $('#reportProblemModal').data('reported-username');
+
+        if (!reportedUsername || !reason) return;
+
+        // Gửi AJAX POST yêu cầu báo cáo về FriendController
+        $.ajax({
+            url: urls.reportConversation, // urls.reportConversation phải trỏ đến Friend/ReportConversation
+            type: 'POST',
+            data: {
+                __RequestVerificationToken: antiForgeryToken,
+                reportedUsername: reportedUsername,
+                reason: reason
+            },
+            success: function (response) {
+                $('#reportProblemModal').modal('hide');
+                if (response.success) {
+                    alert('Báo cáo đã được gửi đi thành công.');
+                } else {
+                    alert('Lỗi: ' + (response.message || 'Không thể gửi báo cáo.'));
+                }
+            }
+        });
+    });
+
     $('<style>')
         .prop('type', 'text/css')
         .html(`
@@ -3720,35 +3782,19 @@ function switchChat(target) {
         `)
         .appendTo('head');
 
-    // Add click handler for search results
 
     $('body').on('click', '.search-result-item', function () {
-
         const messageId = $(this).data('message-id');
-
         if (!messageId) return;
-
-
-
         const $message = $(`.chat-message[data-message-id="${messageId}"]`);
-
         const $messagesList = $('#messagesList');
-
-
-
         if ($message.length) {
-
-            // Scroll message into view (centered)
 
             $messagesList.animate({
 
                 scrollTop: $messagesList.scrollTop() + $message.position().top - ($messagesList.height() / 2) + ($message.height() / 2)
 
             }, 300);
-
-
-
-            // Add highlight class and remove after animation
 
             $message.addClass('highlight');
 

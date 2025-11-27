@@ -287,6 +287,26 @@
                 display: none;
             }
 
+        .post-menu .dropdown-menu {
+            border-radius: var(--border-radius-medium);
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--border-color);
+            padding: 8px 0;
+        }
+
+        .post-menu .dropdown-item {
+            font-size: 14px;
+            padding: 8px 16px;
+            color: var(--text-color-primary);
+        }
+
+            .post-menu .dropdown-item:hover {
+                background-color: var(--background-color);
+            }
+
+
+
+
         .post-body {
             padding: 0 16px 12px 16px;
         }
@@ -654,39 +674,26 @@
             font-weight: bold;
             backdrop-filter: blur(2px);
         }
-
-        .dropdown-submenu {
-            position: relative;
+        #reportPostModal .modal-content {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         }
 
-            .dropdown-submenu > .dropdown-menu {
-                top: 0;
-                left: 100%;
-                margin-top: -6px;
-                margin-left: -1px;
-                border-radius: 0 6px 6px 6px;
-            }
+        #reportPostModal .list-group-item {
+            border: none;
+            padding-left: 0;
+            padding-right: 0;
+            font-weight: 600;
+            color: #050505;
+            font-size: 15px;
+        }
 
-            .dropdown-submenu:hover > .dropdown-menu {
-                display: block;
-            }
-
-            .dropdown-submenu > a:after {
-                display: block;
-                content: " ";
-                float: right;
-                width: 0;
-                height: 0;
-                border-color: transparent;
-                border-style: solid;
-                border-width: 5px 0 5px 5px;
-                border-left-color: #ccc;
-                margin-top: 5px;
-                margin-right: -10px;
-            }
-
-            .dropdown-submenu:hover > a:after {
-                border-left-color: #fff;
+            #reportPostModal .list-group-item:hover {
+                background-color: #f0f2f5;
+                border-radius: 8px;
+                padding-left: 10px;
+                padding-right: 10px;
             }
     </style>
 }
@@ -764,6 +771,44 @@
     <a class="next-btn" onclick="changeImage(1)">&#10095;</a>
     <img class="gallery-content" id="galleryImage">
     <div id="galleryCaption"></div>
+</div>
+<div class="modal fade" id="reportPostModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">Chọn vấn đề để báo cáo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <p class="text-muted small mb-3">Nếu bạn nhận thấy ai đó đang gặp nguy hiểm, đừng chần chừ mà hãy tìm ngay sự giúp đỡ trước khi báo cáo với Online Chat.</p>
+                <input type="hidden" id="reportPostIdVal" value="" />
+
+                <div class="list-group list-group-flush report-options">
+                    <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 report-reason-item" data-reason="Quấy rối">
+                        Quấy rối <i class="fas fa-chevron-right text-muted small"></i>
+                    </button>
+                    <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 report-reason-item" data-reason="Tự tử hoặc tự gây thương tích">
+                        Tự tử hoặc tự gây thương tích <i class="fas fa-chevron-right text-muted small"></i>
+                    </button>
+                    <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 report-reason-item" data-reason="Giả mạo người khác">
+                        Giả mạo người khác <i class="fas fa-chevron-right text-muted small"></i>
+                    </button>
+                    <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 report-reason-item" data-reason="Chia sẻ nội dung không phù hợp">
+                        Chia sẻ nội dung không phù hợp <i class="fas fa-chevron-right text-muted small"></i>
+                    </button>
+                    <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 report-reason-item" data-reason="Hate speech">
+                        Ngôn từ gây thù ghét <i class="fas fa-chevron-right text-muted small"></i>
+                    </button>
+                    <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 report-reason-item" data-reason="Bán hàng trái phép">
+                        Bán hàng trái phép <i class="fas fa-chevron-right text-muted small"></i>
+                    </button>
+                    <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 report-reason-item" data-reason="Vi phạm khác">
+                        Vấn đề khác <i class="fas fa-chevron-right text-muted small"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section scripts {
@@ -958,7 +1003,7 @@
 
         function loadChatUsers() {
             $.ajax({
-                url: '@Url.Action("GetChatUsers", "Chat")',
+                url: '@Url.Action("GetFriendsToShare", "Feed")',
                 type: 'GET',
                 success: function(data) {
                     if (data && data.length > 0) {
@@ -1149,8 +1194,69 @@
                 console.error('[Index] Response:', xhr.responseText);
             }
         });
-    }
+        }
+
+        $(document).on('click', '.hide-post-btn', function (e) {
+            e.preventDefault();
+            if(confirm("Bạn có muốn ẩn bài viết này không?")) {
+                $(this).closest('.post-card').fadeOut(300, function() {
+                    $(this).remove(); // Xóa khỏi giao diện
+                });
+            }
+        });
+
+        // 2. Xử lý nút MỞ MODAL BÁO CÁO
+        $(document).on('click', '.trigger-report-modal', function (e) {
+            e.preventDefault();
+            var postId = $(this).data('post-id');
+            // Lưu PostId vào thẻ input ẩn trong modal để lát nữa gửi đi
+            $('#reportPostIdVal').val(postId);
+            // Hiện modal
+            $('#reportPostModal').modal('show');
+        });
+
+        // 3. Xử lý khi chọn LÝ DO BÁO CÁO
+        $(document).on('click', '.report-reason-item', function () {
+            var reason = $(this).data('reason');
+            var postId = $('#reportPostIdVal').val();
+            var $item = $(this); // Lưu lại element đang click để làm hiệu ứng loading
+
+            // Hiệu ứng loading
+            $item.css('opacity', '0.5');
+
+            $.ajax({
+                url: '@Url.Action("ReportPost", "Feed")',
+                type: 'POST',
+                data: {
+                    "__RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val(),
+                    postId: postId,
+                    reason: reason
+                },
+                success: function (response) {
+                    $('#reportPostModal').modal('hide');
+                    $item.css('opacity', '1');
+
+                    if (response.success) {
+                        alert("Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét trường hợp này.");
+                        // Ẩn bài viết luôn cho đỡ ngứa mắt
+                        $('.post-card[data-post-id="' + postId + '"]').fadeOut();
+                    } else {
+                        alert(response.message || "Không thể gửi báo cáo.");
+                    }
+                },
+                error: function() {
+                    alert("Lỗi kết nối server.");
+                    $item.css('opacity', '1');
+                }
+            });
+        });
 
     setInterval(loadStories, 30000);
+
+    $(document).on('click', '.dropdown-submenu a.dropdown-toggle', function(e){
+        $(this).next('ul').toggle();
+        e.stopPropagation();
+        e.preventDefault();
+    });
     </script>
 }

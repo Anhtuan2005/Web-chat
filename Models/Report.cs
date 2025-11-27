@@ -29,6 +29,7 @@ namespace Online_chat.Models
         [MaxLength(500)]
         public string Reason { get; set; }
 
+        public int? MessageId { get; set; }
         public DateTime CreatedAt { get; set; } // Renamed from Timestamp
 
         public bool IsResolved { get; set; } // New property

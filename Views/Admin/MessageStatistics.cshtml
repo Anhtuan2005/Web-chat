@@ -1,0 +1,172 @@
+@model Online_chat.Models.MessageStatisticsViewModel
+@{
+    ViewBag.Title = "Thống kê tin nhắn";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<h2>@ViewBag.Title</h2>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="info-box">
+            <span class="info-box-icon bg-info"><i class="fas fa-envelope"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Tổng số tin nhắn</span>
+                <span class="info-box-number">@Model.TotalMessages</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="info-box">
+            <span class="info-box-icon bg-success"><i class="fas fa-users"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Tin nhắn nhóm</span>
+                <span class="info-box-number">@Model.TotalGroupMessages</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="info-box">
+            <span class="info-box-icon bg-warning"><i class="fas fa-user-secret"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Tin nhắn riêng tư</span>
+                <span class="info-box-number">@Model.TotalPrivateMessages</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="info-box">
+            <span class="info-box-icon bg-danger"><i class="fas fa-users-cog"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Tổng số nhóm</span>
+                <span class="info-box-number">@Model.TotalGroups</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Top 10 người gửi tin nhắn nhóm nhiều nhất</h3>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Tên người dùng</th>
+                            <th>Số lượng tin nhắn</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.TopGroupSenders)
+                        {
+                            <tr>
+                                <td>@item.SenderUsername</td>
+                                <td>@item.MessageCount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Top 10 người gửi tin nhắn riêng tư nhiều nhất</h3>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Tên người dùng</th>
+                            <th>Số lượng tin nhắn</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.TopPrivateSenders)
+                        {
+                            <tr>
+                                <td>@item.SenderUsername</td>
+                                <td>@item.MessageCount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Top 10 nhóm có nhiều tin nhắn nhất</h3>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Tên nhóm</th>
+                            <th>Số lượng tin nhắn</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.TopGroups)
+                        {
+                            <tr>
+                                <td>@item.GroupName</td>
+                                <td>@item.MessageCount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Thống kê tin nhắn trong 7 ngày gần nhất</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="messageChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    var ctx = document.getElementById('messagesChart').getContext('2d');
+    var messagesChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: @Html.Raw(Json.Encode(Model.GroupMessagesLabels)),
+            datasets: [{
+                label: 'Tin nhắn nhóm',
+                data: @Html.Raw(Json.Encode(Model.GroupMessagesData)),
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }, {
+                label: 'Tin nhắn riêng tư',
+                data: @Html.Raw(Json.Encode(Model.PrivateMessagesData)),
+                borderColor: 'rgb(255, 99, 132)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    </script>
+}

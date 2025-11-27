@@ -431,8 +431,8 @@
     var currentUserId = parseInt('@(ViewBag.CurrentUserId ?? 0)');
 
     // Hàm lấy Token
-    function getAntiForgeryToken() {
-        return document.querySelector('#storyActionForm input[name="__RequestVerificationToken"]').value;
+    function getStoryAntiForgeryToken() {
+        return $('input[name="__RequestVerificationToken"]').val();
     }
 
     // Toggle Menu ...
@@ -482,7 +482,7 @@
                 'X-Requested-With': 'XMLHttpRequest'
             },
             body: new URLSearchParams({
-                '__RequestVerificationToken': getAntiForgeryToken(),
+                '__RequestVerificationToken': getStoryAntiForgeryToken(),
                 'postId': story.id,
                 'privacy': privacy
             })
@@ -509,7 +509,7 @@
                 'X-Requested-With': 'XMLHttpRequest'
             },
             body: new URLSearchParams({
-                '__RequestVerificationToken': getAntiForgeryToken(),
+                '__RequestVerificationToken': getStoryAntiForgeryToken(),
                 'postId': story.id
             })
         })

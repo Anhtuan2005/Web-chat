@@ -1,11 +1,113 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
+﻿@model IEnumerable<Online_chat.Models.User>
+@{
+    ViewBag.Title = "Danh sách User bị khóa";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
 
-namespace WebChat_Online_MVC.Views.Admin
-{
-	public class BannedUsers
-	{
-	}
+<div class="page-header">
+    <h1 class="page-title text-danger">Danh sách tài khoản bị khóa</h1>
+    <p class="page-subtitle">Quản lý và mở khóa các tài khoản vi phạm</p>
+</div>
+
+<div class="content-card">
+    <div class="content-card-header">
+        <h5 class="content-card-title">
+            <i class="fas fa-user-lock me-2"></i> User đang bị khóa
+        </h5>
+        <a href="@Url.Action("ManageUsers", "Admin")" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Quay lại danh sách
+        </a>
+    </div>
+
+    <div class="content-card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Ngày bị khóa</th>
+                        <th>Ngày mở khóa</th>
+                        <th>Thời gian còn lại</th>
+                        <th class="text-center">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="fas fa-check-circle me-2 text-success"></i> Hiện không có tài khoản nào bị khóa.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var user in Model)
+                        {
+                            var timeLeft = user.BanExpiresAt.Value - DateTime.Now;
+                            string timeString = "";
+                            if (timeLeft.TotalDays > 365) { timeString = "Vĩnh viễn"; }
+                            else if (timeLeft.TotalDays >= 1) { timeString = (int)timeLeft.TotalDays + " ngày"; }
+                            else { timeString = (int)timeLeft.TotalHours + " giờ"; }
+
+                            <tr id="row-@user.Id">
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="@(user.AvatarUrl ?? "/Content/default-avatar.png")"
+                                             class="rounded-circle me-2" width="32" height="32" style="object-fit:cover">
+                                        <strong class="text-danger">@user.Username</strong>
+                                    </div>
+                                </td>
+                                <td>@user.Email</td>
+                                <td><small>@DateTime.Now.ToString("dd/MM/yyyy")</small></td>
+                                <td><strong>@user.BanExpiresAt.Value.ToString("dd/MM/yyyy HH:mm")</strong></td>
+                                <td>
+                                    <span class="badge bg-warning text-dark">@timeString</span>
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-success unban-btn"
+                                            data-id="@user.Id"
+                                            data-username="@user.Username">
+                                        <i class="fas fa-unlock me-1"></i> Mở khóa
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        $(document).ready(function () {
+            $('.unban-btn').click(function () {
+                var btn = $(this);
+                var userId = btn.data('id');
+                var username = btn.data('username');
+
+                if (confirm('Bạn có chắc chắn muốn mở khóa cho tài khoản "' + username + '" không?')) {
+                    $.ajax({
+                        url: '/Admin/UnbanUser',
+                        type: 'POST',
+                        data: { userId: userId },
+                        success: function (res) {
+                            if (res.success) {
+                                alert(res.message);
+                                $('#row-' + userId).fadeOut(300, function() { $(this).remove(); });
+                            } else {
+                                alert(res.message);
+                            }
+                        },
+                        error: function () {
+                            alert('Lỗi kết nối server.');
+                        }
+                    });
+                }
+            });
+        });
+    </script>
 }

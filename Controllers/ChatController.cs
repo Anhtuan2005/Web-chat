@@ -427,9 +427,10 @@ namespace Online_chat.Controllers
                     .Include(m => m.ForwardedFrom)
                     .Include(m => m.Reactions.Select(r => r.User))  // ← THÊM DÒNG NÀY
                     .Where(m =>
-                        (m.SenderId == currentUser.Id && m.ReceiverId == partner.Id) ||
-                        (m.SenderId == partner.Id && m.ReceiverId == currentUser.Id))
-                    .OrderBy(m => m.Timestamp)
+                ((m.SenderId == currentUser.Id && m.ReceiverId == partner.Id) ||
+                 (m.SenderId == partner.Id && m.ReceiverId == currentUser.Id))
+                && !m.IsDeleted) 
+            .OrderBy(m => m.Timestamp)
                     .ToList();
 
                 var result = messages.Select(m => new
@@ -519,11 +520,15 @@ namespace Online_chat.Controllers
             }
 
             var messagesToDelete = _context.PrivateMessages
-                .Where(m => (m.SenderId == currentUser.Id & m.ReceiverId == partnerUser.Id) ||
-                             (m.SenderId == partnerUser.Id & m.ReceiverId == currentUser.Id))
+                .Where(m => (m.SenderId == currentUser.Id && m.ReceiverId == partnerUser.Id) ||
+                            (m.SenderId == partnerUser.Id && m.ReceiverId == currentUser.Id))
                 .ToList();
 
-            _context.PrivateMessages.RemoveRange(messagesToDelete);
+            foreach (var msg in messagesToDelete)
+            {
+                msg.IsDeleted = true;
+            }
+
             _context.SaveChanges();
 
             return Json(new { success = true });
@@ -543,32 +548,82 @@ namespace Online_chat.Controllers
 
             var messages = _context.PrivateMessages
                 .Where(m => (m.SenderId == currentUser.Id && m.ReceiverId == partnerUser.Id) ||
-                             (m.SenderId == partnerUser.Id& m.ReceiverId == currentUser.Id))
+                             (m.SenderId == partnerUser.Id && m.ReceiverId == currentUser.Id))
                 .OrderByDescending(m => m.Timestamp)
                 .ToList();
 
+            // Parse JSON content để lấy type
             var images = messages
-                .Where(m => m.MessageType == "image")
                 .Select(m => new
                 {
-                    Url = GetContentFromJson(m.Content), 
-                    Timestamp = m.Timestamp.ToString("dd/MM/yyyy")
+                    Message = m,
+                    ParsedContent = ParseMessageContent(m.Content)
+                })
+                .Where(x => x.ParsedContent != null && x.ParsedContent.Type == "image")
+                .Select(x => new
+                {
+                    Url = x.ParsedContent.Content,
+                    Timestamp = x.Message.Timestamp.ToString("dd/MM/yyyy")
+                })
+                .Take(20)
+                .ToList();
+
+            var videos = messages
+                .Select(m => new
+                {
+                    Message = m,
+                    ParsedContent = ParseMessageContent(m.Content)
+                })
+                .Where(x => x.ParsedContent != null && x.ParsedContent.Type == "video")
+                .Select(x => new
+                {
+                    Url = x.ParsedContent.Content,
+                    Timestamp = x.Message.Timestamp.ToString("dd/MM/yyyy")
                 })
                 .Take(20)
                 .ToList();
 
             var files = messages
-                .Where(m => m.MessageType == "file")
                 .Select(m => new
                 {
-                    Url = GetContentFromJson(m.Content),
-                    FileName = GetFileNameFromJson(m.Content),
-                    Timestamp = m.Timestamp.ToString("dd/MM/yyyy")
+                    Message = m,
+                    ParsedContent = ParseMessageContent(m.Content)
+                })
+                .Where(x => x.ParsedContent != null && x.ParsedContent.Type == "file")
+                .Select(x => new
+                {
+                    Url = x.ParsedContent.Content,
+                    FileName = x.ParsedContent.FileName ?? "File",
+                    FileSize = x.ParsedContent.FileSize ?? "N/A",
+                    Timestamp = x.Message.Timestamp.ToString("dd/MM/yyyy")
                 })
                 .Take(20)
                 .ToList();
 
-            return Json(new { success = true, images = images, files = files }, JsonRequestBehavior.AllowGet);
+            // Gộp ảnh và video vào một danh sách
+            var allMedia = images.Cast<object>().Concat(videos.Cast<object>()).ToList();
+
+            return Json(new { success = true, images = allMedia, files = files }, JsonRequestBehavior.AllowGet);
+        }
+
+        private class MessageContentModel
+        {
+            public string Type { get; set; }
+            public string Content { get; set; }
+            public string FileName { get; set; }
+            public string FileSize { get; set; }
+        }
+
+        private MessageContentModel ParseMessageContent(string jsonContent)
+        {
+            try
+            {
+                return Newtonsoft.Json.JsonConvert.DeserializeObject<MessageContentModel>(jsonContent);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         // Helper methods pour extraire les données JSON

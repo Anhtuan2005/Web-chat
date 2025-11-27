@@ -72,8 +72,9 @@ namespace Online_chat.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public ActionResult Login()
+        public ActionResult Login(string returnUrl)
         {
+            ViewBag.ReturnUrl = returnUrl;
             return View();
         }
 
@@ -83,7 +84,29 @@ namespace Online_chat.Controllers
         {
             var user = _context.Users.FirstOrDefault(u => u.Username == username && u.IsDeleted == false);
 
-            if (user != null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            if (user == null)
+            {
+                ViewBag.Error = "Tên đăng nhập hoặc mật khẩu không đúng.";
+                return View();
+            }
+
+            if (user.BanExpiresAt != null && user.BanExpiresAt > DateTime.Now)
+            {
+                var timeLeft = user.BanExpiresAt.Value - DateTime.Now;
+                string timeMessage = "";
+
+                if (timeLeft.TotalDays >= 1)
+                    timeMessage = $"{(int)timeLeft.TotalDays} ngày";
+                else if (timeLeft.TotalHours >= 1)
+                    timeMessage = $"{(int)timeLeft.TotalHours} giờ";
+                else
+                    timeMessage = $"{(int)timeLeft.TotalMinutes} phút";
+
+                ViewBag.Error = $"Tài khoản của bạn đã bị khóa. Vui lòng quay lại sau {timeMessage}.";
+                return View();
+            }
+
+            if (BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
                 FormsAuthentication.SetAuthCookie(user.Username, false);
 

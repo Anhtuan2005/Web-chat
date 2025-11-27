@@ -14,23 +14,38 @@
             </div>
 
             @* --- NÚT MENU (XÓA, SỬA...) --- *@
-            <div class="post-menu dropdown">
-                <button class="dropdown-toggle" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-h"></i></button>
-                <ul class="dropdown-menu dropdown-menu-right">
-                    @if (item.UserId == (int?)ViewBag.CurrentUserId)
-                    {
-                        <li><a href="#" class="dropdown-item delete-post-btn" data-post-id="@item.Id">Xóa bài viết</a></li>
-                        <li class="dropdown-submenu">
-                            <a href="#" class="dropdown-item dropdown-toggle" data-bs-toggle="dropdown">Quyền riêng tư</a>
-                            <ul class="dropdown-menu">
-                                <li><a href="#" class="dropdown-item privacy-option" data-post-id="@item.Id" data-privacy="Public">Công khai</a></li>
-                                <li><a href="#" class="dropdown-item privacy-option" data-post-id="@item.Id" data-privacy="Private">Riêng tư</a></li>
-                                <li><a href="#" class="dropdown-item privacy-option" data-post-id="@item.Id" data-privacy="Friends">Bạn bè</a></li>
-                            </ul>
-                        </li>
-                    }
-                </ul>
-            </div>
+        <div class="post-menu dropdown">
+            <button class="dropdown-toggle" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-h"></i></button>
+            <ul class="dropdown-menu dropdown-menu-right">
+                @if (item.UserId == (int?)ViewBag.CurrentUserId)
+                {
+                    @* --- MENU CỦA CHỦ BÀI VIẾT --- *@
+                    <li><a href="#" class="dropdown-item delete-post-btn" data-post-id="@item.Id">Xóa bài viết</a></li>
+                    <li class="dropdown-submenu">
+                        <a href="#" class="dropdown-item dropdown-toggle" data-bs-toggle="dropdown">Quyền riêng tư</a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#" class="dropdown-item privacy-option" data-post-id="@item.Id" data-privacy="Public">Công khai</a></li>
+                            <li><a href="#" class="dropdown-item privacy-option" data-post-id="@item.Id" data-privacy="Private">Riêng tư</a></li>
+                            <li><a href="#" class="dropdown-item privacy-option" data-post-id="@item.Id" data-privacy="Friends">Bạn bè</a></li>
+                        </ul>
+                    </li>
+                }
+                else
+                {
+                    @* --- MENU CỦA NGƯỜI XEM --- *@
+                    <li>
+                        <a href="#" class="dropdown-item hide-post-btn" data-post-id="@item.Id">
+                            <i class="far fa-eye-slash me-2"></i> Ẩn bài viết
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="dropdown-item trigger-report-modal" data-post-id="@item.Id">
+                            <i class="fas fa-exclamation-circle me-2"></i> Báo cáo bài viết
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
         </div>
 
         @* --- PHẦN NỘI DUNG (TEXT) --- *@

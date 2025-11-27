@@ -45,6 +45,8 @@ namespace Online_chat.Models
 
         public DateTime CreatedAt { get; set; }
 
+        public DateTime? BanExpiresAt { get; set; }
+
         [StringLength(50)]
         public string UserCode { get; set; }
         public string FullName { get; set; }

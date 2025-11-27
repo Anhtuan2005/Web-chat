@@ -528,51 +528,67 @@ namespace Online_chat.Controllers
         [ValidateAntiForgeryToken]
         public JsonResult BlockUser(int blockedId)
         {
-            if (blockedId <= 0)
+            try
             {
-                return Json(new { success = false, message = "ID người dùng không hợp lệ." });
+                // 1. Kiểm tra ID hợp lệ
+                if (blockedId <= 0)
+                {
+                    return Json(new { success = false, message = "ID người dùng không hợp lệ." });
+                }
+
+                var currentUsername = User.Identity.Name;
+                // Kiểm tra User hiện tại có tồn tại và chưa bị xóa
+                var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername && !u.IsDeleted);
+
+                if (currentUser == null)
+                {
+                    return Json(new { success = false, message = "Không thể xác thực người dùng hiện tại." });
+                }
+
+                if (currentUser.Id == blockedId)
+                {
+                    return Json(new { success = false, message = "Bạn không thể tự chặn chính mình." });
+                }
+
+                // 2. Kiểm tra người bị chặn có tồn tại không (Tránh lỗi khóa ngoại Foreign Key)
+                var targetUser = _context.Users.FirstOrDefault(u => u.Id == blockedId && !u.IsDeleted);
+                if (targetUser == null)
+                {
+                    return Json(new { success = false, message = "Người dùng này không tồn tại hoặc đã bị xóa." });
+                }
+
+                // 3. Kiểm tra đã chặn chưa
+                var alreadyBlocked = _context.BlockedUsers.Any(b => b.BlockerId == currentUser.Id && b.BlockedId == blockedId);
+                if (alreadyBlocked)
+                {
+                    return Json(new { success = true, message = "Người dùng đã bị chặn từ trước." });
+                }
+
+                var newBlock = new BlockedUser
+                {
+                    BlockerId = currentUser.Id,
+                    BlockedId = blockedId,
+                };
+                _context.BlockedUsers.Add(newBlock);
+
+                var friendship = _context.Friendships.FirstOrDefault(f =>
+                    (f.SenderId == currentUser.Id && f.ReceiverId == blockedId) ||
+                    (f.SenderId == blockedId && f.ReceiverId == currentUser.Id));
+
+                if (friendship != null)
+                {
+                    _context.Friendships.Remove(friendship);
+                }
+
+                _context.SaveChanges();
+
+                return Json(new { success = true, message = "Đã chặn người dùng thành công." });
             }
-            var currentUsername = User.Identity.Name;
-            var currentUser = _context.Users.FirstOrDefault(u => u.Username == currentUsername);
-
-            if (currentUser == null)
+            catch (Exception ex)
             {
-                return Json(new { success = false, message = "Không thể xác thực người dùng." });
+                System.Diagnostics.Debug.WriteLine("Error Blocking User: " + ex.ToString());
+                return Json(new { success = false, message = "Lỗi server: " + ex.Message });
             }
-
-            if (currentUser.Id == blockedId)
-            {
-                return Json(new { success = false, message = "Bạn không thể tự chặn chính mình." });
-            }
-
-            // Check if block already exists
-            var alreadyBlocked = _context.BlockedUsers.Any(b => b.BlockerId == currentUser.Id && b.BlockedId == blockedId);
-            if (alreadyBlocked)
-            {
-                return Json(new { success = true, message = "Người dùng đã bị chặn từ trước." });
-            }
-
-            // Create new block record
-            var newBlock = new BlockedUser
-            {
-                BlockerId = currentUser.Id,
-                BlockedId = blockedId
-            };
-            _context.BlockedUsers.Add(newBlock);
-
-            // Remove any existing friendship (sent, received, or accepted)
-            var friendship = _context.Friendships.FirstOrDefault(f =>
-                (f.SenderId == currentUser.Id && f.ReceiverId == blockedId) ||
-                (f.SenderId == blockedId && f.ReceiverId == currentUser.Id));
-
-            if (friendship != null)
-            {
-                _context.Friendships.Remove(friendship);
-            }
-
-            _context.SaveChanges();
-
-            return Json(new { success = true, message = "Đã chặn người dùng." });
         }
 
         [HttpPost]

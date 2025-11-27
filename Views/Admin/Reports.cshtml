@@ -1,11 +1,14 @@
 @model IEnumerable<Online_chat.Models.Report>
-
+@using Online_chat.Models  
 @{
     ViewBag.Title = "Quản lý Báo cáo";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<h2>Quản lý Báo cáo</h2>
+<div class="page-header">
+    <h1 class="page-title">Quản lý Báo cáo</h1>
+    <p class="page-subtitle">Kiểm tra và xử lý các nội dung bị người dùng báo cáo.</p>
+</div>
 
 @if (TempData["SuccessMessage"] != null)
 {
@@ -16,53 +19,147 @@
     <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
 }
 
-<div class="card">
-    <div class="card-header">
-        Danh sách các báo cáo
+<div class="content-card">
+    <div class="content-card-header">
+        <h5 class="content-card-title">
+            Danh sách các báo cáo
+        </h5>
     </div>
-    <div class="card-body">
-        <table class="table table-striped table-bordered">
-            <thead>
-                <tr>
-                    <th>Người báo cáo</th>
-                    <th>Người bị báo cáo</th>
-                    <th>Lý do</th>
-                    <th>Ngày báo cáo</th>
-                    <th>Trạng thái</th>
-                    <th>Hành động</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var report in Model)
-                {
+    <div class="content-card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered align-middle" id="reports-table">
+                <thead>
                     <tr>
-                        <td>@report.Reporter.Username</td>
-                        <td>@report.ReportedUser.Username</td>
-                        <td>@report.Reason</td>
-                        <td>@report.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                        <td>
-                            @if (report.IsResolved)
-                            {
-                                <span class="badge bg-success">Đã giải quyết</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-warning text-dark">Chưa giải quyết</span>
-                            }
-                        </td>
-                        <td>
-                            @if (!report.IsResolved)
-                            {
-                                using (Html.BeginForm("ResolveReport", "Admin", new { id = report.Id }, FormMethod.Post))
-                                {
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-success">Đánh dấu đã giải quyết</button>
-                                }
-                            }
-                        </td>
+                        <th style="width: 100px;">Người báo cáo</th>
+                        <th style="width: 100px;">Người bị báo cáo</th>
+                        <th>Lý do</th>
+                        <th style="width: 150px;">Ngày báo cáo</th>
+                        <th style="width: 120px;" class="text-center">Trạng thái</th>
+                        <th style="width: 200px;" class="text-center">Hành động</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var report in Model)
+                    {
+                        <tr>
+                            <td>@report.Reporter.Username</td>
+                            <td>@report.ReportedUser.Username</td>
+                            <td>@report.Reason</td>
+                            <td>@report.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="text-center">
+                                @if (report.IsResolved)
+                                {
+                                    <span class="badge bg-success">Đã giải quyết</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark">Chưa giải quyết</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @{
+                                    // Giả định:
+                                    // Báo cáo có thể đến từ PostId hoặc MessageId.
+                                    // Chúng ta dùng PostId nếu nó có giá trị, ngược lại dùng MessageId (hoặc mặc định là Message)
+                                    var itemId = report.PostId.HasValue ? report.PostId.Value : report.MessageId.HasValue ? report.MessageId.Value : 0;
+                                    var itemType = report.PostId.HasValue ? "Post" : "Message";
+                                }
+
+                                @* Nút Xem Chi Tiết *@
+                                @if (itemId > 0)
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-info view-detail-btn"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#contentDetailModal"
+                                            data-item-id="@itemId"
+                                            data-item-type="@itemType"
+                                            title="Xem chi tiết nội dung">
+                                        <i class="fas fa-search"></i> Xem chi tiết
+                                    </button>
+                                }
+
+
+                                @* Nút Giải quyết *@
+                                @if (!report.IsResolved)
+                                {
+                                    using (Html.BeginForm("ResolveReport", "Admin",
+                                        new { id = report.Id }, FormMethod.Post,
+                                        new { style = "display:inline-block;" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-success ms-2">Đánh dấu</button>
+                                    }
+                                }
+
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
+
+<div class="modal fade" id="contentDetailModal" tabindex="-1" aria-labelledby="contentDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="contentDetailModalLabel"><i class="fas fa-file-alt me-2"></i>Chi tiết nội dung</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="contentDetailMessageType" class="fw-bold text-primary"></p>
+                <div class="p-3 border rounded bg-light" style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;" id="contentDetailContent">
+                    Đang tải nội dung...
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        $(document).ready(function () {
+
+            $('table').first().attr('id', 'reports-table');
+
+            $('#reports-table').on('click', '.view-detail-btn', function (e) {
+                e.preventDefault();
+                var button = $(this);
+                var itemId = button.data('item-id');
+                var itemType = button.data('item-type');
+
+                var modal = $('#contentDetailModal');
+                var contentDiv = $('#contentDetailContent');
+                var messageTypeP = $('#contentDetailMessageType');
+                contentDiv.html('<i class="fas fa-spinner fa-spin"></i> Đang tải...');
+                messageTypeP.text('Đang kết nối...');
+
+                modal.modal('show');
+
+                $.ajax({
+                    url: '@Url.Action("GetReportedItemContent", "Admin")',
+                    type: 'GET',
+                    data: { itemId: itemId, itemType: itemType },
+                    success: function (response) {
+                        if (response.success) {
+                            messageTypeP.text(response.message + " (" + itemType + ")");
+                            contentDiv.text(response.content);
+                        } else {
+                            contentDiv.html('<span class="text-danger">' + response.message + '</span>');
+                            messageTypeP.text('Lỗi tải');
+                        }
+                    },
+                    error: function () {
+                        contentDiv.html('<span class="text-danger">Lỗi kết nối máy chủ khi tải nội dung.</span>');
+                        messageTypeP.text('Lỗi kết nối');
+                    }
+                });
+            });
+        });
+    </script>
+}
